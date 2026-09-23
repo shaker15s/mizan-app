@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:pivotX="54"
+        android:pivotY="54">
+        <!-- Central Pillar / Shield Top (Mizan Balance Scale) -->
+        <!-- Diamond finial at top -->
+        <path
+            android:fillColor="#FFD166"
+            android:pathData="M54,26 L57.5,30 L54,34 L50.5,30 Z" />
+
+        <!-- Vertical Stem / Authority Pillar -->
+        <path
+            android:fillColor="#E2E8F0"
+            android:pathData="M52.5,33 L55.5,33 L55.5,74 L52.5,74 Z" />
+
+        <!-- Horizontal Beam -->
+        <path
+            android:fillColor="#00F5D4"
+            android:pathData="M31,39 L77,39 L77,42 L31,42 Z" />
+
+        <!-- Fulcrum / Pivot Ring -->
+        <path
+            android:fillColor="#FFD166"
+            android:pathData="M51,37.5 L57,37.5 L57,43.5 L51,43.5 Z" />
+
+        <!-- Left Balance Strings -->
+        <path
+            android:strokeColor="#94A3B8"
+            android:strokeWidth="1.2"
+            android:fillColor="#00000000"
+            android:pathData="M34,42 L27,58 M34,42 L41,58" />
+
+        <!-- Left Pan (M3 curve) -->
+        <path
+            android:fillColor="#FFD166"
+            android:pathData="M25,58 L43,58 C43,64 25,64 25,58 Z" />
+
+        <!-- Right Balance Strings -->
+        <path
+            android:strokeColor="#94A3B8"
+            android:strokeWidth="1.2"
+            android:fillColor="#00000000"
+            android:pathData="M74,42 L67,58 M74,42 L81,58" />
+
+        <!-- Right Pan (M3 curve) -->
+        <path
+            android:fillColor="#00F5D4"
+            android:pathData="M65,58 L83,58 C83,64 65,64 65,58 Z" />
+
+        <!-- Base Pedestal -->
+        <path
+            android:fillColor="#38BDF8"
+            android:pathData="M44,74 L64,74 L68,78 L40,78 Z" />
+        <path
+            android:fillColor="#0284C7"
+            android:pathData="M37,78 L71,78 L71,81 L37,81 Z" />
+    </group>
+</vector>

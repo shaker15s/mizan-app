@@ -1,0 +1,6 @@
+{
+  "name": "MIZAN",
+  "description": "Governed Agent-Native ERP Execution Platform. Deterministic authority, verification, and audit receipts for Odoo and enterprise systems.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
