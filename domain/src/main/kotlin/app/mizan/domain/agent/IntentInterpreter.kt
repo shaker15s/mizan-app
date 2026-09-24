@@ -273,7 +273,7 @@ class IntentInterpreter(
         val SKU = Regex("""SKU-[A-Z0-9-]+""", RegexOption.IGNORE_CASE)
         val ORDER_ID = Regex("""(?:SO|SAL-ORD|ORDER)-[A-Z0-9-]+""", RegexOption.IGNORE_CASE)
         val INVOICE_ID = Regex("""INV-[A-Z0-9-]+""", RegexOption.IGNORE_CASE)
-        val NUMBER = Regex("""\d{1,3}(?:[,\s]\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?""")
+        val NUMBER = Regex("""\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?""")
         val CURRENCY = Regex("""USD|EGP|EUR|GBP|SAR|AED|\$|€|£|ج\.م|جنيه|دولار|ر\.س|د\.إ""", RegexOption.IGNORE_CASE)
         val CUSTOMER = Regex(
             """(?:for|customer|عميل|للعميل)\s+([^,\n]{2,80})""",

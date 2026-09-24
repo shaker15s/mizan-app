@@ -10,7 +10,7 @@ class UserPreferences(context: Context) {
         set(value) = prefs.edit().putString(KEY_LANGUAGE, value).apply()
 
     var theme: String
-        get() = prefs.getString(KEY_THEME, "system") ?: "system"
+        get() = prefs.getString(KEY_THEME, "light") ?: "light"
         set(value) = prefs.edit().putString(KEY_THEME, value).apply()
 
     var reducedMotion: Boolean

@@ -23,7 +23,7 @@ interface MizanDao {
     suspend fun executionByKey(tenantId: String, key: String): ExecutionEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertExecution(entity: ExecutionEntity)
+    suspend fun upsertExecution(entity: ExecutionEntity): Long
 
     @Query("SELECT * FROM receipts WHERE tenantId = :tenantId ORDER BY createdAt DESC LIMIT :limit")
     fun observeReceipts(tenantId: String, limit: Int): Flow<List<ReceiptEntity>>
@@ -37,7 +37,7 @@ interface MizanDao {
     suspend fun receipt(tenantId: String, id: String): ReceiptEntity?
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
-    suspend fun insertReceipt(entity: ReceiptEntity)
+    suspend fun insertReceipt(entity: ReceiptEntity): Long
 
     @Query("SELECT * FROM audit_events WHERE tenantId = :tenantId ORDER BY chainIndex DESC LIMIT 1")
     suspend fun latestAudit(tenantId: String): AuditEventEntity?
@@ -73,7 +73,7 @@ interface MizanDao {
     suspend fun caseById(tenantId: String, id: String): ReconciliationEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertCase(entity: ReconciliationEntity)
+    suspend fun upsertCase(entity: ReconciliationEntity): Long
 
     @Query("SELECT * FROM cached_orders WHERE tenantId = :tenantId ORDER BY updatedAt DESC")
     fun observeOrders(tenantId: String): Flow<List<OrderEntity>>
@@ -88,13 +88,13 @@ interface MizanDao {
     fun observeStock(tenantId: String): Flow<List<StockEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertOrder(entity: OrderEntity)
+    suspend fun upsertOrder(entity: OrderEntity): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertCustomers(entities: List<CustomerEntity>)
+    suspend fun upsertCustomers(entities: List<CustomerEntity>): List<Long>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertStock(entities: List<StockEntity>)
+    suspend fun upsertStock(entities: List<StockEntity>): List<Long>
 
     @Query(
         """
@@ -136,7 +136,7 @@ interface MizanDao {
     suspend fun sync(tenantId: String): SyncEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertSync(entity: SyncEntity)
+    suspend fun upsertSync(entity: SyncEntity): Long
 
     @Query("SELECT COUNT(*) FROM cached_orders WHERE tenantId = :tenantId")
     suspend fun orderCount(tenantId: String): Int

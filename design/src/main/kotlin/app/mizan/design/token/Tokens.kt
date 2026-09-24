@@ -5,8 +5,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * MIZAN color is a warm instrument desk: paper and ink, with brass used
- * only for the action that matters. Status is never color alone.
+ * MIZAN Modern Apple Glass & Fluid Intelligence theme.
+ * Clean, translucent materials, precision borders, and high-contrast typography.
  */
 data class MizanColors(
     val isDark: Boolean,
@@ -14,6 +14,7 @@ data class MizanColors(
     val surface: Color,
     val surfaceElevated: Color,
     val glass: Color,
+    val glassBorder: Color,
     val textPrimary: Color,
     val textSecondary: Color,
     val textTertiary: Color,
@@ -23,6 +24,8 @@ data class MizanColors(
     val accent: Color,
     val onAccent: Color,
     val accentMuted: Color,
+    val userBubble: Color,
+    val onUserBubble: Color,
     val success: Color,
     val onSuccess: Color,
     val successContainer: Color,
@@ -41,63 +44,69 @@ data class MizanColors(
 
 fun lightColors() = MizanColors(
     isDark = false,
-    background = Color(0xFFF3F0E8),
-    surface = Color(0xFFFBFAF6),
-    surfaceElevated = Color(0xFFFFFFFF),
-    glass = Color(0xF7FBFAF6),
-    textPrimary = Color(0xFF1C1A16),
-    textSecondary = Color(0xFF5E584E),
-    textTertiary = Color(0xFF8A8376),
-    border = Color(0xFFE4DDD0),
-    borderStrong = Color(0xFFCFC6B6),
-    focus = Color(0xFF8A6430),
-    accent = Color(0xFF8A6430),
-    onAccent = Color(0xFFFFF8EE),
-    accentMuted = Color(0xFFF3E7D4),
-    success = Color(0xFF1F6B43),
-    onSuccess = Color(0xFFF4FFF8),
-    successContainer = Color(0xFFE5F2EA),
-    warning = Color(0xFF8A5A12),
-    onWarning = Color(0xFFFFF8EE),
-    warningContainer = Color(0xFFF8EBD8),
-    danger = Color(0xFF9C3D32),
-    onDanger = Color(0xFFFFF7F5),
-    dangerContainer = Color(0xFFF8E4E1),
-    info = Color(0xFF3D5C78),
-    onInfo = Color(0xFFF5F8FB),
-    infoContainer = Color(0xFFE4EDF4),
-    neutral = Color(0xFF6E675C),
-    scrim = Color(0x801C1A16),
+    background = Color(0xFFF8F9FC),
+    surface = Color(0xFFFFFFFF),
+    surfaceElevated = Color(0xFFF1F3F9),
+    glass = Color(0xEBFFFFFF),
+    glassBorder = Color(0x1C0F172A),
+    textPrimary = Color(0xFF0F172A),
+    textSecondary = Color(0xFF4B5563),
+    textTertiary = Color(0xFF94A3B8),
+    border = Color(0x0F0F172A),
+    borderStrong = Color(0x210F172A),
+    focus = Color(0xFF0D9488),
+    accent = Color(0xFF0D9488),
+    onAccent = Color(0xFFFFFFFF),
+    accentMuted = Color(0x180D9488),
+    userBubble = Color(0xFF0F172A),
+    onUserBubble = Color(0xFFFFFFFF),
+    success = Color(0xFF0D9488),
+    onSuccess = Color(0xFFFFFFFF),
+    successContainer = Color(0xFFF0FDF4),
+    warning = Color(0xFFD97706),
+    onWarning = Color(0xFFFFFFFF),
+    warningContainer = Color(0xFFFFFBEB),
+    danger = Color(0xFFE11D48),
+    onDanger = Color(0xFFFFFFFF),
+    dangerContainer = Color(0xFFFFF1F2),
+    info = Color(0xFF0284C7),
+    onInfo = Color(0xFFFFFFFF),
+    infoContainer = Color(0xFFF0F9FF),
+    neutral = Color(0xFF64748B),
+    scrim = Color(0x4D0F172A),
 )
 
 fun darkColors() = MizanColors(
     isDark = true,
-    background = Color(0xFF10140F),
-    surface = Color(0xFF181C16),
-    surfaceElevated = Color(0xFF22281F),
-    glass = Color(0xF0181C16),
-    textPrimary = Color(0xFFF4F0E6),
-    textSecondary = Color(0xFFB7B1A4),
-    textTertiary = Color(0xFF8A8478),
-    border = Color(0xFF2E342C),
-    borderStrong = Color(0xFF41483C),
-    focus = Color(0xFFD7B56A),
-    accent = Color(0xFFD7B56A),
-    onAccent = Color(0xFF1C1408),
-    accentMuted = Color(0xFF3A3120),
-    success = Color(0xFF9CB896),
-    onSuccess = Color(0xFF102116),
-    successContainer = Color(0xFF1C2A20),
-    warning = Color(0xFFE0B07A),
-    onWarning = Color(0xFF2A1C0C),
-    warningContainer = Color(0xFF3A2C1A),
-    danger = Color(0xFFE09A8E),
-    onDanger = Color(0xFF2C1210),
-    dangerContainer = Color(0xFF3A221E),
-    info = Color(0xFFA9C0D4),
-    onInfo = Color(0xFF12202C),
-    infoContainer = Color(0xFF1C2832),
-    neutral = Color(0xFFA39C90),
+    background = Color(0xFF0B0F17),
+    surface = Color(0xFF131926),
+    surfaceElevated = Color(0xFF1A2234),
+    glass = Color(0xD9131926),
+    glassBorder = Color(0x26FFFFFF),
+    textPrimary = Color(0xFFF8FAFC),
+    textSecondary = Color(0xFF94A3B8),
+    textTertiary = Color(0xFF64748B),
+    border = Color(0x1FFFFFFF),
+    borderStrong = Color(0x33FFFFFF),
+    focus = Color(0xFF10B981),
+    accent = Color(0xFF10B981),
+    onAccent = Color(0xFF022C22),
+    accentMuted = Color(0x2610B981),
+    userBubble = Color(0xFF1E293B),
+    onUserBubble = Color(0xFFF8FAFC),
+    success = Color(0xFF10B981),
+    onSuccess = Color(0xFF022C22),
+    successContainer = Color(0xFF064E3B),
+    warning = Color(0xFFF59E0B),
+    onWarning = Color(0xFF451A03),
+    warningContainer = Color(0xFF78350F),
+    danger = Color(0xFFEF4444),
+    onDanger = Color(0xFF450A0A),
+    dangerContainer = Color(0xFF7F1D1D),
+    info = Color(0xFF38BDF8),
+    onInfo = Color(0xFF082F49),
+    infoContainer = Color(0xFF0C4A6E),
+    neutral = Color(0xFF94A3B8),
     scrim = Color(0xCC000000),
 )
 
@@ -106,9 +115,9 @@ object Space {
     val sm: Dp = 8.dp
     val md: Dp = 12.dp
     val lg: Dp = 16.dp
-    val xl: Dp = 24.dp
-    val xxl: Dp = 32.dp
-    val xxxl: Dp = 48.dp
+    val xl: Dp = 20.dp
+    val xxl: Dp = 24.dp
+    val xxxl: Dp = 32.dp
 }
 
 enum class MotionToken { INSTANT, FAST, STANDARD, EMPHASIZED, TRANSITION, MODAL, NAVIGATION, FEEDBACK }

@@ -24,29 +24,8 @@ android {
         versionName = "2.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
-    }
-
-    flavorDimensions += "environment"
-    productFlavors {
-        create("demo") {
-            dimension = "environment"
-            applicationIdSuffix = ".demo"
-            versionNameSuffix = "-demo"
-            buildConfigField("String", "MIZAN_ENV", "\"demo\"")
-            buildConfigField("boolean", "DEMO_MODE", "true")
-        }
-        create("staging") {
-            dimension = "environment"
-            applicationIdSuffix = ".staging"
-            versionNameSuffix = "-staging"
-            buildConfigField("String", "MIZAN_ENV", "\"staging\"")
-            buildConfigField("boolean", "DEMO_MODE", "false")
-        }
-        create("production") {
-            dimension = "environment"
-            buildConfigField("String", "MIZAN_ENV", "\"production\"")
-            buildConfigField("boolean", "DEMO_MODE", "false")
-        }
+        buildConfigField("String", "MIZAN_ENV", "\"demo\"")
+        buildConfigField("boolean", "DEMO_MODE", "true")
     }
 
     signingConfigs {
@@ -93,11 +72,6 @@ android {
         buildConfig = true
     }
 
-    sourceSets {
-        getByName("staging") { java.srcDir("src/remote/java") }
-        getByName("production") { java.srcDir("src/remote/java") }
-    }
-
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }
@@ -115,6 +89,7 @@ dependencies {
     implementation(project(":data"))
     implementation(project(":integration"))
     implementation(project(":design"))
+    implementation(libs.androidx.room.runtime)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

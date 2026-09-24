@@ -5,7 +5,7 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Deep obsidian slate gradient background -->
+    <!-- Deep midnight slate to emerald luxury Apple gradient -->
     <path android:pathData="M0,0h108v108h-108z">
         <aapt:attr name="android:fillColor">
             <gradient
@@ -14,23 +14,28 @@
                 android:endX="108"
                 android:endY="108"
                 android:type="linear">
-                <item android:color="#0B132B" android:offset="0.0" />
-                <item android:color="#1C2541" android:offset="0.6" />
-                <item android:color="#212F45" android:offset="1.0" />
+                <item android:color="#081325" android:offset="0.0" />
+                <item android:color="#042F2E" android:offset="0.5" />
+                <item android:color="#0B2533" android:offset="1.0" />
             </gradient>
         </aapt:attr>
     </path>
-    <!-- Subtle technical grid accents -->
+    <!-- Central soft radial glow -->
+    <path
+        android:fillColor="#0D9488"
+        android:fillAlpha="0.16"
+        android:pathData="M54,24 A30,30 0 1,1 53.99,24 Z" />
+    <!-- Frosted concentric rings -->
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#1E3A8A"
-        android:strokeWidth="0.75"
-        android:strokeAlpha="0.4"
-        android:pathData="M18,18 L90,18 L90,90 L18,90 Z" />
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.0"
+        android:strokeAlpha="0.14"
+        android:pathData="M54,16 A38,38 0 1,1 53.99,16 Z" />
     <path
         android:fillColor="#00000000"
         android:strokeColor="#00F5D4"
-        android:strokeWidth="0.5"
-        android:strokeAlpha="0.25"
-        android:pathData="M54,12 L54,96 M12,54 L96,54" />
+        android:strokeWidth="0.8"
+        android:strokeAlpha="0.20"
+        android:pathData="M54,24 A30,30 0 1,1 53.99,24 Z" />
 </vector>

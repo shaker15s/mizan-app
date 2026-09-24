@@ -20,6 +20,7 @@ import app.mizan.domain.model.ExecutionRecord
 import app.mizan.domain.model.Proposal
 import app.mizan.domain.model.ReconciliationCase
 import app.mizan.domain.model.ReconciliationStatus
+import app.mizan.domain.security.Freshness
 import app.mizan.graph.AuthorityDeps
 import app.mizan.integration.api.MizanApiClient
 import kotlinx.coroutines.Dispatchers
@@ -30,8 +31,6 @@ import java.util.UUID
  * Production and staging. The device does not call an ERP and does not
  * invent a result when the service is missing or the response is incomplete.
  */
-fun createAuthority(deps: AuthorityDeps): ExecutionAuthority = RemoteExecutionAuthority(deps)
-
 class RemoteExecutionAuthority(
     private val deps: AuthorityDeps,
 ) : ExecutionAuthority {
@@ -54,6 +53,20 @@ class RemoteExecutionAuthority(
             return AuthorityOutcome.Refused(
                 AppError.Authorization("SOD_NEED_SECOND_APPROVER", "client cannot appoint a second approver"),
             )
+        }
+        if (proposal.policy.approval != ApprovalLevel.L0_NONE) {
+            val freshness = deps.reauth.check(
+                command.proof,
+                proposal.executionId.value,
+                command.approver.id,
+                command.approver.tenantId,
+                proposal.policy.approval,
+            )
+            if (freshness != Freshness.FRESH) {
+                return AuthorityOutcome.Refused(
+                    AppError.Security("BIOMETRIC_REAUTH_REQUIRED", "Biometric authentication required: ${freshness.name}"),
+                )
+            }
         }
         val walked = deps.machine.run(pathToExecuting(proposal.policy.approval))
         if (walked is Transition.Illegal) {

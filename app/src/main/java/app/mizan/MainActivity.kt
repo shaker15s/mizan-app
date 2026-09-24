@@ -33,8 +33,8 @@ class MainActivity : FragmentActivity() {
             val prefs = app.graph.preferences
             val dark = when (prefs.theme) {
                 "dark" -> true
-                "light" -> false
-                else -> isSystemInDarkTheme()
+                "system" -> isSystemInDarkTheme()
+                else -> false // Default to the Craft daylight light theme
             }
             val arabic = when (prefs.language) {
                 "ar" -> true

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -37,6 +38,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -57,11 +60,14 @@ import app.mizan.design.token.Motion
 import app.mizan.design.token.MotionToken
 import app.mizan.design.token.Space
 
-val ShapeContainer = RoundedCornerShape(8.dp)
-val ShapeCard = RoundedCornerShape(12.dp)
-val ShapeFloating = RoundedCornerShape(16.dp)
-val ShapeControl = RoundedCornerShape(10.dp)
-val ShapeChip = RoundedCornerShape(6.dp)
+val ShapeContainer = RoundedCornerShape(18.dp)
+val ShapeCard = RoundedCornerShape(22.dp)
+val ShapeFloating = RoundedCornerShape(28.dp)
+val ShapeControl = RoundedCornerShape(14.dp)
+val ShapePill = RoundedCornerShape(100.dp)
+val ShapeChip = RoundedCornerShape(10.dp)
+val ShapeBubbleUser = RoundedCornerShape(22.dp, 22.dp, 6.dp, 22.dp)
+val ShapeBubbleAgent = RoundedCornerShape(22.dp, 22.dp, 22.dp, 6.dp)
 
 enum class StatusTone { Neutral, Accent, Success, Warning, Danger, Info }
 
@@ -74,10 +80,51 @@ fun MizanSurface(
     val colors = LocalMizanColors.current
     Column(
         modifier = modifier
+            .shadow(
+                elevation = if (colors.isDark) 0.dp else if (elevated) 4.dp else 2.dp,
+                shape = ShapeCard,
+                spotColor = Color(0x0F0F172A),
+                ambientColor = Color(0x080F172A),
+            )
             .clip(ShapeCard)
-            .background(if (elevated) colors.surfaceElevated else colors.surface)
-            .border(BorderStroke(1.dp, colors.border), ShapeCard)
-            .padding(Space.lg),
+            .background(
+                if (colors.isDark) {
+                    SolidColor(if (elevated) colors.surfaceElevated else colors.glass)
+                } else {
+                    if (elevated) SolidColor(colors.surfaceElevated) else Brush.verticalGradient(
+                        listOf(Color(0xF7FFFFFF), Color(0xEBFFFFFF)),
+                    )
+                },
+            )
+            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+            .padding(Space.md),
+        content = content,
+    )
+}
+
+@Composable
+fun MizanGlassCard(
+    modifier: Modifier = Modifier,
+    border: BorderStroke? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val colors = LocalMizanColors.current
+    Column(
+        modifier = modifier
+            .shadow(
+                elevation = if (colors.isDark) 0.dp else 3.dp,
+                shape = ShapeCard,
+                spotColor = Color(0x0F0F172A),
+                ambientColor = Color(0x080F172A),
+            )
+            .clip(ShapeCard)
+            .background(
+                if (colors.isDark) SolidColor(colors.glass) else Brush.verticalGradient(
+                    listOf(Color(0xF7FFFFFF), Color(0xEBFFFFFF)),
+                ),
+            )
+            .border(border ?: BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+            .padding(Space.md),
         content = content,
     )
 }
@@ -129,9 +176,10 @@ fun MizanStatusBadge(label: String, tone: StatusTone, modifier: Modifier = Modif
     }
     Row(
         modifier = modifier
-            .clip(ShapeChip)
+            .clip(ShapePill)
             .background(bg)
-            .padding(horizontal = Space.sm, vertical = Space.xs)
+            .border(BorderStroke(0.6.dp, fg.copy(alpha = 0.25f)), ShapePill)
+            .padding(horizontal = Space.sm, vertical = 2.dp)
             .semantics { contentDescription = label },
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -142,7 +190,7 @@ fun MizanStatusBadge(label: String, tone: StatusTone, modifier: Modifier = Modif
                 .background(fg),
         )
         Spacer(Modifier.width(6.dp))
-        Text(label, style = MaterialTheme.typography.labelMedium, color = fg)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = fg)
     }
 }
 
@@ -202,10 +250,16 @@ private fun MizanButtonBase(
     val fg = if (enabled) content else colors.textTertiary
     Row(
         modifier = modifier
-            .heightIn(min = 48.dp)
-            .clip(ShapeControl)
+            .heightIn(min = 44.dp)
+            .shadow(
+                elevation = if (colors.isDark || !enabled || container == Color.Transparent) 0.dp else 2.dp,
+                shape = ShapePill,
+                spotColor = Color(0x140F172A),
+                ambientColor = Color(0x080F172A),
+            )
+            .clip(ShapePill)
             .background(bg)
-            .then(if (border != null) Modifier.border(1.dp, border, ShapeControl) else Modifier)
+            .then(if (border != null) Modifier.border(0.8.dp, border, ShapePill) else Modifier)
             .clickable(
                 interactionSource = interaction,
                 indication = ripple(color = content.copy(alpha = 0.2f)),
@@ -213,7 +267,7 @@ private fun MizanButtonBase(
                 role = Role.Button,
                 onClick = onClick,
             )
-            .padding(horizontal = Space.lg, vertical = Space.md),
+            .padding(horizontal = Space.lg, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
@@ -396,22 +450,22 @@ fun MizanCommandField(
         value = value,
         onValueChange = onValueChange,
         enabled = enabled,
-        textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.textPrimary),
+        textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.textPrimary),
         cursorBrush = SolidColor(colors.accent),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
         keyboardActions = KeyboardActions(onSend = { onSubmit() }),
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = 52.dp)
-            .clip(ShapeControl)
-            .background(colors.surfaceElevated)
-            .border(1.dp, colors.borderStrong, ShapeControl)
-            .padding(horizontal = Space.lg, vertical = Space.md)
+            .heightIn(min = 46.dp)
+            .clip(ShapePill)
+            .background(colors.surfaceElevated.copy(alpha = 0.85f))
+            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapePill)
+            .padding(horizontal = Space.lg, vertical = Space.sm)
             .semantics { contentDescription = placeholder },
         decorationBox = { inner ->
             Box(contentAlignment = Alignment.CenterStart) {
                 if (value.isEmpty()) {
-                    Text(placeholder, style = MaterialTheme.typography.bodyLarge, color = colors.textTertiary)
+                    Text(placeholder, style = MaterialTheme.typography.bodyMedium, color = colors.textTertiary)
                 }
                 inner()
             }
@@ -473,8 +527,8 @@ fun MizanGlassDock(modifier: Modifier = Modifier, content: @Composable () -> Uni
         modifier = modifier
             .fillMaxWidth()
             .background(colors.glass)
-            .border(BorderStroke(1.dp, colors.border), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-            .padding(horizontal = Space.lg, vertical = Space.sm),
+            .border(BorderStroke(0.8.dp, colors.glassBorder), RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+            .padding(horizontal = Space.md, vertical = Space.sm),
     ) {
         content()
     }
@@ -499,5 +553,232 @@ fun SuggestionRow(suggestions: List<Pair<String, () -> Unit>>, modifier: Modifie
     }
 }
 
+/**
+ * Craft iOS style feature card with frosted glass, hairline border, and tinted icon container.
+ */
+@Composable
+fun CraftFeatureCard(
+    title: String,
+    body: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    trailingBadge: String? = null,
+    onClick: (() -> Unit)? = null,
+) {
+    val colors = LocalMizanColors.current
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = if (colors.isDark) 0.dp else 3.dp,
+                shape = ShapeCard,
+                spotColor = Color(0x0F0F172A),
+                ambientColor = Color(0x050F172A),
+            )
+            .clip(ShapeCard)
+            .background(
+                if (colors.isDark) SolidColor(colors.glass) else Brush.verticalGradient(
+                    listOf(Color(0xFAFFFFFF), Color(0xEDFFFFFF)),
+                ),
+            )
+            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .padding(Space.md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(ShapeControl)
+                .background(colors.accentMuted)
+                .border(BorderStroke(0.6.dp, colors.accent.copy(alpha = 0.3f)), ShapeControl),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = colors.accent,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+        Spacer(Modifier.width(Space.md))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                color = colors.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.textSecondary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (trailingBadge != null) {
+            Spacer(Modifier.width(Space.sm))
+            MizanStatusBadge(trailingBadge, StatusTone.Accent)
+        }
+    }
+}
+
+/**
+ * Craft iOS style selectable card (for workspace, role, or policy selection).
+ */
+@Composable
+fun CraftSelectableCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    selected: Boolean,
+    onSelect: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LocalMizanColors.current
+    val borderColor = if (selected) colors.accent else colors.glassBorder
+    val borderWidth = if (selected) 1.5.dp else 0.8.dp
+    val bg: Brush = if (colors.isDark) {
+        SolidColor(if (selected) colors.accentMuted.copy(alpha = 0.2f) else colors.glass)
+    } else {
+        if (selected) SolidColor(colors.accentMuted.copy(alpha = 0.12f)) else Brush.verticalGradient(
+            listOf(Color(0xFAFFFFFF), Color(0xEDFFFFFF)),
+        )
+    }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = if (colors.isDark) 0.dp else if (selected) 4.dp else 2.dp,
+                shape = ShapeCard,
+                spotColor = if (selected) colors.accent.copy(alpha = 0.2f) else Color(0x0F0F172A),
+                ambientColor = Color(0x050F172A),
+            )
+            .clip(ShapeCard)
+            .background(bg)
+            .border(BorderStroke(borderWidth, borderColor), ShapeCard)
+            .clickable(role = Role.RadioButton, onClick = onSelect)
+            .padding(Space.md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(42.dp)
+                .clip(ShapeControl)
+                .background(if (selected) colors.accent else colors.surfaceElevated)
+                .border(BorderStroke(0.6.dp, if (selected) colors.accent else colors.borderStrong), ShapeControl),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (selected) colors.onAccent else colors.textSecondary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        Spacer(Modifier.width(Space.md))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                color = colors.textPrimary,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.textSecondary,
+            )
+        }
+        Spacer(Modifier.width(Space.sm))
+        // Radio indicator
+        Box(
+            modifier = Modifier
+                .size(22.dp)
+                .clip(RoundedCornerShape(11.dp))
+                .background(if (selected) colors.accent else Color.Transparent)
+                .border(
+                    BorderStroke(1.2.dp, if (selected) colors.accent else colors.textTertiary),
+                    RoundedCornerShape(11.dp),
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (selected) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(colors.onAccent),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Craft iOS style animated page indicator dots/pills.
+ */
+@Composable
+fun CraftPageIndicator(
+    pageCount: Int,
+    currentPage: Int,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LocalMizanColors.current
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        for (i in 0 until pageCount) {
+            val isActive = i == currentPage
+            val width = if (isActive) 24.dp else 8.dp
+            val color = if (isActive) colors.accent else colors.borderStrong
+            Box(
+                modifier = Modifier
+                    .height(8.dp)
+                    .width(width)
+                    .clip(ShapePill)
+                    .background(color),
+            )
+        }
+    }
+}
+
+/**
+ * Floating Apple/Craft frosted dock with hairline border and bottom inset padding.
+ */
+@Composable
+fun CraftFloatingDock(
+    modifier: Modifier = Modifier,
+    content: @Composable RowScope.() -> Unit,
+) {
+    val colors = LocalMizanColors.current
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = if (colors.isDark) 0.dp else 8.dp,
+                shape = ShapeFloating,
+                spotColor = Color(0x140F172A),
+                ambientColor = Color(0x0A0F172A),
+            )
+            .clip(ShapeFloating)
+            .background(
+                if (colors.isDark) SolidColor(colors.surfaceElevated.copy(alpha = 0.94f)) else Brush.verticalGradient(
+                    listOf(Color(0xF8FFFFFF), Color(0xEEFFFFFF)),
+                ),
+            )
+            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeFloating)
+            .padding(horizontal = Space.lg, vertical = Space.md),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        content = content,
+    )
+}
+
 @Composable
 fun buttonPadding(): PaddingValues = PaddingValues(0.dp)
+

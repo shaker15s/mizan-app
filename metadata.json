@@ -2,5 +2,5 @@
   "name": "MIZAN",
   "description": "Governed agentic ERP client. The device prepares requests. A MIZAN service is the authority. The demo flavor is a labeled simulation and does not call an ERP.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

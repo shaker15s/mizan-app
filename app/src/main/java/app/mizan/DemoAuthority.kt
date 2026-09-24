@@ -35,8 +35,6 @@ import app.mizan.domain.model.ReceiptId
 import app.mizan.graph.AuthorityDeps
 import java.util.UUID
 
-fun createAuthority(deps: AuthorityDeps): ExecutionAuthority = SimulatedExecutionAuthority(deps)
-
 class SimulatedExecutionAuthority(
     private val deps: AuthorityDeps,
 ) : ExecutionAuthority {
@@ -56,10 +54,11 @@ class SimulatedExecutionAuthority(
                 return AuthorityOutcome.Refused(AppError.Conflict("IDEMPOTENCY", decision.reason.name))
             is IdempotencyDecision.Replay -> {
                 val record = existing
-                return if (record?.erpRecordId != null && record.phase == ExecutionPhase.VERIFIED) {
+                val erpId = record?.erpRecordId
+                return if (record != null && erpId != null && record.phase == ExecutionPhase.VERIFIED) {
                     AuthorityOutcome.Verified(
                         record.id,
-                        record.erpRecordId,
+                        erpId,
                         record.erpModel ?: "simulation",
                         VerificationKind.SIMULATED_READ_BACK,
                     )

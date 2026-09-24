@@ -7,57 +7,97 @@
     <group
         android:pivotX="54"
         android:pivotY="54">
-        <!-- Central Pillar / Shield Top (Mizan Balance Scale) -->
-        <!-- Diamond finial at top -->
+        <!-- Top Diamond Finial -->
         <path
-            android:fillColor="#FFD166"
-            android:pathData="M54,26 L57.5,30 L54,34 L50.5,30 Z" />
-
-        <!-- Vertical Stem / Authority Pillar -->
+            android:fillColor="#FBBF24"
+            android:pathData="M54,23 L58.5,28 L54,33 L49.5,28 Z" />
+        <!-- Top Finial Sparkle Core -->
         <path
-            android:fillColor="#E2E8F0"
-            android:pathData="M52.5,33 L55.5,33 L55.5,74 L52.5,74 Z" />
+            android:fillColor="#FFFFFF"
+            android:pathData="M54,26.5 A1.5,1.5 0 1,1 53.99,26.5 Z" />
 
-        <!-- Horizontal Beam -->
+        <!-- Central Authority Pillar (Double-layer stem) -->
+        <path
+            android:fillColor="#F8FAFC"
+            android:pathData="M52.2,32 L55.8,32 L55.8,72 L52.2,72 Z" />
+        <path
+            android:fillColor="#94A3B8"
+            android:pathData="M53.4,34 L54.6,34 L54.6,70 L53.4,70 Z" />
+
+        <!-- Fulcrum Precision Ring -->
+        <path
+            android:fillColor="#F59E0B"
+            android:pathData="M54,34 A5,5 0 1,1 53.99,34 Z" />
+        <path
+            android:fillColor="#081325"
+            android:pathData="M54,36.5 A2.5,2.5 0 1,1 53.99,36.5 Z" />
         <path
             android:fillColor="#00F5D4"
-            android:pathData="M31,39 L77,39 L77,42 L31,42 Z" />
+            android:pathData="M54,38 A1,1 0 1,1 53.99,38 Z" />
 
-        <!-- Fulcrum / Pivot Ring -->
-        <path
-            android:fillColor="#FFD166"
-            android:pathData="M51,37.5 L57,37.5 L57,43.5 L51,43.5 Z" />
-
-        <!-- Left Balance Strings -->
-        <path
-            android:strokeColor="#94A3B8"
-            android:strokeWidth="1.2"
-            android:fillColor="#00000000"
-            android:pathData="M34,42 L27,58 M34,42 L41,58" />
-
-        <!-- Left Pan (M3 curve) -->
-        <path
-            android:fillColor="#FFD166"
-            android:pathData="M25,58 L43,58 C43,64 25,64 25,58 Z" />
-
-        <!-- Right Balance Strings -->
-        <path
-            android:strokeColor="#94A3B8"
-            android:strokeWidth="1.2"
-            android:fillColor="#00000000"
-            android:pathData="M74,42 L67,58 M74,42 L81,58" />
-
-        <!-- Right Pan (M3 curve) -->
+        <!-- Horizontal Precision Beam -->
         <path
             android:fillColor="#00F5D4"
-            android:pathData="M65,58 L83,58 C83,64 65,64 65,58 Z" />
+            android:pathData="M27,37.5 L81,37.5 C82.5,37.5 82.5,40.5 81,40.5 L27,40.5 C25.5,40.5 25.5,37.5 27,37.5 Z" />
 
-        <!-- Base Pedestal -->
+        <!-- Beam End Knobs -->
         <path
-            android:fillColor="#38BDF8"
-            android:pathData="M44,74 L64,74 L68,78 L40,78 Z" />
+            android:fillColor="#FBBF24"
+            android:pathData="M29,39 A2,2 0 1,1 28.99,39 Z" />
         <path
-            android:fillColor="#0284C7"
-            android:pathData="M37,78 L71,78 L71,81 L37,81 Z" />
+            android:fillColor="#FBBF24"
+            android:pathData="M79,39 A2,2 0 1,1 78.99,39 Z" />
+
+        <!-- Left Suspension Cables -->
+        <path
+            android:strokeColor="#CBD5E1"
+            android:strokeWidth="1.2"
+            android:strokeLineCap="round"
+            android:fillColor="#00000000"
+            android:pathData="M29,40.5 L22,56 M29,40.5 L36,56" />
+
+        <!-- Left Pan (Emerald M3 curved dish with glass rim) -->
+        <path
+            android:fillColor="#10B981"
+            android:pathData="M19,56 C19,65 39,65 39,56 Z" />
+        <path
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="1"
+            android:strokeAlpha="0.7"
+            android:strokeLineCap="round"
+            android:fillColor="#00000000"
+            android:pathData="M18.5,56 L39.5,56" />
+
+        <!-- Right Suspension Cables -->
+        <path
+            android:strokeColor="#CBD5E1"
+            android:strokeWidth="1.2"
+            android:strokeLineCap="round"
+            android:fillColor="#00000000"
+            android:pathData="M79,40.5 L72,56 M79,40.5 L86,56" />
+
+        <!-- Right Pan (Gold M3 curved dish with glass rim) -->
+        <path
+            android:fillColor="#FBBF24"
+            android:pathData="M69,56 C69,65 89,65 89,56 Z" />
+        <path
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="1"
+            android:strokeAlpha="0.7"
+            android:strokeLineCap="round"
+            android:fillColor="#00000000"
+            android:pathData="M68.5,56 L89.5,56" />
+
+        <!-- Base Pedestal (Stepped geometric mount) -->
+        <path
+            android:fillColor="#0F766E"
+            android:pathData="M43,72 L65,72 L70,76 L38,76 Z" />
+        <path
+            android:fillColor="#115E59"
+            android:pathData="M34,76 L74,76 C75,76 75,79 74,79 L34,79 C33,79 33,76 34,76 Z" />
+        <!-- Glowing Base Calibration LED -->
+        <path
+            android:fillColor="#00F5D4"
+            android:pathData="M48,74 L60,74 L60,75 L48,75 Z" />
     </group>
 </vector>

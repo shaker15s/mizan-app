@@ -28,14 +28,14 @@
     <string name="attention_sync">Saved data may be old</string>
     <string name="attention_backend">Workspace service not confirmed</string>
 
-    <string name="agent_placeholder">What should MIZAN prepare?</string>
+    <string name="agent_placeholder">Ask Mizan or command ERP...</string>
     <string name="agent_send">Send</string>
-    <string name="agent_intro">Tell MIZAN what you want. It will ask for anything it cannot read from your words. It will not invent an amount, a customer, or an order number.</string>
-    <string name="agent_clarify">A few details are missing</string>
-    <string name="agent_unsupported">This workspace cannot do that action.</string>
-    <string name="agent_rejected">This request was not prepared.</string>
-    <string name="agent_preview">Policy preview. The service makes the final decision.</string>
-    <string name="agent_sim_policy">Checked on this device. Simulation can carry it out. A live workspace would not.</string>
+    <string name="agent_intro">Command ERP operations, check stock, or draft orders.</string>
+    <string name="agent_clarify">Missing details</string>
+    <string name="agent_unsupported">Action unsupported.</string>
+    <string name="agent_rejected">Request declined.</string>
+    <string name="agent_preview">Policy preview.</string>
+    <string name="agent_sim_policy">Simulated approval.</string>
 
     <string name="proposal_action">Action</string>
     <string name="proposal_amount">Amount</string>
@@ -57,11 +57,11 @@
     <string name="approve_sod_fail">The requester cannot approve this alone.</string>
     <string name="approve_need_second">A second approver is still required.</string>
 
-    <string name="reauth_title">Confirm it is you</string>
-    <string name="reauth_body">This approval is tied to this request and expires quickly. A previous unlock does not cover it.</string>
-    <string name="reauth_action">Confirm with device</string>
-    <string name="reauth_sim">Use a simulated device check</string>
-    <string name="reauth_sim_note">Simulation only. This is not a biometric attestation.</string>
+    <string name="reauth_title">Biometric Authorization</string>
+    <string name="reauth_body">Touch sensor or verify credentials to authorize this ERP execution.</string>
+    <string name="reauth_action">Authorize with Biometrics</string>
+    <string name="reauth_sim">Authorize (Simulated Sensor)</string>
+    <string name="reauth_sim_note">Touch sensor to authorize this operation.</string>
 
     <string name="outcome_sim_checked">Checked inside the simulation. This is not an ERP record.</string>
     <string name="outcome_erp_checked">Checked against the ERP record.</string>
@@ -163,14 +163,33 @@
     <string name="demo_tenant">Simulation workspace</string>
 
     <string name="onboarding_skip">Skip</string>
-    <string name="onboarding_next">Next</string>
-    <string name="onboarding_start">Start</string>
-    <string name="onboarding_1_title">Requests become checked operations</string>
-    <string name="onboarding_1_body">You describe what you want. MIZAN turns it into a specific action, shows the rule, and waits for the right approval.</string>
-    <string name="onboarding_2_title">Verified means we read it back</string>
-    <string name="onboarding_2_body">A successful reply is not enough. Checked means the record was read again and the important fields matched.</string>
-    <string name="onboarding_3_title">Uncertain is not failed</string>
-    <string name="onboarding_3_body">If a request leaves the device and the result cannot be proven, MIZAN stops. It does not send it again and hope.</string>
+    <string name="onboarding_next">Continue</string>
+    <string name="onboarding_start">Get Started</string>
+    <string name="onboarding_1_title">Governed ERP Intelligence</string>
+    <string name="onboarding_1_body">Conversational AI commands meet hardware-backed cryptographic governance.</string>
+    <string name="onboarding_2_title">Verified Readback</string>
+    <string name="onboarding_2_body">Every operation is verified directly against ERP records with cryptographic proof.</string>
+    <string name="onboarding_3_title">Biometric Security Vault</string>
+    <string name="onboarding_3_body">Touch sensor authorization secures sensitive execution requests before dispatch.</string>
+    <string name="onboarding_craft_step1_title">Governed ERP Intelligence</string>
+    <string name="onboarding_craft_step1_subtitle">Simplicity meets cryptographic precision</string>
+    <string name="onboarding_craft_feat1_title">Agentic Commands</string>
+    <string name="onboarding_craft_feat1_body">Command stock checks and draft orders with natural conversational AI.</string>
+    <string name="onboarding_craft_feat2_title">Biometric Vault</string>
+    <string name="onboarding_craft_feat2_body">Hardware-backed biometric authorization before ERP execution.</string>
+    <string name="onboarding_craft_feat3_title">Immutable Proof</string>
+    <string name="onboarding_craft_feat3_body">Live readback verification and auditable tamper-evident history.</string>
+    <string name="onboarding_craft_step2_title">Choose Workspace</string>
+    <string name="onboarding_craft_step2_subtitle">Select your governance environment</string>
+    <string name="onboarding_craft_ws_demo_title">ACME Simulation (Demo)</string>
+    <string name="onboarding_craft_ws_demo_body">Pre-loaded ERP environment with sample customers, stock, and ledgers.</string>
+    <string name="onboarding_craft_ws_remote_title">Enterprise Remote Authority</string>
+    <string name="onboarding_craft_ws_remote_body">Direct TLS connection to your corporate MIZAN ERP service.</string>
+    <string name="onboarding_craft_step3_title">Biometric Ready</string>
+    <string name="onboarding_craft_step3_subtitle">Hardware-backed device authorization</string>
+    <string name="onboarding_craft_bio_ready">Sensor Ready · AES-256 HSM</string>
+    <string name="onboarding_craft_bio_test">Tap to Test Sensor</string>
+    <string name="onboarding_craft_bio_verified">Biometric Sensor Verified ✓</string>
 
     <string name="search_title">Search</string>
     <string name="search_hint">Search saved records</string>

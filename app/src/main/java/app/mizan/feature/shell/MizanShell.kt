@@ -1,14 +1,30 @@
 package app.mizan.feature.shell
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.font.FontWeight
+import app.mizan.design.component.ShapeFloating
+import app.mizan.design.component.ShapePill
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.FactCheck
@@ -17,6 +33,7 @@ import androidx.compose.material.icons.outlined.Hub
 import androidx.compose.material.icons.outlined.Rule
 import androidx.compose.material.icons.outlined.SyncProblem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationRail
@@ -129,14 +146,58 @@ fun MizanShell(
                 containerColor = colors.background,
                 bottomBar = {
                     if (showNav && !medium) {
-                        NavigationBar(containerColor = colors.glass) {
-                            destinations.filter { it.compact }.forEach { dest ->
-                                NavigationBarItem(
-                                    selected = route == dest.route,
-                                    onClick = { nav.navigateTab(dest.route) },
-                                    icon = { Icon(dest.icon, contentDescription = stringResource(dest.label)) },
-                                    label = { Text(stringResource(dest.label), maxLines = 1) },
-                                )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .navigationBarsPadding(),
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .shadow(
+                                        elevation = if (colors.isDark) 0.dp else 10.dp,
+                                        shape = ShapeFloating,
+                                        spotColor = Color(0x1A0F172A),
+                                        ambientColor = Color(0x0F0F172A),
+                                    )
+                                    .clip(ShapeFloating)
+                                    .background(
+                                        if (colors.isDark) SolidColor(colors.surfaceElevated.copy(alpha = 0.94f)) else Brush.verticalGradient(
+                                            listOf(Color(0xF8FFFFFF), Color(0xEEFFFFFF)),
+                                        ),
+                                    )
+                                    .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeFloating)
+                                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.SpaceAround,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                destinations.filter { it.compact }.forEach { dest ->
+                                    val selected = route == dest.route
+                                    Column(
+                                        modifier = Modifier
+                                            .clip(ShapePill)
+                                            .background(if (selected) colors.accentMuted else Color.Transparent)
+                                            .clickable { nav.navigateTab(dest.route) }
+                                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                                    ) {
+                                        Icon(
+                                            dest.icon,
+                                            contentDescription = stringResource(dest.label),
+                                            tint = if (selected) colors.accent else colors.textSecondary,
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                        Text(
+                                            text = stringResource(dest.label),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                                            color = if (selected) colors.textPrimary else colors.textTertiary,
+                                            maxLines = 1,
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
