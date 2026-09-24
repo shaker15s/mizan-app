@@ -1,3 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">MIZAN</string>
+    <string name="simulation_banner">Simulation. Nothing here is an ERP record.</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_agent">Agent</string>
+    <string name="nav_operations">Operations</string>
+    <string name="nav_evidence">Evidence</string>
+    <string name="nav_account">Account</string>
+    <string name="nav_reconcile">Reconcile</string>
+    <string name="nav_governance">Rules</string>
+    <string name="cd_search">Search on this device</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_mark">MIZAN</string>
+
+    <string name="home_kicker">What needs you</string>
+    <string name="home_recent">Recent</string>
+    <string name="home_health">Connection</string>
+    <string name="home_empty_title">Nothing needs you right now</string>
+    <string name="home_empty_body">Ask the agent to prepare a request, or open a workspace that is actually connected.</string>
+    <string name="home_ask">Ask the agent</string>
+    <string name="home_changed">Since you last opened MIZAN, this device can only show what it has saved.</string>
+
+    <string name="attention_approval">Needs approval</string>
+    <string name="attention_reconciliation">Outcome uncertain</string>
+    <string name="attention_failure">Did not complete</string>
+    <string name="attention_erp">ERP not reachable from here</string>
+    <string name="attention_sync">Saved data may be old</string>
+    <string name="attention_backend">Workspace service not confirmed</string>
+
+    <string name="agent_placeholder">What should MIZAN prepare?</string>
+    <string name="agent_send">Send</string>
+    <string name="agent_intro">Tell MIZAN what you want. It will ask for anything it cannot read from your words. It will not invent an amount, a customer, or an order number.</string>
+    <string name="agent_clarify">A few details are missing</string>
+    <string name="agent_unsupported">This workspace cannot do that action.</string>
+    <string name="agent_rejected">This request was not prepared.</string>
+    <string name="agent_preview">Policy preview. The service makes the final decision.</string>
+    <string name="agent_sim_policy">Checked on this device. Simulation can carry it out. A live workspace would not.</string>
+
+    <string name="proposal_action">Action</string>
+    <string name="proposal_amount">Amount</string>
+    <string name="proposal_customer">Customer</string>
+    <string name="proposal_risk">Why this risk</string>
+    <string name="proposal_policy">Rule</string>
+    <string name="proposal_actor">Requested by</string>
+    <string name="proposal_review">Review</string>
+    <string name="proposal_dismiss">Dismiss</string>
+    <string name="risk_note">This is a classification, not a probability.</string>
+
+    <string name="approve_title">Approve this request?</string>
+    <string name="approve_execute">Approve and execute</string>
+    <string name="approve_keep">Do not execute</string>
+    <string name="approve_destructive_title">This cannot be undone from MIZAN</string>
+    <string name="approve_destructive_body">Cancelling may release reserved stock in the system of record. Confirm only if that is what you intend.</string>
+    <string name="approve_cancel_order">Cancel the order</string>
+    <string name="approve_sod_ok">Separation of duties is satisfied.</string>
+    <string name="approve_sod_fail">The requester cannot approve this alone.</string>
+    <string name="approve_need_second">A second approver is still required.</string>
+
+    <string name="reauth_title">Confirm it is you</string>
+    <string name="reauth_body">This approval is tied to this request and expires quickly. A previous unlock does not cover it.</string>
+    <string name="reauth_action">Confirm with device</string>
+    <string name="reauth_sim">Use a simulated device check</string>
+    <string name="reauth_sim_note">Simulation only. This is not a biometric attestation.</string>
+
+    <string name="outcome_sim_checked">Checked inside the simulation. This is not an ERP record.</string>
+    <string name="outcome_erp_checked">Checked against the ERP record.</string>
+    <string name="outcome_accepted">The service accepted the request. The ERP record is not confirmed yet.</string>
+    <string name="outcome_uncertain">MIZAN could not confirm whether this was accepted. It was not retried, so a duplicate is not created by accident.</string>
+    <string name="outcome_open_recon">Open reconciliation</string>
+    <string name="outcome_refused">The request was not carried out.</string>
+
+    <string name="ops_title">Operations</string>
+    <string name="ops_empty_title">No operations yet</string>
+    <string name="ops_empty_body">When you prepare a request, its state will show here — including ones that did not finish.</string>
+    <string name="ops_segment_all">All</string>
+    <string name="ops_segment_open">Open</string>
+
+    <string name="recon_title">Reconciliation</string>
+    <string name="recon_empty_title">No uncertain outcomes</string>
+    <string name="recon_empty_body">If a request leaves this device and the result cannot be proven, it waits here. It is not marked failed, and it is not sent again automatically.</string>
+    <string name="recon_link">Link to this record</string>
+    <string name="recon_close">Close without linking</string>
+    <string name="recon_note_hint">Why this match is right</string>
+    <string name="recon_need_note">Add a note before linking.</string>
+    <string name="recon_candidates">Possible records</string>
+    <string name="recon_pick">Choose the record. Linking does not check it.</string>
+    <string name="recon_no_candidate">There is no record to link. Close the question, or leave it open.</string>
+    <string name="connection_refresh_scope">This only rechecks the network on this device. It does not prove the service or the ERP.</string>
+    <string name="suggest_stock">Check stock SKU-SRV-01</string>
+    <string name="suggest_draft">Create a draft order for Cairo Tech, 15000 EGP, items 2 servers</string>
+    <string name="suggest_draft_ar">أنشئ أمر بيع للعميل Cairo Tech بمبلغ 15000 جنيه بنود خادمين</string>
+
+    <string name="evidence_title">Evidence</string>
+    <string name="evidence_empty_title">No receipts yet</string>
+    <string name="evidence_empty_body">A receipt is written after an operation is checked. A local hash chain can show whether this device’s history was edited. It is not a public notary.</string>
+    <string name="evidence_check">Check local integrity</string>
+    <string name="evidence_demo_tamper">Show how a changed copy is detected</string>
+    <string name="evidence_demo_tamper_note">The stored history is not modified.</string>
+    <string name="evidence_more">Show more</string>
+    <string name="evidence_fact">Result</string>
+    <string name="evidence_policy">Why it was allowed</string>
+    <string name="evidence_proof">How it was checked</string>
+    <string name="evidence_meta">Technical details</string>
+
+    <string name="gov_title">Rules</string>
+    <string name="gov_intro">These are the rules this device can explain. In a live workspace, the service is the authority.</string>
+    <string name="gov_reads">Lookups do not need approval.</string>
+    <string name="gov_auditor">Auditors cannot change records.</string>
+    <string name="gov_destructive">Cancelling needs a manager who did not start the request.</string>
+    <string name="gov_dual">Above the top threshold, two different approvers are required.</string>
+    <string name="gov_currency">A currency with no configured ladder is not treated as dollars. It needs a manager.</string>
+    <string name="gov_sim_thresholds">Simulation thresholds, not a customer’s legal policy.</string>
+
+    <string name="account_title">Account</string>
+    <string name="account_security">Security</string>
+    <string name="account_connection">Connection</string>
+    <string name="account_rules">Rules</string>
+    <string name="account_language">Language</string>
+    <string name="account_theme">Theme</string>
+    <string name="account_motion">Reduce motion</string>
+    <string name="account_sign_out">Sign out</string>
+    <string name="account_system">System</string>
+    <string name="account_light">Light</string>
+    <string name="account_dark">Dark</string>
+    <string name="account_english">English</string>
+    <string name="account_arabic">Arabic</string>
+    <string name="account_sim_role">Simulation role</string>
+    <string name="account_sim_role_note">Switching roles here does not grant authority on a real workspace.</string>
+    <string name="account_sim_ambiguous">Make the next write uncertain</string>
+    <string name="account_diagnostics">On this device</string>
+    <string name="account_startup">Last startup</string>
+
+    <string name="security_title">Security</string>
+    <string name="security_session">Session</string>
+    <string name="security_no_erp_secret">ERP passwords are not stored on this device.</string>
+    <string name="security_freshness">A sensitive approval needs a fresh device check for that request.</string>
+    <string name="security_biometric">Device check</string>
+
+    <string name="connection_title">Connection</string>
+    <string name="connection_erp">System of record</string>
+    <string name="connection_not_configured">Not configured</string>
+    <string name="connection_reachable">Reachable</string>
+    <string name="connection_authenticated">Signed in</string>
+    <string name="connection_authorized">Allowed to act</string>
+    <string name="connection_healthy">Responding</string>
+    <string name="connection_synced">Saved copy updated</string>
+    <string name="connection_unknown">Not checked</string>
+    <string name="connection_sim">Simulation connector. No network ERP.</string>
+    <string name="connection_refresh">Check again</string>
+
+    <string name="sign_in_title">Sign in</string>
+    <string name="sign_in_body">The password is sent only to the MIZAN service and is not saved here. ERP credentials are not entered on this screen.</string>
+    <string name="sign_in_email">Email</string>
+    <string name="sign_in_password">Password</string>
+    <string name="sign_in_continue">Continue</string>
+    <string name="sign_in_url">Service URL</string>
+    <string name="sign_in_url_invalid">The service address must start with https://</string>
+    <string name="sign_in_missing_service">This build has no MIZAN service address. The device will not invent a signed-in workspace.</string>
+    <string name="demo_title">Simulation workspace</string>
+    <string name="demo_body">This build does not connect to an ERP. You can walk through approval, uncertainty, and evidence with labeled sample data.</string>
+    <string name="demo_enter">Enter the simulation</string>
+    <string name="demo_tenant">Simulation workspace</string>
+
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_start">Start</string>
+    <string name="onboarding_1_title">Requests become checked operations</string>
+    <string name="onboarding_1_body">You describe what you want. MIZAN turns it into a specific action, shows the rule, and waits for the right approval.</string>
+    <string name="onboarding_2_title">Verified means we read it back</string>
+    <string name="onboarding_2_body">A successful reply is not enough. Checked means the record was read again and the important fields matched.</string>
+    <string name="onboarding_3_title">Uncertain is not failed</string>
+    <string name="onboarding_3_body">If a request leaves the device and the result cannot be proven, MIZAN stops. It does not send it again and hope.</string>
+
+    <string name="search_title">Search</string>
+    <string name="search_hint">Search saved records</string>
+    <string name="search_scope">On this device only. Not a live ERP search.</string>
+    <string name="search_empty">Nothing saved here matches.</string>
+    <string name="search_short">Type at least two characters.</string>
+
+    <string name="error_retry">Try again</string>
+    <string name="error_not_configured_title">Service not configured</string>
+    <string name="error_not_configured_body">This device cannot authorize an ERP change by itself. Connect a MIZAN service before executing.</string>
+    <string name="error_network_title">The service did not respond</string>
+    <string name="error_network_body">Your saved copy is unchanged. If a change had already been sent, it would be listed under reconciliation — not marked failed.</string>
+    <string name="loading">Loading</string>
+    <string name="offline_banner">Offline. Showing what this device last saved.</string>
+    <string name="stale_banner">This copy may be old.</string>
+
+    <string name="phase_PROPOSED">Drafted</string>
+    <string name="phase_VALIDATED">Checked the inputs</string>
+    <string name="phase_RISK_EVALUATED">Risk classified</string>
+    <string name="phase_AWAITING_APPROVAL">Waiting for approval</string>
+    <string name="phase_AUTHORIZED">Approved</string>
+    <string name="phase_LEASE_ACQUIRED">Reserved to run</string>
+    <string name="phase_EXECUTING">Running</string>
+    <string name="phase_ERP_ACCEPTED">Accepted, not yet checked</string>
+    <string name="phase_VERIFICATION_PENDING">Checking the record</string>
+    <string name="phase_VERIFIED">Checked</string>
+    <string name="phase_REJECTED">Declined</string>
+    <string name="phase_CANCELLED">Cancelled</string>
+    <string name="phase_TIMEOUT">Timed out</string>
+    <string name="phase_ERP_FAILURE">Did not complete</string>
+    <string name="phase_AMBIGUOUS">Uncertain</string>
+    <string name="phase_RECONCILIATION_REQUIRED">Needs reconciliation</string>
+    <string name="phase_LINKED_UNVERIFIED">Linked by a person. Not checked against the ERP.</string>
+    <string name="phase_CLOSED_UNVERIFIED">Closed without a confirmed record</string>
+
+    <string name="reason_SAFE_READ">A lookup does not need approval.</string>
+    <string name="reason_AUDITOR_READONLY">Auditors can look, not change.</string>
+    <string name="reason_DESTRUCTIVE_REQUIRES_MANAGER">Cancelling needs a manager.</string>
+    <string name="reason_THRESHOLD_L1">This amount needs your confirmation.</string>
+    <string name="reason_THRESHOLD_L2">This amount needs a privileged approver.</string>
+    <string name="reason_THRESHOLD_L3">This amount needs a manager.</string>
+    <string name="reason_THRESHOLD_L4">This amount needs two approvers.</string>
+    <string name="reason_CURRENCY_LADDER_MISSING">No threshold is configured for this currency. A manager must review it.</string>
+    <string name="reason_CREDIT_LIMIT">This would pass the customer’s credit limit.</string>
+    <string name="reason_CUSTOMER_BLOCKED">This customer is blocked.</string>
+    <string name="reason_INJECTION_BLOCKED">The text tried to override the rules. It was not prepared.</string>
+    <string name="reason_TOOL_NOT_SUPPORTED">The connected system does not offer this action.</string>
+    <string name="reason_CONFIRM_NO_AMOUNT">Please confirm this change.</string>
+    <string name="reason_API_NOT_CONFIGURED">No MIZAN service is configured.</string>
+    <string name="reason_SESSION_MISSING">Sign in again.</string>
+    <string name="reason_SESSION_EXPIRED">The session expired.</string>
+    <string name="reason_FORBIDDEN">You are not allowed to do this.</string>
+    <string name="reason_SOD_SAME_ACTOR">You started this request, so you cannot approve it.</string>
+    <string name="reason_SOD_ROLE">This approval needs a different role.</string>
+    <string name="reason_REAUTH">Confirm it is you for this request.</string>
+    <string name="reason_IDEMPOTENCY">This request is already in progress or uncertain. It was not sent again.</string>
+    <string name="reason_API_URL_NOT_HTTPS">The service address must start with https://</string>
+    <string name="reason_SIGN_IN_HTTP">The service rejected sign-in.</string>
+    <string name="reason_SIGN_IN_NETWORK">The service did not respond.</string>
+    <string name="reason_SIGN_IN_BODY">The service reply was incomplete. No session was saved.</string>
+
+    <string name="missing_CUSTOMER">Which customer?</string>
+    <string name="missing_AMOUNT">What amount?</string>
+    <string name="missing_CURRENCY">Which currency?</string>
+    <string name="missing_ITEMS">What is being ordered?</string>
+    <string name="missing_ORDER_ID">Which order number?</string>
+    <string name="missing_INVOICE_ID">Which invoice number?</string>
+    <string name="missing_REASON">Why?</string>
+    <string name="missing_SKU">Which SKU?</string>
+    <string name="missing_QUERY">What should I look for?</string>
+
+    <string name="tool_stock">Check stock</string>
+    <string name="tool_customer">Find a customer</string>
+    <string name="tool_draft">Draft sales order</string>
+    <string name="tool_cancel">Cancel order</string>
+    <string name="tool_invoice">Create invoice</string>
+    <string name="tool_payment">Register payment</string>
+    <string name="tool_summary">Sales summary</string>
+    <string name="tool_unknown">Unknown action</string>
+    <string name="outcome_saved_copy">From the copy saved on this device. Not a live ERP lookup.</string>
+    <string name="reason_SOD_NEED_SECOND_APPROVER">A second approver is still required.</string>
+    <string name="reason_SOD_ROLE_INSUFFICIENT">This approval needs a different role.</string>
+    <string name="reason_SOD_TENANT_MISMATCH">The approver is not in this workspace.</string>
+    <string name="reason_ILLEGAL_TRANSITION">This request is not in a state that can be executed.</string>
+
+    <string name="health_HEALTHY">Responding</string>
+    <string name="health_DEGRADED">Degraded</string>
+    <string name="health_UNAVAILABLE">Unavailable</string>
+    <string name="health_UNKNOWN">Not checked</string>
+    <string name="health_network">Network</string>
+    <string name="health_backend">MIZAN service</string>
+    <string name="health_erp">ERP</string>
+    <string name="health_sync">Saved copy</string>
+
+    <string name="chain_CHAIN_EMPTY">No local history yet.</string>
+    <string name="chain_CHAIN_INTACT_LOCAL">Local history matches its hash chain. This does not prove a server stored the same events.</string>
+    <string name="chain_CHAIN_LINK_MISMATCH">Local history does not link at this record.</string>
+    <string name="chain_CHAIN_PAYLOAD_MISMATCH">A local record was changed after it was written.</string>
+
+    <string name="role_SALES_REP">Sales</string>
+    <string name="role_SALES_MANAGER">Sales manager</string>
+    <string name="role_FINANCE_APPROVER">Finance</string>
+    <string name="role_AUDITOR">Auditor</string>
+    <string name="role_OPERATOR">Operator</string>
 </resources>

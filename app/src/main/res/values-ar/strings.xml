@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ميزان</string>
+    <string name="simulation_banner">محاكاة. لا شيء هنا سجل حقيقي في نظام الموارد.</string>
+    <string name="nav_home">الرئيسية</string>
+    <string name="nav_agent">الوكيل</string>
+    <string name="nav_operations">العمليات</string>
+    <string name="nav_evidence">الأدلة</string>
+    <string name="nav_account">الحساب</string>
+    <string name="nav_reconcile">التسوية</string>
+    <string name="nav_governance">القواعد</string>
+    <string name="cd_search">بحث في هذا الجهاز</string>
+    <string name="cd_back">رجوع</string>
+    <string name="cd_mark">ميزان</string>
+
+    <string name="home_kicker">ما الذي يحتاجك</string>
+    <string name="home_recent">مؤخرًا</string>
+    <string name="home_health">الاتصال</string>
+    <string name="home_empty_title">لا شيء يحتاجك الآن</string>
+    <string name="home_empty_body">اسأل الوكيل أن يجهّز طلبًا، أو اربط مساحة عمل متصلة فعلًا.</string>
+    <string name="home_ask">اسأل الوكيل</string>
+    <string name="home_changed">منذ آخر فتح، لا يعرض هذا الجهاز إلا ما حفظه.</string>
+
+    <string name="attention_approval">بانتظار اعتماد</string>
+    <string name="attention_reconciliation">النتيجة غير مؤكدة</string>
+    <string name="attention_failure">لم تكتمل</string>
+    <string name="attention_erp">نظام الموارد غير متاح من هنا</string>
+    <string name="attention_sync">النسخة المحفوظة قد تكون قديمة</string>
+    <string name="attention_backend">خدمة مساحة العمل غير مؤكدة</string>
+
+    <string name="agent_placeholder">ماذا نجهّز؟</string>
+    <string name="agent_send">إرسال</string>
+    <string name="agent_intro">صف ما تريده. سيسألك ميزان عما لا يستطيع قراءته من كلامك. لن يخترع مبلغًا أو عميلًا أو رقم أمر.</string>
+    <string name="agent_clarify">ينقص بعض التفاصيل</string>
+    <string name="agent_unsupported">مساحة العمل هذه لا تدعم هذا الإجراء.</string>
+    <string name="agent_rejected">لم يُجهَّز هذا الطلب.</string>
+    <string name="agent_preview">معاينة للقاعدة. القرار النهائي للخدمة.</string>
+    <string name="agent_sim_policy">فُحص على هذا الجهاز. المحاكاة تستطيع تنفيذه. مساحة العمل الحقيقية لا تفعل ذلك.</string>
+
+    <string name="proposal_action">الإجراء</string>
+    <string name="proposal_amount">المبلغ</string>
+    <string name="proposal_customer">العميل</string>
+    <string name="proposal_risk">سبب التصنيف</string>
+    <string name="proposal_policy">القاعدة</string>
+    <string name="proposal_actor">مقدّم الطلب</string>
+    <string name="proposal_review">مراجعة</string>
+    <string name="proposal_dismiss">تجاهل</string>
+    <string name="risk_note">هذا تصنيف، وليس احتمالًا.</string>
+
+    <string name="approve_title">اعتماد هذا الطلب؟</string>
+    <string name="approve_execute">اعتماد وتنفيذ</string>
+    <string name="approve_keep">عدم التنفيذ</string>
+    <string name="approve_destructive_title">لا يمكن التراجع عن هذا من ميزان</string>
+    <string name="approve_destructive_body">قد يحرر الإلغاء مخزونًا محجوزًا في نظام السجلات. أكّد فقط إذا كان هذا ما تريده.</string>
+    <string name="approve_cancel_order">إلغاء الأمر</string>
+    <string name="approve_sod_ok">فصل المهام متحقّق.</string>
+    <string name="approve_sod_fail">من قدّم الطلب لا يستطيع اعتماده وحده.</string>
+    <string name="approve_need_second">ما زال اعتماد شخص ثانٍ مطلوبًا.</string>
+
+    <string name="reauth_title">أكّد أنك أنت</string>
+    <string name="reauth_body">هذا الاعتماد مرتبط بهذا الطلب وينتهي سريعًا. فتح سابق للجلسة لا يغطيه.</string>
+    <string name="reauth_action">تأكيد من الجهاز</string>
+    <string name="reauth_sim">استخدام فحص جهاز محاكى</string>
+    <string name="reauth_sim_note">للمحاكاة فقط. هذا ليس إثبات بصمة.</string>
+
+    <string name="outcome_sim_checked">فُحص داخل المحاكاة. هذا ليس سجل نظام موارد.</string>
+    <string name="outcome_erp_checked">طُابق مع سجل نظام الموارد.</string>
+    <string name="outcome_accepted">قبلت الخدمة الطلب. سجل نظام الموارد لم يُؤكَّد بعد.</string>
+    <string name="outcome_uncertain">لم يتأكد ميزان إن كان الطلب قد قُبل. لم تُعد المحاولة، حتى لا يُنشأ سجل مكرر بالخطأ.</string>
+    <string name="outcome_open_recon">فتح التسوية</string>
+    <string name="outcome_refused">لم يُنفَّذ الطلب.</string>
+
+    <string name="ops_title">العمليات</string>
+    <string name="ops_empty_title">لا عمليات بعد</string>
+    <string name="ops_empty_body">حين تجهّز طلبًا، تظهر حالته هنا، بما فيها ما لم يكتمل.</string>
+    <string name="ops_segment_all">الكل</string>
+    <string name="ops_segment_open">المفتوحة</string>
+
+    <string name="recon_title">التسوية</string>
+    <string name="recon_empty_title">لا نتائج غير مؤكدة</string>
+    <string name="recon_empty_body">إذا غادر الطلب هذا الجهاز ولم يمكن إثبات نتيجته، ينتظر هنا. لا يُعلَّم فاشلًا، ولا يُعاد إرساله تلقائيًا.</string>
+    <string name="recon_link">ربط بهذا السجل</string>
+    <string name="recon_close">إغلاق دون ربط</string>
+    <string name="recon_note_hint">لماذا هذا التطابق صحيح</string>
+    <string name="recon_need_note">أضف ملاحظة قبل الربط.</string>
+    <string name="recon_candidates">سجلات محتملة</string>
+    <string name="recon_pick">اختر السجل. الربط لا يعني فحصه.</string>
+    <string name="recon_no_candidate">لا يوجد سجل للربط. أغلق السؤال، أو اتركه مفتوحًا.</string>
+    <string name="connection_refresh_scope">هذا يعيد فحص الشبكة على هذا الجهاز فقط. لا يثبت الخدمة ولا نظام الموارد.</string>
+    <string name="suggest_stock">افحص مخزون SKU-SRV-01</string>
+    <string name="suggest_draft">أنشئ أمر بيع للعميل Cairo Tech بمبلغ 15000 جنيه بنود خادمين</string>
+    <string name="suggest_draft_ar">أنشئ أمر بيع للعميل Cairo Tech بمبلغ 15000 جنيه بنود خادمين</string>
+
+    <string name="evidence_title">الأدلة</string>
+    <string name="evidence_empty_title">لا إيصالات بعد</string>
+    <string name="evidence_empty_body">يُكتب الإيصال بعد فحص العملية. سلسلة التجزئة المحلية تبين إن كان سجل هذا الجهاز قد عُدّل. ليست جهة توثيق عامة.</string>
+    <string name="evidence_check">فحص سلامة السجل المحلي</string>
+    <string name="evidence_demo_tamper">إظهار كيف تُكتشف نسخة معدّلة</string>
+    <string name="evidence_demo_tamper_note">السجل المحفوظ لا يُعدَّل.</string>
+    <string name="evidence_more">عرض المزيد</string>
+    <string name="evidence_fact">النتيجة</string>
+    <string name="evidence_policy">لماذا سُمح</string>
+    <string name="evidence_proof">كيف فُحص</string>
+    <string name="evidence_meta">تفاصيل تقنية</string>
+
+    <string name="gov_title">القواعد</string>
+    <string name="gov_intro">هذه القواعد التي يستطيع هذا الجهاز شرحها. في مساحة العمل الحقيقية، الخدمة هي صاحبة القرار.</string>
+    <string name="gov_reads">الاستعلامات لا تحتاج اعتمادًا.</string>
+    <string name="gov_auditor">المدقق ينظر ولا يعدّل.</string>
+    <string name="gov_destructive">الإلغاء يحتاج مديرًا لم يبدأ الطلب.</string>
+    <string name="gov_dual">فوق أعلى حد، يلزم معتمدان مختلفان.</string>
+    <string name="gov_currency">العملة التي ليس لها سلم حدود لا تُعامَل كدولار. تحتاج مديرًا.</string>
+    <string name="gov_sim_thresholds">حدود المحاكاة، وليست سياسة العميل القانونية.</string>
+
+    <string name="account_title">الحساب</string>
+    <string name="account_security">الأمان</string>
+    <string name="account_connection">الاتصال</string>
+    <string name="account_rules">القواعد</string>
+    <string name="account_language">اللغة</string>
+    <string name="account_theme">المظهر</string>
+    <string name="account_motion">تقليل الحركة</string>
+    <string name="account_sign_out">تسجيل الخروج</string>
+    <string name="account_system">حسب الجهاز</string>
+    <string name="account_light">فاتح</string>
+    <string name="account_dark">داكن</string>
+    <string name="account_english">English</string>
+    <string name="account_arabic">العربية</string>
+    <string name="account_sim_role">دور المحاكاة</string>
+    <string name="account_sim_role_note">تبديل الدور هنا لا يمنح صلاحية في مساحة عمل حقيقية.</string>
+    <string name="account_sim_ambiguous">اجعل الكتابة التالية غير مؤكدة</string>
+    <string name="account_diagnostics">على هذا الجهاز</string>
+    <string name="account_startup">آخر إقلاع</string>
+
+    <string name="security_title">الأمان</string>
+    <string name="security_session">الجلسة</string>
+    <string name="security_no_erp_secret">كلمات سر نظام الموارد لا تُحفظ على هذا الجهاز.</string>
+    <string name="security_freshness">الاعتماد الحساس يحتاج تأكيدًا جديدًا من الجهاز لهذا الطلب.</string>
+    <string name="security_biometric">فحص الجهاز</string>
+
+    <string name="connection_title">الاتصال</string>
+    <string name="connection_erp">نظام السجلات</string>
+    <string name="connection_not_configured">غير مهيأ</string>
+    <string name="connection_reachable">يمكن الوصول إليه</string>
+    <string name="connection_authenticated">تم تسجيل الدخول</string>
+    <string name="connection_authorized">مسموح بالإجراء</string>
+    <string name="connection_healthy">يستجيب</string>
+    <string name="connection_synced">حُدّثت النسخة المحفوظة</string>
+    <string name="connection_unknown">لم يُفحص</string>
+    <string name="connection_sim">موصل محاكاة. لا يوجد نظام موارد على الشبكة.</string>
+    <string name="connection_refresh">فحص مرة أخرى</string>
+
+    <string name="sign_in_title">تسجيل الدخول</string>
+    <string name="sign_in_body">تُرسل كلمة السر إلى خدمة ميزان فقط، ولا تُحفظ هنا. بيانات نظام الموارد لا تُدخل في هذه الشاشة.</string>
+    <string name="sign_in_email">البريد</string>
+    <string name="sign_in_password">كلمة السر</string>
+    <string name="sign_in_continue">متابعة</string>
+    <string name="sign_in_url">عنوان الخدمة</string>
+    <string name="sign_in_url_invalid">يجب أن يبدأ عنوان الخدمة بـ https://</string>
+    <string name="sign_in_missing_service">هذا الإصدار بلا عنوان لخدمة ميزان. لن يخترع الجهاز مساحة عمل مسجّلة.</string>
+    <string name="demo_title">مساحة محاكاة</string>
+    <string name="demo_body">هذا الإصدار لا يتصل بنظام موارد. يمكنك تجربة الاعتماد وعدم اليقين والأدلة ببيانات معلّمة.</string>
+    <string name="demo_enter">دخول المحاكاة</string>
+    <string name="demo_tenant">مساحة محاكاة</string>
+
+    <string name="onboarding_skip">تخطي</string>
+    <string name="onboarding_next">التالي</string>
+    <string name="onboarding_start">ابدأ</string>
+    <string name="onboarding_1_title">الطلب يصبح عملية مفحوصة</string>
+    <string name="onboarding_1_body">تصف ما تريده. يحوّله ميزان إلى إجراء محدد، ويعرض القاعدة، وينتظر الاعتماد المناسب.</string>
+    <string name="onboarding_2_title">«مفحوص» يعني أننا قرأناه مرة أخرى</string>
+    <string name="onboarding_2_body">رد النجاح لا يكفي. الفحص يعني أن السجل قُرئ من جديد وتطابقت الحقول المهمة.</string>
+    <string name="onboarding_3_title">غير المؤكد ليس فشلًا</string>
+    <string name="onboarding_3_body">إذا غادر الطلب الجهاز ولم يمكن إثبات النتيجة، يتوقف ميزان. لا يرسله مرة أخرى على أمل.</string>
+
+    <string name="search_title">بحث</string>
+    <string name="search_hint">ابحث في السجلات المحفوظة</string>
+    <string name="search_scope">على هذا الجهاز فقط. ليس بحثًا مباشرًا في نظام الموارد.</string>
+    <string name="search_empty">لا شيء محفوظ هنا يطابق.</string>
+    <string name="search_short">اكتب حرفين على الأقل.</string>
+
+    <string name="error_retry">حاول مرة أخرى</string>
+    <string name="error_not_configured_title">الخدمة غير مهيأة</string>
+    <string name="error_not_configured_body">هذا الجهاز لا يستطيع اعتماد تغيير في نظام الموارد وحده. اربط خدمة ميزان قبل التنفيذ.</string>
+    <string name="error_network_title">الخدمة لم تستجب</string>
+    <string name="error_network_body">النسخة المحفوظة لم تتغير. إذا كان التغيير قد أُرسل، سيظهر في التسوية — ولن يُعلَّم فاشلًا.</string>
+    <string name="loading">جارٍ التحميل</string>
+    <string name="offline_banner">غير متصل. نعرض آخر ما حفظه هذا الجهاز.</string>
+    <string name="stale_banner">هذه النسخة قد تكون قديمة.</string>
+
+    <string name="phase_PROPOSED">مُسوَّدة</string>
+    <string name="phase_VALIDATED">فُحصت المدخلات</string>
+    <string name="phase_RISK_EVALUATED">صُنّف الخطر</string>
+    <string name="phase_AWAITING_APPROVAL">بانتظار الاعتماد</string>
+    <string name="phase_AUTHORIZED">مُعتمد</string>
+    <string name="phase_LEASE_ACQUIRED">محجوز للتنفيذ</string>
+    <string name="phase_EXECUTING">قيد التنفيذ</string>
+    <string name="phase_ERP_ACCEPTED">مقبول ولم يُفحص بعد</string>
+    <string name="phase_VERIFICATION_PENDING">جارٍ فحص السجل</string>
+    <string name="phase_VERIFIED">مفحوص</string>
+    <string name="phase_REJECTED">مرفوض</string>
+    <string name="phase_CANCELLED">ملغى</string>
+    <string name="phase_TIMEOUT">انتهت المهلة</string>
+    <string name="phase_ERP_FAILURE">لم يكتمل</string>
+    <string name="phase_AMBIGUOUS">غير مؤكد</string>
+    <string name="phase_RECONCILIATION_REQUIRED">يحتاج تسوية</string>
+    <string name="phase_LINKED_UNVERIFIED">رُبط بواسطة شخص. لم يُفحص في نظام الموارد.</string>
+    <string name="phase_CLOSED_UNVERIFIED">أُغلق دون سجل مؤكد</string>
+
+    <string name="reason_SAFE_READ">الاستعلام لا يحتاج اعتمادًا.</string>
+    <string name="reason_AUDITOR_READONLY">المدقق ينظر ولا يعدّل.</string>
+    <string name="reason_DESTRUCTIVE_REQUIRES_MANAGER">الإلغاء يحتاج مديرًا.</string>
+    <string name="reason_THRESHOLD_L1">هذا المبلغ يحتاج تأكيدك.</string>
+    <string name="reason_THRESHOLD_L2">هذا المبلغ يحتاج معتمدًا بصلاحية أعلى.</string>
+    <string name="reason_THRESHOLD_L3">هذا المبلغ يحتاج مديرًا.</string>
+    <string name="reason_THRESHOLD_L4">هذا المبلغ يحتاج معتمدين.</string>
+    <string name="reason_CURRENCY_LADDER_MISSING">لا سلم حدود لهذه العملة. يجب أن يراجعها مدير.</string>
+    <string name="reason_CREDIT_LIMIT">هذا يتجاوز حد ائتمان العميل.</string>
+    <string name="reason_CUSTOMER_BLOCKED">هذا العميل موقوف.</string>
+    <string name="reason_INJECTION_BLOCKED">النص حاول تجاوز القواعد. لم يُجهَّز.</string>
+    <string name="reason_TOOL_NOT_SUPPORTED">النظام المتصل لا يقدّم هذا الإجراء.</string>
+    <string name="reason_CONFIRM_NO_AMOUNT">يرجى تأكيد هذا التغيير.</string>
+    <string name="reason_API_NOT_CONFIGURED">لا توجد خدمة ميزان مهيأة.</string>
+    <string name="reason_SESSION_MISSING">سجّل الدخول مرة أخرى.</string>
+    <string name="reason_SESSION_EXPIRED">انتهت الجلسة.</string>
+    <string name="reason_FORBIDDEN">غير مسموح لك بهذا.</string>
+    <string name="reason_SOD_SAME_ACTOR">أنت بدأت هذا الطلب، فلا تستطيع اعتماده.</string>
+    <string name="reason_SOD_ROLE">هذا الاعتماد يحتاج دورًا مختلفًا.</string>
+    <string name="reason_REAUTH">أكّد أنك أنت لهذا الطلب.</string>
+    <string name="reason_IDEMPOTENCY">هذا الطلب قيد التنفيذ أو غير مؤكد. لم يُرسل مرة أخرى.</string>
+    <string name="reason_API_URL_NOT_HTTPS">يجب أن يبدأ عنوان الخدمة بـ https://</string>
+    <string name="reason_SIGN_IN_HTTP">رفضت الخدمة تسجيل الدخول.</string>
+    <string name="reason_SIGN_IN_NETWORK">الخدمة لم تستجب.</string>
+    <string name="reason_SIGN_IN_BODY">رد الخدمة ناقص. لم تُحفظ جلسة.</string>
+
+    <string name="missing_CUSTOMER">أي عميل؟</string>
+    <string name="missing_AMOUNT">ما المبلغ؟</string>
+    <string name="missing_CURRENCY">أي عملة؟</string>
+    <string name="missing_ITEMS">ما المطلوب؟</string>
+    <string name="missing_ORDER_ID">ما رقم الأمر؟</string>
+    <string name="missing_INVOICE_ID">ما رقم الفاتورة؟</string>
+    <string name="missing_REASON">لماذا؟</string>
+    <string name="missing_SKU">ما رمز الصنف؟</string>
+    <string name="missing_QUERY">عمّ أبحث؟</string>
+
+    <string name="tool_stock">فحص المخزون</string>
+    <string name="tool_customer">البحث عن عميل</string>
+    <string name="tool_draft">مسودة أمر بيع</string>
+    <string name="tool_cancel">إلغاء أمر</string>
+    <string name="tool_invoice">إنشاء فاتورة</string>
+    <string name="tool_payment">تسجيل سداد</string>
+    <string name="tool_summary">ملخص المبيعات</string>
+    <string name="tool_unknown">إجراء غير معروف</string>
+    <string name="outcome_saved_copy">من النسخة المحفوظة على هذا الجهاز. ليس استعلامًا مباشرًا.</string>
+    <string name="reason_SOD_NEED_SECOND_APPROVER">ما زال اعتماد شخص ثانٍ مطلوبًا.</string>
+    <string name="reason_SOD_ROLE_INSUFFICIENT">هذا الاعتماد يحتاج دورًا مختلفًا.</string>
+    <string name="reason_SOD_TENANT_MISMATCH">المعتمد ليس في مساحة العمل هذه.</string>
+    <string name="reason_ILLEGAL_TRANSITION">هذا الطلب ليس في حالة تسمح بتنفيذه.</string>
+
+    <string name="health_HEALTHY">يستجيب</string>
+    <string name="health_DEGRADED">متدهور</string>
+    <string name="health_UNAVAILABLE">غير متاح</string>
+    <string name="health_UNKNOWN">لم يُفحص</string>
+    <string name="health_network">الشبكة</string>
+    <string name="health_backend">خدمة ميزان</string>
+    <string name="health_erp">نظام الموارد</string>
+    <string name="health_sync">النسخة المحفوظة</string>
+
+    <string name="chain_CHAIN_EMPTY">لا سجل محلي بعد.</string>
+    <string name="chain_CHAIN_INTACT_LOCAL">السجل المحلي يطابق سلسلة التجزئة. هذا لا يثبت أن خادمًا حفظ الأحداث نفسها.</string>
+    <string name="chain_CHAIN_LINK_MISMATCH">السجل المحلي لا يتصل عند هذا البند.</string>
+    <string name="chain_CHAIN_PAYLOAD_MISMATCH">تغيّر بند محلي بعد كتابته.</string>
+
+    <string name="role_SALES_REP">مبيعات</string>
+    <string name="role_SALES_MANAGER">مدير مبيعات</string>
+    <string name="role_FINANCE_APPROVER">مالية</string>
+    <string name="role_AUDITOR">مدقق</string>
+    <string name="role_OPERATOR">مشغّل</string>
+</resources>
