@@ -1,9 +1,15 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    application
 }
 
 kotlin {
     jvmToolchain(17)
+}
+
+application {
+    // `main` is a top-level function in MizanServiceMain.kt.
+    mainClass.set("app.mizan.service.MizanServiceMainKt")
 }
 
 /**
