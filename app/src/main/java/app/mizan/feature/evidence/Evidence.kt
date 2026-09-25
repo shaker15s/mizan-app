@@ -27,6 +27,8 @@ import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.Gavel
 import androidx.compose.material.icons.outlined.Hub
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Policy
+import androidx.compose.material.icons.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.WarningAmber
@@ -66,11 +68,11 @@ import app.mizan.design.component.MizanPrimaryButton
 import app.mizan.design.component.MizanSecondaryButton
 import app.mizan.design.component.MizanSectionHeader
 import app.mizan.design.component.MizanStatusBadge
-import app.mizan.design.component.MizanSurface
 import app.mizan.design.component.ShapeCard
 import app.mizan.design.component.ShapeControl
 import app.mizan.design.component.ShapePill
 import app.mizan.design.component.StatusTone
+import app.mizan.design.component.mizanBounceClick
 import app.mizan.design.theme.LocalMizanColors
 import app.mizan.design.token.Space
 import app.mizan.domain.audit.ChainReport
@@ -91,7 +93,7 @@ import kotlinx.coroutines.withContext
 
 class EvidenceViewModel(private val graph: AppGraph) : ViewModel() {
     val receipts = graph.session.session.flatMapLatest { session ->
-        if (session == null) flowOf(emptyList()) else graph.receipts.observe(session.tenant.id, 40)
+        if (session == null) flowOf(emptyList()) else graph.receipts.observe(session.tenant.id, 50)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     var report by mutableStateOf<ChainReport?>(null)
@@ -124,7 +126,15 @@ fun EvidenceRoute(graph: AppGraph, expanded: Boolean) {
 
     var openReceiptId by remember { mutableStateOf<String?>(null) }
     var filterIndex by remember { mutableIntStateOf(0) }
-    val filterOptions = listOf("All Receipts (${receipts.size})", "ERP Verified", "Simulations")
+
+    val verifiedCount = remember(receipts) { receipts.count { it.verification == VerificationKind.READ_BACK } }
+    val simCount = remember(receipts) { receipts.count { it.origin == EvidenceOrigin.SIMULATION } }
+
+    val filterOptions = listOf(
+        "All (${receipts.size})",
+        "Verified ($verifiedCount)",
+        "Simulations ($simCount)",
+    )
 
     val filteredReceipts = remember(receipts, filterIndex) {
         when (filterIndex) {
@@ -136,215 +146,338 @@ fun EvidenceRoute(graph: AppGraph, expanded: Boolean) {
 
     val selected = receipts.find { it.id.value == openReceiptId }
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = Space.lg, vertical = Space.md),
-        verticalArrangement = Arrangement.spacedBy(Space.md),
-    ) {
-        // Screen Header Card
+    if (expanded) {
+        // Wide/Tablet layout with side-by-side ledger and inspector
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
-                .padding(Space.md),
-            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxSize().padding(Space.lg),
+            horizontalArrangement = Arrangement.spacedBy(Space.md),
         ) {
-            Box(
+            Column(
                 modifier = Modifier
-                    .size(42.dp)
-                    .clip(ShapeControl)
-                    .background(colors.accentMuted)
-                    .border(BorderStroke(0.6.dp, colors.accent.copy(alpha = 0.3f)), ShapeControl),
-                contentAlignment = Alignment.Center,
+                    .weight(0.55f)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(Space.md),
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.Security,
-                    contentDescription = null,
-                    tint = colors.accent,
-                    modifier = Modifier.size(22.dp),
+                EvidenceHeaderAndVerification(vm, graph, receipts.size)
+                GlassSegmentedControl(
+                    options = filterOptions,
+                    selectedIndex = filterIndex,
+                    onSelect = { filterIndex = it },
                 )
+                EvidenceReceiptsList(filteredReceipts, openReceiptId) { openReceiptId = it }
             }
-            Spacer(Modifier.width(Space.md))
-            Column(Modifier.weight(1f)) {
+
+            Column(
+                modifier = Modifier
+                    .weight(0.45f)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(Space.md),
+            ) {
+                if (selected != null) {
+                    ReceiptDetailCard(selected) { openReceiptId = null }
+                } else {
+                    MizanEmptyState(
+                        title = "Select a Trust Receipt",
+                        body = "Choose any cryptographic execution receipt from the ledger to inspect its full Merkle payload, signature stamp, and ERP binding.",
+                    )
+                }
+            }
+        }
+    } else {
+        // Mobile Handheld Layout
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Space.lg, vertical = Space.md),
+            verticalArrangement = Arrangement.spacedBy(Space.md),
+        ) {
+            EvidenceHeaderAndVerification(vm, graph, receipts.size)
+
+            // Segmented Filter Tabs
+            GlassSegmentedControl(
+                options = filterOptions,
+                selectedIndex = filterIndex,
+                onSelect = { filterIndex = it },
+            )
+
+            // Trust Receipts List
+            MizanSectionHeader("Cryptographic Audit Ledger")
+            EvidenceReceiptsList(filteredReceipts, openReceiptId) { openReceiptId = it }
+
+            // Expanded Inspector Modal Detail
+            selected?.let { receipt ->
+                Spacer(Modifier.height(Space.sm))
+                ReceiptDetailCard(receipt) { openReceiptId = null }
+            }
+
+            Spacer(Modifier.height(Space.xl))
+        }
+    }
+}
+
+@Composable
+private fun EvidenceHeaderAndVerification(
+    vm: EvidenceViewModel,
+    graph: AppGraph,
+    receiptCount: Int,
+) {
+    val colors = LocalMizanColors.current
+
+    // Screen Hero Banner
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = if (colors.isDark) 0.dp else 4.dp,
+                shape = ShapeCard,
+                spotColor = Color(0x140F172A),
+                ambientColor = Color(0x080F172A),
+            )
+            .clip(ShapeCard)
+            .background(
+                if (colors.isDark) SolidColor(colors.glass) else Brush.verticalGradient(
+                    listOf(Color(0xFAFFFFFF), Color(0xEDFFFFFF)),
+                ),
+            )
+            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+            .padding(Space.md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(46.dp)
+                .clip(ShapeControl)
+                .background(colors.accentMuted)
+                .border(BorderStroke(0.6.dp, colors.accent.copy(alpha = 0.3f)), ShapeControl),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Security,
+                contentDescription = null,
+                tint = colors.accent,
+                modifier = Modifier.size(24.dp),
+            )
+        }
+        Spacer(Modifier.width(Space.md))
+        Column(Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
                 Text(
                     text = stringResource(R.string.evidence_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = colors.textPrimary,
                 )
+                MizanStatusBadge("Merkle Root", StatusTone.Accent)
+            }
+            Text(
+                text = "Tamper-Evident SHA-256 Cryptographic Chain",
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.textSecondary,
+            )
+        }
+    }
+
+    // Ledger Verification Card
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = if (colors.isDark) 0.dp else 4.dp,
+                shape = ShapeCard,
+                spotColor = Color(0x140F172A),
+                ambientColor = Color(0x080F172A),
+            )
+            .clip(ShapeCard)
+            .background(
+                if (colors.isDark) SolidColor(colors.glass) else Brush.verticalGradient(
+                    listOf(Color(0xFAFFFFFF), Color(0xEDFFFFFF)),
+                ),
+            )
+            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+            .padding(Space.lg),
+        verticalArrangement = Arrangement.spacedBy(Space.md),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
                 Text(
-                    text = "Immutable Merkle Audit Ledger & Trust Receipts",
+                    text = "Chain Integrity & Seal",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.textPrimary,
+                )
+                Text(
+                    text = "Verifies cryptographic continuity of all receipts against the Merkle tree",
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.textSecondary,
                 )
             }
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .clip(CircleShape)
+                    .background(if (vm.report?.intact == false) colors.danger else Color(0xFF10B981)),
+            )
         }
 
-        // Ledger Verification Card
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .shadow(
-                    elevation = if (colors.isDark) 0.dp else 4.dp,
-                    shape = ShapeCard,
-                    spotColor = Color(0x140F172A),
-                    ambientColor = Color(0x080F172A),
-                )
-                .clip(ShapeCard)
-                .background(
-                    if (colors.isDark) SolidColor(colors.glass) else Brush.verticalGradient(
-                        listOf(Color(0xFAFFFFFF), Color(0xEDFFFFFF)),
-                    ),
-                )
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
-                .padding(Space.lg),
-            verticalArrangement = Arrangement.spacedBy(Space.sm),
+        // Metrics Grid (Ledger Height, Verified Seals, Origin)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Space.sm),
         ) {
+            EvidenceMetricPill(
+                label = "Ledger Height",
+                value = "$receiptCount Blocks",
+                icon = Icons.Outlined.ReceiptLong,
+                modifier = Modifier.weight(1f),
+            )
+            EvidenceMetricPill(
+                label = "Integrity Status",
+                value = if (vm.report?.intact == false) "Tampered" else "100% Intact",
+                icon = Icons.Outlined.Shield,
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        // Live Verification Report Banner
+        vm.report?.let { report ->
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(ShapeControl)
+                    .background(if (report.intact) colors.accentMuted else colors.danger.copy(alpha = 0.15f))
+                    .border(
+                        BorderStroke(0.6.dp, if (report.intact) colors.accent else colors.danger),
+                        ShapeControl,
+                    )
+                    .padding(Space.sm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(Modifier.weight(1f)) {
+                Icon(
+                    imageVector = if (report.intact) Icons.Outlined.CheckCircle else Icons.Outlined.WarningAmber,
+                    contentDescription = null,
+                    tint = if (report.intact) colors.accent else colors.danger,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(Space.sm))
+                Column {
                     Text(
-                        text = "Cryptographic Chain Integrity",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = colors.textPrimary,
+                        text = if (report.intact) "Cryptographic Chain Intact & Verified" else "Integrity Failure Detected",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (report.intact) colors.accent else colors.danger,
                     )
                     Text(
-                        text = stringResource(R.string.evidence_empty_body),
+                        text = chainLabel(report.messageCode),
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.textSecondary,
                     )
                 }
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(if (vm.report?.intact == false) colors.danger else colors.accent),
-                )
-            }
-
-            // Report Banner if available
-            vm.report?.let { report ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(ShapeControl)
-                        .background(if (report.intact) colors.accentMuted else colors.danger.copy(alpha = 0.15f))
-                        .border(
-                            BorderStroke(0.6.dp, if (report.intact) colors.accent else colors.danger),
-                            ShapeControl,
-                        )
-                        .padding(Space.sm),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        imageVector = if (report.intact) Icons.Outlined.CheckCircle else Icons.Outlined.WarningAmber,
-                        contentDescription = null,
-                        tint = if (report.intact) colors.accent else colors.danger,
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(Modifier.width(Space.sm))
-                    Text(
-                        text = chainLabel(report.messageCode),
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (report.intact) colors.accent else colors.danger,
-                    )
-                }
-            }
-
-            // Action Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Space.sm),
-            ) {
-                MizanPrimaryButton(
-                    text = if (vm.checking) "Verifying Ledger..." else stringResource(R.string.evidence_check),
-                    onClick = { vm.check(false) },
-                    enabled = !vm.checking,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-
-            if (graph.demoMode) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(ShapeControl)
-                        .background(colors.warning.copy(alpha = 0.08f))
-                        .border(BorderStroke(0.6.dp, colors.warning.copy(alpha = 0.25f)), ShapeControl)
-                        .padding(Space.sm),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            text = "Tamper Simulation Test",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.warning,
-                        )
-                        Text(
-                            text = stringResource(R.string.evidence_demo_tamper_note),
-                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                            color = colors.textSecondary,
-                        )
-                    }
-                    Spacer(Modifier.width(Space.sm))
-                    MizanGhostButton(stringResource(R.string.evidence_demo_tamper), onClick = { vm.check(true) })
-                }
             }
         }
 
-        // Segmented filter tabs
-        GlassSegmentedControl(
-            options = filterOptions,
-            selectedIndex = filterIndex,
-            onSelect = { filterIndex = it },
+        // Verification Trigger Button
+        MizanPrimaryButton(
+            text = if (vm.checking) "Verifying Cryptographic Ledger..." else stringResource(R.string.evidence_check),
+            onClick = { vm.check(false) },
+            enabled = !vm.checking,
+            loading = vm.checking,
+            modifier = Modifier.fillMaxWidth(),
         )
 
-        // Trust Receipts List
-        MizanSectionHeader("Audited Trust Receipts")
-        if (filteredReceipts.isEmpty()) {
-            MizanEmptyState(
-                stringResource(R.string.evidence_empty_title),
-                stringResource(R.string.evidence_empty_body),
-            )
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(Space.sm)) {
-                filteredReceipts.forEach { receipt ->
-                    AuditTrailReceiptCard(
-                        toolName = toolLabel(receipt.tool),
-                        intent = "ERP Receipt · ${toolLabel(receipt.tool)}",
-                        phaseLabel = receipt.verification.name,
-                        statusTone = StatusTone.Success,
-                        receiptId = receipt.id.value,
-                        erpRecordId = receipt.erpRecordId,
-                        policyRule = receipt.policyRuleId,
-                        traceId = receipt.id.value,
-                        timestampFormatted = if (receipt.origin == EvidenceOrigin.SIMULATION) "Simulated Evidence" else "Machine Signed & Sealed",
-                        isBiometricVerified = true,
-                        isSimulation = receipt.origin == EvidenceOrigin.SIMULATION,
-                        onClick = { openReceiptId = receipt.id.value },
+        if (graph.demoMode) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(ShapeControl)
+                    .background(colors.warning.copy(alpha = 0.08f))
+                    .border(BorderStroke(0.6.dp, colors.warning.copy(alpha = 0.25f)), ShapeControl)
+                    .padding(Space.sm),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = "Tamper Simulation Test",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.warning,
+                    )
+                    Text(
+                        text = stringResource(R.string.evidence_demo_tamper_note),
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                        color = colors.textSecondary,
                     )
                 }
+                Spacer(Modifier.width(Space.sm))
+                MizanGhostButton(stringResource(R.string.evidence_demo_tamper), onClick = { vm.check(true) })
             }
         }
+    }
+}
 
-        // Expanded modal detail
-        selected?.let { receipt ->
-            Spacer(Modifier.height(Space.sm))
-            ReceiptDetailCard(receipt) { openReceiptId = null }
+@Composable
+private fun EvidenceMetricPill(
+    label: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LocalMizanColors.current
+    Row(
+        modifier = modifier
+            .clip(ShapeControl)
+            .background(if (colors.isDark) colors.surfaceElevated else Color(0x0A000000))
+            .border(BorderStroke(0.6.dp, colors.borderStrong), ShapeControl)
+            .padding(horizontal = Space.md, vertical = Space.sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Space.sm),
+    ) {
+        Icon(icon, contentDescription = null, tint = colors.accent, modifier = Modifier.size(18.dp))
+        Column {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = colors.textTertiary)
+            Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = colors.textPrimary)
         }
+    }
+}
 
-        Spacer(Modifier.height(Space.xl))
+@Composable
+private fun EvidenceReceiptsList(
+    receipts: List<TrustReceipt>,
+    selectedId: String?,
+    onSelect: (String) -> Unit,
+) {
+    if (receipts.isEmpty()) {
+        MizanEmptyState(
+            title = stringResource(R.string.evidence_empty_title),
+            body = stringResource(R.string.evidence_empty_body),
+        )
+    } else {
+        Column(verticalArrangement = Arrangement.spacedBy(Space.sm)) {
+            receipts.forEach { receipt ->
+                AuditTrailReceiptCard(
+                    toolName = toolLabel(receipt.tool),
+                    intent = "ERP Receipt · ${toolLabel(receipt.tool)}",
+                    phaseLabel = receipt.verification.name,
+                    statusTone = StatusTone.Success,
+                    receiptId = receipt.id.value,
+                    erpRecordId = receipt.erpRecordId,
+                    policyRule = receipt.policyRuleId,
+                    traceId = receipt.id.value,
+                    timestampFormatted = if (receipt.origin == EvidenceOrigin.SIMULATION) "Simulated Evidence" else "Machine Signed & Sealed",
+                    isBiometricVerified = true,
+                    isSimulation = receipt.origin == EvidenceOrigin.SIMULATION,
+                    onClick = { onSelect(receipt.id.value) },
+                )
+            }
+        }
     }
 }
 
@@ -375,12 +508,23 @@ private fun ReceiptDetailCard(receipt: TrustReceipt, onClose: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = "Receipt Inspector",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = colors.textPrimary,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(ShapeControl)
+                        .background(colors.accentMuted),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Outlined.Shield, contentDescription = null, tint = colors.accent, modifier = Modifier.size(18.dp))
+                }
+                Text(
+                    text = "Receipt Inspector",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.textPrimary,
+                )
+            }
             MizanGhostButton("Close", onClick = onClose)
         }
 

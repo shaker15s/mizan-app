@@ -53,9 +53,10 @@ fun MizanTheme(
     dark: Boolean,
     arabic: Boolean,
     reducedMotion: Boolean,
+    preset: String = "cyber_mizan",
     content: @Composable () -> Unit,
 ) {
-    val colors = if (dark) darkColors() else lightColors()
+    val colors = app.mizan.design.token.resolveThemeColors(preset, dark)
     val material = if (dark) {
         darkColorScheme(
             primary = colors.accent,

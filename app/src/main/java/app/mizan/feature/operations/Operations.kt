@@ -29,6 +29,8 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.FactCheck
 import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Hub
+import androidx.compose.material.icons.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.Icon
@@ -48,7 +50,9 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
@@ -72,6 +76,7 @@ import app.mizan.design.component.ShapeCard
 import app.mizan.design.component.ShapeControl
 import app.mizan.design.component.ShapePill
 import app.mizan.design.component.StatusTone
+import app.mizan.design.component.mizanBounceClick
 import app.mizan.design.theme.LocalMizanColors
 import app.mizan.design.token.Space
 import app.mizan.domain.execution.ExecutionPhase
@@ -99,7 +104,30 @@ fun OperationsRoute(graph: AppGraph, expanded: Boolean) {
 
     var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
     var filterIndex by rememberSaveable { mutableIntStateOf(0) }
-    val filterOptions = listOf("All ( ${records.size} )", "Verified", "Pending", "Faults")
+
+    val verifiedCount = remember(records) { records.count { it.phase == ExecutionPhase.VERIFIED } }
+    val pendingCount = remember(records) {
+        records.count {
+            it.phase == ExecutionPhase.AWAITING_APPROVAL ||
+                it.phase == ExecutionPhase.AMBIGUOUS ||
+                it.phase == ExecutionPhase.RECONCILIATION_REQUIRED ||
+                it.phase == ExecutionPhase.LINKED_UNVERIFIED
+        }
+    }
+    val faultCount = remember(records) {
+        records.count {
+            it.phase == ExecutionPhase.ERP_FAILURE ||
+                it.phase == ExecutionPhase.REJECTED ||
+                it.phase == ExecutionPhase.TIMEOUT
+        }
+    }
+
+    val filterOptions = listOf(
+        "All (${records.size})",
+        "Verified ($verifiedCount)",
+        "Pending ($pendingCount)",
+        "Faults ($faultCount)",
+    )
 
     val filteredRecords = remember(records, filterIndex) {
         when (filterIndex) {
@@ -131,64 +159,43 @@ fun OperationsRoute(graph: AppGraph, expanded: Boolean) {
 
     if (expanded) {
         // Split-pane layout for tablet / wide screens
-        Row(Modifier.fillMaxSize().padding(Space.lg), horizontalArrangement = Arrangement.spacedBy(Space.md)) {
+        Row(
+            modifier = Modifier.fillMaxSize().padding(Space.lg),
+            horizontalArrangement = Arrangement.spacedBy(Space.md),
+        ) {
             Column(
-                Modifier
-                    .weight(0.45f)
+                modifier = Modifier
+                    .weight(0.52f)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(Space.sm),
+                verticalArrangement = Arrangement.spacedBy(Space.md),
             ) {
-                MizanSectionHeader(stringResource(R.string.ops_title))
+                OperationsHeroStats(records.size, verifiedCount, pendingCount, faultCount)
                 GlassSegmentedControl(
                     options = filterOptions,
                     selectedIndex = filterIndex,
                     onSelect = { filterIndex = it },
                 )
-                filteredRecords.forEach { record ->
-                    AuditTrailReceiptCard(
-                        toolName = record.tool.wire,
-                        intent = record.intent.ifBlank { record.tool.wire },
-                        phaseLabel = phaseLabel(record.phase),
-                        statusTone = tone(record.phase),
-                        receiptId = record.id.value,
-                        erpRecordId = record.erpRecordId,
-                        policyRule = null,
-                        traceId = record.traceId.value,
-                        timestampFormatted = "Audited Execution",
-                        isBiometricVerified = true,
-                        isSimulation = graph.demoMode,
-                        onClick = { selectedId = record.id.value },
+                OperationsReceiptsList(filteredRecords, selectedId) { selectedId = it }
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(0.48f)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(Space.md),
+            ) {
+                if (current != null) {
+                    OperationDetailCard(current) { selectedId = null }
+                } else {
+                    MizanEmptyState(
+                        title = "Select an Execution Receipt",
+                        body = "Choose any operation from the execution list to inspect its governance lease, cryptographic verification proof, and audit metadata.",
                     )
                 }
             }
-            Column(
-                Modifier
-                    .weight(0.55f)
-                    .verticalScroll(rememberScrollState()),
-            ) {
-                if (current == null) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(ShapeCard)
-                            .background(colors.glass)
-                            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
-                            .padding(Space.xl),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = "Select an operation from the list to view its cryptographic attestation and full ERP payload details.",
-                            color = colors.textSecondary,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-                } else {
-                    OperationDetailCard(current)
-                }
-            }
         }
-    } else if (current == null) {
-        // Mobile vertical list
+    } else {
+        // Mobile Handheld layout
         Column(
             Modifier
                 .fillMaxSize()
@@ -196,114 +203,38 @@ fun OperationsRoute(graph: AppGraph, expanded: Boolean) {
                 .padding(horizontal = Space.lg, vertical = Space.md),
             verticalArrangement = Arrangement.spacedBy(Space.md),
         ) {
-            // Screen Header Card
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(ShapeCard)
-                    .background(colors.glass)
-                    .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
-                    .padding(Space.md),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(ShapeControl)
-                        .background(colors.accentMuted)
-                        .border(BorderStroke(0.6.dp, colors.accent.copy(alpha = 0.3f)), ShapeControl),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.History,
-                        contentDescription = null,
-                        tint = colors.accent,
-                        modifier = Modifier.size(22.dp),
-                    )
-                }
-                Spacer(Modifier.width(Space.md))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.ops_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.textPrimary,
-                    )
-                    Text(
-                        text = "${records.size} tracked operations · ${records.count { it.phase == ExecutionPhase.VERIFIED }} verified",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.textSecondary,
-                    )
-                }
-            }
+            OperationsHeroStats(records.size, verifiedCount, pendingCount, faultCount)
 
-            // Segmented interactive filter
+            // Filter Tabs
             GlassSegmentedControl(
                 options = filterOptions,
                 selectedIndex = filterIndex,
                 onSelect = { filterIndex = it },
             )
 
-            // Filtered Operations List
-            if (filteredRecords.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(ShapeCard)
-                        .background(colors.glass)
-                        .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
-                        .padding(Space.lg),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "No operations match this filter.",
-                        color = colors.textSecondary,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(Space.sm)) {
-                    filteredRecords.forEach { record ->
-                        AuditTrailReceiptCard(
-                            toolName = record.tool.wire,
-                            intent = record.intent.ifBlank { record.tool.wire },
-                            phaseLabel = phaseLabel(record.phase),
-                            statusTone = tone(record.phase),
-                            receiptId = record.id.value,
-                            erpRecordId = record.erpRecordId,
-                            policyRule = null,
-                            traceId = record.traceId.value,
-                            timestampFormatted = "Audited Execution",
-                            isBiometricVerified = true,
-                            isSimulation = graph.demoMode,
-                            onClick = { selectedId = record.id.value },
-                        )
-                    }
-                }
+            // Operations List
+            MizanSectionHeader(stringResource(R.string.ops_title))
+            OperationsReceiptsList(filteredRecords, selectedId) { selectedId = it }
+
+            // Inspector Detail Modal if tapped
+            current?.let { record ->
+                Spacer(Modifier.height(Space.sm))
+                OperationDetailCard(record) { selectedId = null }
             }
-            Spacer(Modifier.height(Space.xl))
-        }
-    } else {
-        // Mobile single item deep inspector
-        Column(
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = Space.lg, vertical = Space.md),
-            verticalArrangement = Arrangement.spacedBy(Space.md),
-        ) {
-            MizanGhostButton(stringResource(R.string.cd_back), onClick = { selectedId = null })
-            OperationDetailCard(current)
+
             Spacer(Modifier.height(Space.xl))
         }
     }
 }
 
 @Composable
-private fun OperationDetailCard(record: ExecutionRecord) {
+private fun OperationsHeroStats(
+    total: Int,
+    verified: Int,
+    pending: Int,
+    faults: Int,
+) {
     val colors = LocalMizanColors.current
-    val clipboard = LocalClipboardManager.current
-    var copiedTrace by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -312,7 +243,7 @@ private fun OperationDetailCard(record: ExecutionRecord) {
                 elevation = if (colors.isDark) 0.dp else 4.dp,
                 shape = ShapeCard,
                 spotColor = Color(0x140F172A),
-                ambientColor = Color(0x050F172A),
+                ambientColor = Color(0x080F172A),
             )
             .clip(ShapeCard)
             .background(
@@ -324,112 +255,248 @@ private fun OperationDetailCard(record: ExecutionRecord) {
             .padding(Space.lg),
         verticalArrangement = Arrangement.spacedBy(Space.md),
     ) {
-        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = record.intent.ifBlank { record.tool.wire },
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.textPrimary,
-                )
-                Text(
-                    text = "Tool Protocol: ${record.tool.wire}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.textSecondary,
-                )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(ShapeControl)
+                        .background(colors.accentMuted)
+                        .border(BorderStroke(0.6.dp, colors.accent.copy(alpha = 0.3f)), ShapeControl),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.FactCheck,
+                        contentDescription = null,
+                        tint = colors.accent,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+                Column {
+                    Text(
+                        text = "ERP Execution Authority",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.textPrimary,
+                    )
+                    Text(
+                        text = "Real-time lease and idempotent execution tracking",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.textSecondary,
+                    )
+                }
             }
-            MizanStatusBadge(phaseLabel(record.phase), tone(record.phase))
-        }
-
-        // Biometric Attestation Seal
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(ShapeControl)
-                .background(colors.accentMuted)
-                .border(BorderStroke(0.6.dp, colors.accent.copy(alpha = 0.3f)), ShapeControl)
-                .padding(Space.sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Fingerprint,
-                contentDescription = null,
-                tint = colors.accent,
-                modifier = Modifier.size(20.dp),
+            MizanStatusBadge(
+                label = if (faults > 0) "$faults Faults" else "Nominal",
+                tone = if (faults > 0) StatusTone.Danger else StatusTone.Success,
             )
-            Spacer(Modifier.width(Space.sm))
-            Column {
-                Text(
-                    text = "Hardware Attestation Verified",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.accent,
-                )
-                Text(
-                    text = "Signed via Android Keystore cryptographic key pair",
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                    color = colors.textSecondary,
-                )
-            }
         }
 
-        // Details key-values
-        MizanKeyValue(stringResource(R.string.evidence_meta), record.id.value, mono = true)
-
-        // Trace ID with copy affordance
+        // Stats summary row
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Space.sm),
         ) {
-            Column {
-                Text("Trace ID", style = MaterialTheme.typography.labelMedium, color = colors.textTertiary)
-                Text(record.traceId.value, style = MaterialTheme.typography.bodySmall, fontFamily = app.mizan.design.theme.MizanMono, color = colors.textPrimary)
-            }
-            Row(
-                modifier = Modifier
-                    .clip(ShapePill)
-                    .background(colors.surfaceElevated)
-                    .border(BorderStroke(0.6.dp, colors.border), ShapePill)
-                    .clickable {
-                        clipboard.setText(AnnotatedString(record.traceId.value))
-                        copiedTrace = true
-                    }
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = if (copiedTrace) "COPIED" else "COPY",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                    color = colors.accent,
-                )
-                Spacer(Modifier.width(4.dp))
-                Icon(Icons.Outlined.ContentCopy, contentDescription = null, tint = colors.accent, modifier = Modifier.size(12.dp))
-            }
-        }
-
-        record.erpRecordId?.let {
-            MizanKeyValue(stringResource(R.string.evidence_fact), it, mono = true)
-        }
-        record.errorCode?.let {
-            MizanKeyValue(stringResource(R.string.outcome_refused), it)
+            OperationsStatChip(
+                label = "Total Run",
+                value = "$total",
+                dotColor = colors.accent,
+                modifier = Modifier.weight(1f),
+            )
+            OperationsStatChip(
+                label = "Verified",
+                value = "$verified",
+                dotColor = Color(0xFF10B981),
+                modifier = Modifier.weight(1f),
+            )
+            OperationsStatChip(
+                label = "Pending",
+                value = "$pending",
+                dotColor = colors.warning,
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }
 
-private fun tone(phase: ExecutionPhase): StatusTone = when (phase) {
-    ExecutionPhase.VERIFIED -> StatusTone.Success
-    ExecutionPhase.AMBIGUOUS,
-    ExecutionPhase.RECONCILIATION_REQUIRED,
-    ExecutionPhase.LINKED_UNVERIFIED,
-    ExecutionPhase.CLOSED_UNVERIFIED,
-    ExecutionPhase.AWAITING_APPROVAL,
-    -> StatusTone.Warning
-    ExecutionPhase.ERP_FAILURE, ExecutionPhase.REJECTED, ExecutionPhase.TIMEOUT -> StatusTone.Danger
-    else -> StatusTone.Info
+@Composable
+private fun OperationsStatChip(
+    label: String,
+    value: String,
+    dotColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LocalMizanColors.current
+    Column(
+        modifier = modifier
+            .clip(ShapeControl)
+            .background(if (colors.isDark) colors.surfaceElevated else Color(0x0A000000))
+            .border(BorderStroke(0.6.dp, colors.borderStrong), ShapeControl)
+            .padding(horizontal = Space.md, vertical = Space.sm),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(dotColor),
+            )
+            Text(label, style = MaterialTheme.typography.labelSmall, color = colors.textTertiary)
+        }
+        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+    }
+}
+
+@Composable
+private fun OperationsReceiptsList(
+    records: List<ExecutionRecord>,
+    selectedId: String?,
+    onSelect: (String) -> Unit,
+) {
+    if (records.isEmpty()) {
+        MizanEmptyState(
+            title = "No Matching Operations",
+            body = "No execution records match the selected filter category.",
+        )
+    } else {
+        Column(verticalArrangement = Arrangement.spacedBy(Space.sm)) {
+            records.forEach { record ->
+                val (tone, statusLabel) = when (record.phase) {
+                    ExecutionPhase.VERIFIED -> StatusTone.Success to "Verified Safe"
+                    ExecutionPhase.AWAITING_APPROVAL -> StatusTone.Warning to "Awaiting Sign-off"
+                    ExecutionPhase.AMBIGUOUS -> StatusTone.Warning to "Ambiguous Match"
+                    ExecutionPhase.RECONCILIATION_REQUIRED -> StatusTone.Warning to "Reconcile Needed"
+                    ExecutionPhase.ERP_FAILURE, ExecutionPhase.REJECTED, ExecutionPhase.TIMEOUT -> StatusTone.Danger to "Execution Fault"
+                    else -> StatusTone.Accent to phaseLabel(record.phase)
+                }
+
+                AuditTrailReceiptCard(
+                    toolName = toolLabel(record.tool),
+                    intent = record.intent.ifBlank { record.tool.wire },
+                    phaseLabel = statusLabel,
+                    statusTone = tone,
+                    receiptId = record.id.value,
+                    erpRecordId = record.erpRecordId,
+                    policyRule = record.policyRuleId,
+                    traceId = record.id.value,
+                    timestampFormatted = "Phase: ${phaseLabel(record.phase)}",
+                    isBiometricVerified = record.phase == ExecutionPhase.VERIFIED,
+                    isSimulation = false,
+                    onClick = { onSelect(record.id.value) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OperationDetailCard(record: ExecutionRecord, onClose: () -> Unit) {
+    val colors = LocalMizanColors.current
+    val clipboard = LocalClipboardManager.current
+    val haptic = LocalHapticFeedback.current
+    var copied by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = if (colors.isDark) 0.dp else 4.dp,
+                shape = ShapeCard,
+                spotColor = Color(0x140F172A),
+                ambientColor = Color(0x080F172A),
+            )
+            .clip(ShapeCard)
+            .background(
+                if (colors.isDark) SolidColor(colors.glass) else Brush.verticalGradient(
+                    listOf(Color(0xFAFFFFFF), Color(0xEDFFFFFF)),
+                ),
+            )
+            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+            .padding(Space.lg),
+        verticalArrangement = Arrangement.spacedBy(Space.sm),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(ShapeControl)
+                        .background(colors.accentMuted),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Outlined.ReceiptLong, contentDescription = null, tint = colors.accent, modifier = Modifier.size(20.dp))
+                }
+                Column {
+                    Text(
+                        text = "Operation Inspector",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.textPrimary,
+                    )
+                    Text(
+                        text = toolLabel(record.tool),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.textSecondary,
+                    )
+                }
+            }
+            MizanGhostButton("Close", onClick = onClose)
+        }
+
+        MizanKeyValue("Execution ID", record.id.value, mono = true)
+        MizanKeyValue("Execution Phase", phaseLabel(record.phase))
+        MizanKeyValue("Tool Invocation", record.tool.wire, mono = true)
+        record.erpRecordId?.let {
+            MizanKeyValue("ERP Bound Identifier", it, mono = true)
+        }
+        MizanKeyValue("Authority Proposal ID", record.proposalId.value, mono = true)
+        record.leaseExpiresAt?.let {
+            MizanKeyValue("Authority Lease Expiry", it.toString(), mono = true)
+        }
+        record.errorCode?.let {
+            MizanKeyValue("Fault Code", it, mono = true)
+        }
+
+        // Trace ID copy button
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(ShapePill)
+                .background(if (colors.isDark) colors.surfaceElevated else Color(0x0A000000))
+                .border(BorderStroke(0.6.dp, colors.borderStrong), ShapePill)
+                .clickable {
+                    try { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) } catch (_: Throwable) {}
+                    clipboard.setText(AnnotatedString(record.id.value))
+                    copied = true
+                }
+                .padding(horizontal = Space.md, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Icon(Icons.Outlined.Fingerprint, contentDescription = null, tint = colors.accent, modifier = Modifier.size(16.dp))
+                Text(
+                    text = if (copied) "Execution ID Copied!" else "Copy Trace ID",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (copied) colors.accent else colors.textPrimary,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+            Icon(
+                imageVector = if (copied) Icons.Outlined.CheckCircle else Icons.Outlined.ContentCopy,
+                contentDescription = null,
+                tint = if (copied) colors.accent else colors.textTertiary,
+                modifier = Modifier.size(14.dp),
+            )
+        }
+    }
 }

@@ -7,97 +7,120 @@
     <group
         android:pivotX="54"
         android:pivotY="54">
-        <!-- Top Diamond Finial -->
+        <!-- Robot Head Antenna & Crown Sensor (عصاية الميزان كدماغ روبوت) -->
         <path
-            android:fillColor="#FBBF24"
-            android:pathData="M54,23 L58.5,28 L54,33 L49.5,28 Z" />
-        <!-- Top Finial Sparkle Core -->
+            android:fillColor="#00F2FE"
+            android:pathData="M53,13 L55,13 L55,19 L53,19 Z" />
+        <path
+            android:fillColor="#00F2FE"
+            android:pathData="M54,12 M54,10 A2,2 0 1,1 54,14 A2,2 0 1,1 54,10 Z" />
+
+        <!-- Robot Head (Chassis forming top of scale) -->
+        <path
+            android:fillColor="#152238"
+            android:strokeColor="#00F2FE"
+            android:strokeWidth="1.8"
+            android:pathData="M43,26 C43,18 47,16 54,16 C61,16 65,18 65,26 C65,33 60,36 54,36 C48,36 43,33 43,26 Z" />
+
+        <!-- Robot Visor Screen with Dual Glowing Eyes -->
+        <path
+            android:fillColor="#070C16"
+            android:pathData="M46,23 L62,23 A2,2 0 0,1 64,25 L64,28 A2,2 0 0,1 62,30 L46,30 A2,2 0 0,1 44,28 L44,25 A2,2 0 0,1 46,23 Z" />
+        <path
+            android:fillColor="#00F2FE"
+            android:pathData="M48,26.5 M48,24.5 A2,2 0 1,1 48,28.5 A2,2 0 1,1 48,24.5 Z" />
         <path
             android:fillColor="#FFFFFF"
-            android:pathData="M54,26.5 A1.5,1.5 0 1,1 53.99,26.5 Z" />
+            android:pathData="M48,26 M48,25 A1,1 0 1,1 48,27 A1,1 0 1,1 48,25 Z" />
+        <path
+            android:fillColor="#00F2FE"
+            android:pathData="M60,26.5 M60,24.5 A2,2 0 1,1 60,28.5 A2,2 0 1,1 60,24.5 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M60,26 M60,25 A1,1 0 1,1 60,27 A1,1 0 1,1 60,25 Z" />
 
-        <!-- Central Authority Pillar (Double-layer stem) -->
+        <!-- Central Fulcrum Core (Intelligent Core Ring) -->
         <path
-            android:fillColor="#F8FAFC"
-            android:pathData="M52.2,32 L55.8,32 L55.8,72 L52.2,72 Z" />
+            android:fillColor="#0F172A"
+            android:strokeColor="#00F2FE"
+            android:strokeWidth="2"
+            android:pathData="M54,41 M54,35 A6,6 0 1,1 54,47 A6,6 0 1,1 54,35 Z" />
         <path
-            android:fillColor="#94A3B8"
-            android:pathData="M53.4,34 L54.6,34 L54.6,70 L53.4,70 Z" />
+            android:fillColor="#00F2FE"
+            android:pathData="M54,41 M54,38.5 A2.5,2.5 0 1,1 54,43.5 A2.5,2.5 0 1,1 54,38.5 Z" />
 
-        <!-- Fulcrum Precision Ring -->
+        <!-- Vertical Spine Pillar of Scale -->
         <path
-            android:fillColor="#F59E0B"
-            android:pathData="M54,34 A5,5 0 1,1 53.99,34 Z" />
-        <path
-            android:fillColor="#081325"
-            android:pathData="M54,36.5 A2.5,2.5 0 1,1 53.99,36.5 Z" />
-        <path
-            android:fillColor="#00F5D4"
-            android:pathData="M54,38 A1,1 0 1,1 53.99,38 Z" />
-
-        <!-- Horizontal Precision Beam -->
-        <path
-            android:fillColor="#00F5D4"
-            android:pathData="M27,37.5 L81,37.5 C82.5,37.5 82.5,40.5 81,40.5 L27,40.5 C25.5,40.5 25.5,37.5 27,37.5 Z" />
-
-        <!-- Beam End Knobs -->
-        <path
-            android:fillColor="#FBBF24"
-            android:pathData="M29,39 A2,2 0 1,1 28.99,39 Z" />
-        <path
-            android:fillColor="#FBBF24"
-            android:pathData="M79,39 A2,2 0 1,1 78.99,39 Z" />
-
-        <!-- Left Suspension Cables -->
-        <path
-            android:strokeColor="#CBD5E1"
+            android:fillColor="#0F172A"
+            android:strokeColor="#00F2FE"
             android:strokeWidth="1.2"
-            android:strokeLineCap="round"
-            android:fillColor="#00000000"
-            android:pathData="M29,40.5 L22,56 M29,40.5 L36,56" />
+            android:pathData="M52,47 L56,47 L56,86 L52,86 Z" />
+        <path
+            android:fillColor="#00F2FE"
+            android:pathData="M53.5,50 L54.5,50 L54.5,83 L53.5,83 Z" />
 
-        <!-- Left Pan (Emerald M3 curved dish with glass rim) -->
+        <!-- Symmetrical Mechanical Robot Arms & Balance Beam -->
         <path
-            android:fillColor="#10B981"
-            android:pathData="M19,56 C19,65 39,65 39,56 Z" />
-        <path
-            android:strokeColor="#FFFFFF"
-            android:strokeWidth="1"
-            android:strokeAlpha="0.7"
+            android:strokeColor="#00F2FE"
+            android:strokeWidth="2.8"
             android:strokeLineCap="round"
+            android:strokeLineJoin="round"
             android:fillColor="#00000000"
-            android:pathData="M18.5,56 L39.5,56" />
+            android:pathData="M16,41 L38,39 L54,41 L70,39 L92,41" />
 
-        <!-- Right Suspension Cables -->
+        <!-- Mechanical Hand Knuckles at Arm Tips -->
         <path
-            android:strokeColor="#CBD5E1"
+            android:fillColor="#00F2FE"
+            android:pathData="M16,41 M16,38 A3,3 0 1,1 16,44 A3,3 0 1,1 16,38 Z" />
+        <path
+            android:fillColor="#00F2FE"
+            android:pathData="M92,41 M92,38 A3,3 0 1,1 92,44 A3,3 0 1,1 92,38 Z" />
+
+        <!-- Left Scale Suspension Cables & Curved Robotic Hand Pan -->
+        <path
+            android:strokeColor="#94A3B8"
             android:strokeWidth="1.2"
-            android:strokeLineCap="round"
             android:fillColor="#00000000"
-            android:pathData="M79,40.5 L72,56 M79,40.5 L86,56" />
+            android:pathData="M16,41 L8,63 M16,41 L24,63" />
+        <path
+            android:fillColor="#152238"
+            android:strokeColor="#00F2FE"
+            android:strokeWidth="1.5"
+            android:pathData="M7,63 C7,70.5 25,70.5 25,63 Z" />
+        <!-- Left Pan Glowing Audit Hologram -->
+        <path
+            android:fillColor="#00F2FE"
+            android:pathData="M13,56 L19,56 L19,62 L13,62 Z" />
 
-        <!-- Right Pan (Gold M3 curved dish with glass rim) -->
+        <!-- Right Scale Suspension Cables & Curved Robotic Hand Pan -->
+        <path
+            android:strokeColor="#94A3B8"
+            android:strokeWidth="1.2"
+            android:fillColor="#00000000"
+            android:pathData="M92,41 L84,63 M92,41 L100,63" />
+        <path
+            android:fillColor="#152238"
+            android:strokeColor="#00F2FE"
+            android:strokeWidth="1.5"
+            android:pathData="M83,63 C83,70.5 101,70.5 101,63 Z" />
+        <!-- Right Pan Glowing Audit Hologram -->
         <path
             android:fillColor="#FBBF24"
-            android:pathData="M69,56 C69,65 89,65 89,56 Z" />
-        <path
-            android:strokeColor="#FFFFFF"
-            android:strokeWidth="1"
-            android:strokeAlpha="0.7"
-            android:strokeLineCap="round"
-            android:fillColor="#00000000"
-            android:pathData="M68.5,56 L89.5,56" />
+            android:pathData="M89,56 L95,56 L95,62 L89,62 Z" />
 
-        <!-- Base Pedestal (Stepped geometric mount) -->
+        <!-- Stepped Base Dock -->
         <path
-            android:fillColor="#0F766E"
-            android:pathData="M43,72 L65,72 L70,76 L38,76 Z" />
+            android:fillColor="#152238"
+            android:strokeColor="#00F2FE"
+            android:strokeWidth="1.2"
+            android:pathData="M38,86 L70,86 L74,90 L34,90 Z" />
         <path
-            android:fillColor="#115E59"
-            android:pathData="M34,76 L74,76 C75,76 75,79 74,79 L34,79 C33,79 33,76 34,76 Z" />
-        <!-- Glowing Base Calibration LED -->
+            android:fillColor="#070C16"
+            android:strokeColor="#00F2FE"
+            android:strokeWidth="1"
+            android:pathData="M30,90 L78,90 L78,94 L30,94 Z" />
         <path
-            android:fillColor="#00F5D4"
-            android:pathData="M48,74 L60,74 L60,75 L48,75 Z" />
+            android:fillColor="#00F2FE"
+            android:pathData="M44,91.5 L64,91.5 L64,92.5 L44,92.5 Z" />
     </group>
 </vector>

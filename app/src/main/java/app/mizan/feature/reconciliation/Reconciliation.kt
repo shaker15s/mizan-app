@@ -60,6 +60,7 @@ import app.mizan.design.component.MizanStatusBadge
 import app.mizan.design.component.ShapeCard
 import app.mizan.design.component.ShapeControl
 import app.mizan.design.component.StatusTone
+import app.mizan.design.component.mizanBounceClick
 import app.mizan.design.theme.LocalMizanColors
 import app.mizan.design.token.Space
 import app.mizan.domain.audit.AuditAppend
@@ -210,7 +211,7 @@ fun ReconciliationRoute(graph: AppGraph, expanded: Boolean) {
                                 BorderStroke(if (isSelected) 1.2.dp else 0.8.dp, if (isSelected) colors.accent else colors.glassBorder),
                                 ShapeCard,
                             )
-                            .clickable(role = Role.Button) { selectedId = case.id }
+                            .mizanBounceClick(role = Role.Button) { selectedId = case.id }
                             .padding(Space.md),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {

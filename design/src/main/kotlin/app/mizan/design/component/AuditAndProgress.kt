@@ -63,7 +63,9 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -338,11 +340,12 @@ fun AuditTrailReceiptCard(
     var copied by remember { mutableStateOf(false) }
     val clipboard = LocalClipboardManager.current
 
+    val haptic = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.985f else 1f,
-        animationSpec = spring(),
+        targetValue = if (isPressed) 0.965f else 1f,
+        animationSpec = spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessMedium),
         label = "audit_card_scale",
     )
 
@@ -368,6 +371,9 @@ fun AuditTrailReceiptCard(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = {
+                    try {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    } catch (_: Throwable) {}
                     expanded = !expanded
                     onClick?.invoke()
                 },
@@ -557,6 +563,7 @@ fun GlassSegmentedControl(
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalMizanColors.current
+    val haptic = LocalHapticFeedback.current
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -586,7 +593,15 @@ fun GlassSegmentedControl(
                             spotColor = Color(0x140F172A),
                         ) else Modifier,
                     )
-                    .clickable(role = Role.Tab, onClick = { onSelect(index) })
+                    .clickable(
+                        role = Role.Tab,
+                        onClick = {
+                            try {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            } catch (_: Throwable) {}
+                            onSelect(index)
+                        },
+                    )
                     .padding(vertical = 7.dp),
                 contentAlignment = Alignment.Center,
             ) {

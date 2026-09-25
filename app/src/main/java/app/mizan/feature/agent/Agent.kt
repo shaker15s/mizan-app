@@ -66,6 +66,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.mizan.R
 import app.mizan.design.component.MizanDangerButton
+import app.mizan.design.component.MizanRobotScale
+import app.mizan.design.component.RobotScaleState
 import app.mizan.design.component.MizanPrimaryButton
 import app.mizan.design.component.MizanSecondaryButton
 import app.mizan.design.component.MizanStatusBadge
@@ -118,6 +120,7 @@ sealed interface AgentLine {
 class AgentViewModel(private val graph: AppGraph) : ViewModel() {
     private val _lines = MutableStateFlow<List<AgentLine>>(emptyList())
     val lines = _lines.asStateFlow()
+    private val aiHarness = MizanAiHarness()
 
     var input by mutableStateOf("")
     var busy by mutableStateOf(false)
@@ -140,10 +143,16 @@ class AgentViewModel(private val graph: AppGraph) : ViewModel() {
         viewModelScope.launch {
             val customers = graph.readModels.customers(session.tenant.id).first()
             val capabilities = if (graph.demoMode) ConnectorCapabilities.simulation else ConnectorCapabilities.servicePreview
+            val interpretation = aiHarness.parse(
+                input = prompt,
+                capabilities = capabilities,
+                customPrompt = graph.preferences.customSystemPrompt,
+                speedTier = graph.preferences.aiModelSpeedTier,
+            )
             val parsed = graph.proposals.propose(
+                interpreted = interpretation,
                 intent = prompt,
                 actor = session.actor,
-                capabilities = capabilities,
                 customers = customers,
             )
             busy = false
@@ -493,21 +502,12 @@ private fun AgentEmptyHero(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .clip(CircleShape)
-                .background(colors.accentMuted)
-                .border(BorderStroke(1.dp, colors.accent.copy(alpha = 0.3f)), CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.AutoAwesome,
-                contentDescription = null,
-                tint = colors.accent,
-                modifier = Modifier.size(32.dp),
-            )
-        }
+        // Robot-Scale Emblem (ميزان وروبوت في نفس الوقت)
+        MizanRobotScale(
+            size = 115.dp,
+            state = RobotScaleState.IDLE_BALANCED,
+            interactive = true,
+        )
 
         Spacer(Modifier.height(Space.md))
 

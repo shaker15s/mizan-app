@@ -51,6 +51,7 @@ class AppGraph(context: Context) {
     val cases: ReconciliationStore
     val readModels: ReadModelStore
     val sync: SyncStore
+    val syncTracker: app.mizan.health.SyncConnectivityTracker
     val policy: PolicyEvaluator
     val proposals: ProposalService
     val authority: ExecutionAuthority
@@ -71,6 +72,12 @@ class AppGraph(context: Context) {
         cases = RoomReconciliationStore(dao)
         readModels = RoomReadModelStore(dao, receipts, executions, cases)
         sync = RoomSyncStore(dao)
+        syncTracker = app.mizan.health.SyncConnectivityTracker(
+            context = context,
+            preferences = preferences,
+            syncStore = sync,
+            health = health,
+        )
         val catalog = if (demoMode) PolicyCatalog.demo else PolicyCatalog.empty
         policy = PolicyEvaluator(catalog)
         proposals = ProposalService(

@@ -1,0 +1,96 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Glowing Base Dock -->
+    <path
+        android:fillColor="#152238"
+        android:strokeColor="#00F2FE"
+        android:strokeWidth="1.5"
+        android:pathData="M32,92 L76,92 A4,4 0 0,1 80,96 L80,97 L28,97 L28,96 A4,4 0 0,1 32,92 Z" />
+
+    <!-- Central Pillar / Cyber Spine -->
+    <path
+        android:fillColor="#0F172A"
+        android:strokeColor="#00F2FE"
+        android:strokeWidth="1.5"
+        android:pathData="M51,40 L57,40 L57,92 L51,92 Z" />
+
+    <!-- Central Intelligence Fulcrum Core -->
+    <path
+        android:fillColor="#00F2FE"
+        android:pathData="M54,40 M54,34 A6,6 0 1,1 54,46 A6,6 0 1,1 54,34 Z" />
+
+    <!-- Robot Head / Central Scale Top (الروبوت كدماغ وعصاية الميزان) -->
+    <path
+        android:fillColor="#1A2234"
+        android:strokeColor="#00F2FE"
+        android:strokeWidth="1.8"
+        android:pathData="M43,26 C43,18 47,15 54,15 C61,15 65,18 65,26 C65,32 60,35 54,35 C48,35 43,32 43,26 Z" />
+
+    <!-- Robot Antenna -->
+    <path
+        android:strokeColor="#00F2FE"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M54,15 L54,10" />
+    <path
+        android:fillColor="#00F2FE"
+        android:pathData="M54,9 M54,7 A2,2 0 1,1 54,11 A2,2 0 1,1 54,7 Z" />
+
+    <!-- Robot Visor with Dual Glowing Eyes -->
+    <path
+        android:fillColor="#080C14"
+        android:strokeColor="#00F2FE"
+        android:strokeWidth="1"
+        android:pathData="M46,23 L62,23 A2,2 0 0,1 64,25 L64,27 A2,2 0 0,1 62,29 L46,29 A2,2 0 0,1 44,27 L44,25 A2,2 0 0,1 46,23 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M48,26 M48,24.5 A1.5,1.5 0 1,1 48,27.5 A1.5,1.5 0 1,1 48,24.5 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M60,26 M60,24.5 A1.5,1.5 0 1,1 60,27.5 A1.5,1.5 0 1,1 60,24.5 Z" />
+
+    <!-- Mechanical Robot Arms & Balance Beam -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#00F2FE"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M16,40 L40,38 L54,40 L68,38 L92,40" />
+
+    <!-- Left Arm Suspension Cables & Balance Pan -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#94A3B8"
+        android:strokeWidth="1.2"
+        android:pathData="M16,40 L8,64 M16,40 L24,64" />
+    <path
+        android:fillColor="#152238"
+        android:strokeColor="#00F2FE"
+        android:strokeWidth="1.5"
+        android:pathData="M6,64 C6,71 26,71 26,64 Z" />
+    <!-- Glowing Node on Left Pan -->
+    <path
+        android:fillColor="#00F2FE"
+        android:pathData="M13,58 L19,58 L19,63 L13,63 Z" />
+
+    <!-- Right Arm Suspension Cables & Balance Pan -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#94A3B8"
+        android:strokeWidth="1.2"
+        android:pathData="M92,40 L84,64 M92,40 L100,64" />
+    <path
+        android:fillColor="#152238"
+        android:strokeColor="#00F2FE"
+        android:strokeWidth="1.5"
+        android:pathData="M82,64 C82,71 102,71 102,64 Z" />
+    <!-- Glowing Node on Right Pan -->
+    <path
+        android:fillColor="#00F2FE"
+        android:pathData="M89,58 L95,58 L95,63 L89,63 Z" />
+</vector>

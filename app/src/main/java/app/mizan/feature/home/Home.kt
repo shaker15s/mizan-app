@@ -29,6 +29,7 @@ import androidx.compose.material.icons.outlined.FactCheck
 import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Hub
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Shield
@@ -67,6 +68,7 @@ import app.mizan.design.component.MizanStatusBadge
 import app.mizan.design.component.ShapeCard
 import app.mizan.design.component.ShapePill
 import app.mizan.design.component.StatusTone
+import app.mizan.design.component.mizanBounceClick
 import app.mizan.design.theme.LocalMizanColors
 import app.mizan.design.token.Space
 import app.mizan.domain.attention.AttentionItem
@@ -75,6 +77,10 @@ import app.mizan.domain.execution.ExecutionPhase
 import app.mizan.domain.model.ExecutionRecord
 import app.mizan.domain.model.HealthStatus
 import app.mizan.domain.model.SystemHealth
+import app.mizan.design.component.HeaderSyncStatusIndicator
+import app.mizan.domain.audit.AuditEvent
+import app.mizan.domain.model.Digests
+import app.mizan.domain.model.HistoricalErpActionLog
 import app.mizan.domain.model.TrustReceipt
 import app.mizan.graph.AppGraph
 import app.mizan.ui.attentionLabel
@@ -88,6 +94,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 data class HomeUi(
     val workspace: String = "",
@@ -97,23 +106,37 @@ data class HomeUi(
     val recent: List<ExecutionRecord> = emptyList(),
     val receipts: List<TrustReceipt> = emptyList(),
     val allExecutions: List<ExecutionRecord> = emptyList(),
+    val actionLogs: List<HistoricalErpActionLog> = emptyList(),
     val health: SystemHealth = SystemHealth.unknown,
     val offline: Boolean = false,
     val demoMode: Boolean = false,
 )
 
-class HomeViewModel(graph: AppGraph) : ViewModel() {
+class HomeViewModel(private val graph: AppGraph) : ViewModel() {
     val state: StateFlow<HomeUi> = graph.session.session.flatMapLatest { session ->
         if (session == null) {
             flowOf(HomeUi(demoMode = graph.demoMode))
         } else {
             combine(
-                graph.executions.observe(session.tenant.id),
+                graph.executions.observe(session.tenant.id, limit = 100),
                 graph.cases.observe(session.tenant.id),
-                graph.receipts.observe(session.tenant.id, 20),
+                graph.receipts.observe(session.tenant.id, 50),
                 graph.health.networkStatus,
             ) { executions, cases, receipts, network ->
                 val health = graph.health.snapshot(signedIn = true, simulation = graph.demoMode).copy(network = network)
+                val auditEvents = try {
+                    graph.audit.ledger(session.tenant.id)
+                } catch (_: Throwable) {
+                    emptyList()
+                }
+
+                val actionLogs = mapToHistoricalActionLogs(
+                    executions = executions,
+                    auditEvents = auditEvents,
+                    receipts = receipts,
+                    isSimulation = graph.demoMode,
+                )
+
                 HomeUi(
                     workspace = session.tenant.displayName,
                     actor = session.actor.displayName,
@@ -122,6 +145,7 @@ class HomeViewModel(graph: AppGraph) : ViewModel() {
                     recent = executions.take(8),
                     receipts = receipts,
                     allExecutions = executions,
+                    actionLogs = actionLogs,
                     health = health,
                     offline = health.network == HealthStatus.UNAVAILABLE,
                     demoMode = graph.demoMode,
@@ -129,12 +153,84 @@ class HomeViewModel(graph: AppGraph) : ViewModel() {
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUi(demoMode = graph.demoMode))
+
+    fun syncNow() {
+        val tenantId = graph.session.session.value?.tenant?.id
+        graph.syncTracker.syncNow(tenantId)
+    }
+
+    fun toggleSyncDisplay() {
+        graph.syncTracker.toggleDisplayMode()
+    }
+}
+
+private fun mapToHistoricalActionLogs(
+    executions: List<ExecutionRecord>,
+    auditEvents: List<AuditEvent>,
+    receipts: List<TrustReceipt>,
+    isSimulation: Boolean,
+): List<HistoricalErpActionLog> {
+    val timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        .withZone(ZoneId.systemDefault())
+
+    return executions.map { record ->
+        val matchingAudit = auditEvents.find { it.traceId == record.traceId.value }
+
+        // Secure cryptographic verification hash binding
+        val verificationHash = matchingAudit?.currentHash?.ifBlank { null }
+            ?: Digests.sha256("${record.id.value}:${record.canonicalArgs}:${record.createdAt.toEpochMilli()}")
+
+        val shortHash = if (verificationHash.length >= 14) {
+            "${verificationHash.take(8)}...${verificationHash.takeLast(6)}"
+        } else {
+            verificationHash
+        }
+
+        val formattedTime = try {
+            timeFormatter.format(record.createdAt)
+        } catch (_: Throwable) {
+            record.createdAt.toString()
+        }
+
+        val diff = System.currentTimeMillis() - record.createdAt.toEpochMilli()
+        val relative = when {
+            diff < 60_000L -> "Just now"
+            diff < 3_600_000L -> "${diff / 60_000L}m ago"
+            diff < 86_400_000L -> "${diff / 3_600_000L}h ago"
+            else -> "${diff / 86_400_000L}d ago"
+        }
+
+        HistoricalErpActionLog(
+            commandId = record.id.value,
+            traceId = record.traceId.value,
+            tool = record.tool,
+            intent = record.intent.ifBlank { "Executed ${record.tool.wire}" },
+            phase = record.phase,
+            timestamp = record.createdAt,
+            formattedTimestamp = formattedTime,
+            relativeTime = relative,
+            verificationHash = verificationHash,
+            shortHash = shortHash,
+            previousHash = matchingAudit?.previousHash,
+            erpRecordId = record.erpRecordId,
+            actorName = record.initiatorId.value,
+            actorRole = record.approval.name,
+            canonicalPayload = record.canonicalArgs,
+            isSimulation = isSimulation,
+        )
+    }
 }
 
 @Composable
-fun HomeRoute(graph: AppGraph, expanded: Boolean, onOpen: (String) -> Unit) {
+fun HomeRoute(
+    graph: AppGraph,
+    expanded: Boolean,
+    onOpen: (String) -> Unit,
+    onLockSession: (() -> Unit)? = null,
+) {
     val vm: HomeViewModel = viewModel(factory = simpleFactory { HomeViewModel(graph) })
     val state by vm.state.collectAsStateWithLifecycle()
+    val syncStatus by graph.syncTracker.state.collectAsStateWithLifecycle()
     val colors = LocalMizanColors.current
 
     // Compute live ERP execution statistics for visual gauge
@@ -176,19 +272,23 @@ fun HomeRoute(graph: AppGraph, expanded: Boolean, onOpen: (String) -> Unit) {
                     .weight(1f)
                     .padding(start = Space.md),
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     Text(
                         text = state.workspace.ifBlank { stringResource(R.string.app_name) },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colors.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                    Spacer(Modifier.width(6.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(if (state.offline) colors.danger else colors.accent),
+                    HeaderSyncStatusIndicator(
+                        isOnline = syncStatus.isOnline,
+                        displayText = syncStatus.displayText,
+                        isSyncing = syncStatus.isSyncing,
+                        onClick = { vm.toggleSyncDisplay() },
                     )
                 }
                 if (state.actor.isNotBlank() && state.roleName.isNotBlank()) {
@@ -199,12 +299,25 @@ fun HomeRoute(graph: AppGraph, expanded: Boolean, onOpen: (String) -> Unit) {
                     )
                 }
             }
-            MizanIconButton(Icons.Outlined.Search, stringResource(R.string.cd_search), { onOpen("search") })
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                if (onLockSession != null) {
+                    MizanIconButton(Icons.Outlined.Lock, "Lock ERP Session", onLockSession)
+                }
+                MizanIconButton(Icons.Outlined.Search, stringResource(R.string.cd_search), { onOpen("search") })
+            }
         }
 
         if (state.offline) {
             Text(stringResource(R.string.offline_banner), color = colors.warning, style = MaterialTheme.typography.bodySmall)
         }
+
+        // KEY ODOO ERP PERFORMANCE METRICS SUITE: Data visualization cards & Canvas charts
+        OdooPerformanceDashboardCard(
+            executions = state.allExecutions,
+            pendingAuthorizationsCount = pendingCount,
+            onInspectPending = { onOpen("operations") },
+            onInspectSuccessRate = { onOpen("operations") },
+        )
 
         // Craft Metric Grid (3 compact widgets)
         Row(
@@ -274,6 +387,13 @@ fun HomeRoute(graph: AppGraph, expanded: Boolean, onOpen: (String) -> Unit) {
             pendingCount = pendingCount,
             failureCount = failureCount,
             onInspectClick = { onOpen("operations") },
+        )
+
+        // HISTORICAL ERP ACTION LOGS: Read-Only List Component displaying transaction status, timestamp, and verification hash
+        HistoricalErpActionLogsList(
+            logs = state.actionLogs,
+            workspaceName = state.workspace.ifBlank { stringResource(R.string.app_name) },
+            onInspectEvidence = { onOpen("evidence") },
         )
 
         // AUDIT TRAIL COMPONENT: Card-based layout with status indicators & receipts
@@ -516,7 +636,7 @@ private fun MetricCard(
             .clip(ShapeCard)
             .background(colors.glass)
             .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
-            .clickable(role = Role.Button, onClick = onClick)
+            .mizanBounceClick(role = Role.Button, onClick = onClick)
             .padding(Space.md),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -556,7 +676,7 @@ private fun QuickChip(
             .clip(ShapePill)
             .background(colors.surfaceElevated)
             .border(BorderStroke(0.8.dp, colors.glassBorder), ShapePill)
-            .clickable(role = Role.Button, onClick = onClick)
+            .mizanBounceClick(role = Role.Button, onClick = onClick)
             .padding(horizontal = Space.md, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),

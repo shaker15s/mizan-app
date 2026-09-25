@@ -27,21 +27,38 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.mizan.design.theme.LocalMizanColors
 
-/** Geometric balance mark. The name MIZAN means scale. */
+/** Geometric robot-scale mark: fusion of robot head/eyes and balance scale arms. */
 @Composable
 fun MizanMark(modifier: Modifier = Modifier) {
     val color = LocalMizanColors.current.accent
-    Canvas(modifier.size(22.dp)) {
-        val stroke = size.minDimension * 0.08f
+    val surface = LocalMizanColors.current.surface
+    Canvas(modifier.size(26.dp)) {
+        val stroke = size.minDimension * 0.085f
         val cx = size.width / 2f
-        val top = size.height * 0.18f
-        val beamY = size.height * 0.38f
-        val foot = size.height * 0.86f
-        drawLine(color, Offset(cx, top), Offset(cx, foot), stroke, StrokeCap.Round)
-        drawLine(color, Offset(cx - size.width * 0.18f, foot), Offset(cx + size.width * 0.18f, foot), stroke, StrokeCap.Round)
-        drawLine(color, Offset(size.width * 0.12f, beamY), Offset(size.width * 0.88f, beamY), stroke, StrokeCap.Round)
-        drawLine(color, Offset(size.width * 0.12f, beamY), Offset(size.width * 0.22f, beamY + size.height * 0.22f), stroke, StrokeCap.Round)
-        drawLine(color, Offset(size.width * 0.88f, beamY), Offset(size.width * 0.78f, beamY + size.height * 0.22f), stroke, StrokeCap.Round)
+        val headY = size.height * 0.12f
+        val headRadius = size.width * 0.14f
+        val coreY = size.height * 0.38f
+        val foot = size.height * 0.88f
+
+        // Central pillar (Robot torso)
+        drawLine(color, Offset(cx, headY), Offset(cx, foot), stroke, StrokeCap.Round)
+        // Base pedestal
+        drawLine(color, Offset(cx - size.width * 0.22f, foot), Offset(cx + size.width * 0.22f, foot), stroke, StrokeCap.Round)
+        // Horizontal balance arms (Robot arms)
+        drawLine(color, Offset(size.width * 0.08f, coreY), Offset(size.width * 0.92f, coreY), stroke * 1.1f, StrokeCap.Round)
+        // Left scale cables & dish
+        drawLine(color.copy(alpha = 0.7f), Offset(size.width * 0.08f, coreY), Offset(size.width * 0.18f, coreY + size.height * 0.26f), stroke * 0.8f, StrokeCap.Round)
+        drawCircle(color, stroke * 1.2f, Offset(size.width * 0.18f, coreY + size.height * 0.26f))
+        // Right scale cables & dish
+        drawLine(color.copy(alpha = 0.7f), Offset(size.width * 0.92f, coreY), Offset(size.width * 0.82f, coreY + size.height * 0.26f), stroke * 0.8f, StrokeCap.Round)
+        drawCircle(color, stroke * 1.2f, Offset(size.width * 0.82f, coreY + size.height * 0.26f))
+
+        // Robot Head at top of central pillar
+        drawCircle(surface, headRadius, Offset(cx, headY))
+        drawCircle(color, headRadius, Offset(cx, headY), style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke))
+        // Visor eyes
+        drawCircle(color, stroke * 0.85f, Offset(cx - headRadius * 0.42f, headY))
+        drawCircle(color, stroke * 0.85f, Offset(cx + headRadius * 0.42f, headY))
     }
 }
 
@@ -128,19 +145,11 @@ fun MizanHeroEmblem(
                 ),
             contentAlignment = Alignment.Center,
         ) {
-            val markColor = colors.accent
-            Canvas(modifier = Modifier.size(size * 0.55f)) {
-                val stroke = this.size.minDimension * 0.085f
-                val cx = this.size.width / 2f
-                val top = this.size.height * 0.16f
-                val beamY = this.size.height * 0.38f
-                val foot = this.size.height * 0.86f
-                drawLine(markColor, Offset(cx, top), Offset(cx, foot), stroke, StrokeCap.Round)
-                drawLine(markColor, Offset(cx - this.size.width * 0.20f, foot), Offset(cx + this.size.width * 0.20f, foot), stroke, StrokeCap.Round)
-                drawLine(markColor, Offset(this.size.width * 0.10f, beamY), Offset(this.size.width * 0.90f, beamY), stroke, StrokeCap.Round)
-                drawLine(markColor, Offset(this.size.width * 0.10f, beamY), Offset(this.size.width * 0.22f, beamY + this.size.height * 0.24f), stroke, StrokeCap.Round)
-                drawLine(markColor, Offset(this.size.width * 0.90f, beamY), Offset(this.size.width * 0.78f, beamY + this.size.height * 0.24f), stroke, StrokeCap.Round)
-            }
+            MizanRobotScale(
+                size = size * 0.85f,
+                state = RobotScaleState.IDLE_BALANCED,
+                interactive = true,
+            )
         }
     }
 }

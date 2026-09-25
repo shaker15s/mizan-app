@@ -42,7 +42,8 @@ class MainActivity : FragmentActivity() {
                 else -> Locale.getDefault().language == "ar"
             }
             val reduced = prefs.reducedMotion || animatorScale() == 0f
-            MizanTheme(dark = dark, arabic = arabic, reducedMotion = reduced) {
+            val preset = prefs.activeThemePreset
+            MizanTheme(dark = dark, arabic = arabic, reducedMotion = reduced, preset = preset) {
                 MizanShell(
                     graph = app.graph,
                     activity = this,

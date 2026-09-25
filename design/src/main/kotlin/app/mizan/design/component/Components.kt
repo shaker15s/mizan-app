@@ -1,6 +1,9 @@
 package app.mizan.design.component
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -38,11 +41,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -70,6 +76,48 @@ val ShapeBubbleUser = RoundedCornerShape(22.dp, 22.dp, 6.dp, 22.dp)
 val ShapeBubbleAgent = RoundedCornerShape(22.dp, 22.dp, 22.dp, 6.dp)
 
 enum class StatusTone { Neutral, Accent, Success, Warning, Danger, Info }
+
+/**
+ * High-end iOS style tactile press modifier with spring scale-down and haptic feedback.
+ */
+@Composable
+fun Modifier.mizanBounceClick(
+    enabled: Boolean = true,
+    scaleDown: Float = 0.96f,
+    role: Role? = Role.Button,
+    onClick: (() -> Unit)? = null,
+): Modifier {
+    val haptic = LocalHapticFeedback.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed && enabled) scaleDown else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium,
+        ),
+        label = "bounce_scale",
+    )
+
+    return this
+        .scale(scale)
+        .then(
+            if (onClick != null) {
+                Modifier.clickable(
+                    interactionSource = interactionSource,
+                    indication = ripple(),
+                    enabled = enabled,
+                    role = role,
+                    onClick = {
+                        try {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        } catch (_: Throwable) {}
+                        onClick()
+                    },
+                )
+            } else Modifier,
+        )
+}
 
 @Composable
 fun MizanSurface(
@@ -236,8 +284,17 @@ private fun MizanButtonBase(
 ) {
     val colors = LocalMizanColors.current
     val reduced = LocalReducedMotion.current
+    val haptic = LocalHapticFeedback.current
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed && enabled && !loading) 0.96f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium,
+        ),
+        label = "btn_scale",
+    )
     val bg by animateColorAsState(
         targetValue = when {
             !enabled -> colors.border
@@ -250,6 +307,7 @@ private fun MizanButtonBase(
     val fg = if (enabled) content else colors.textTertiary
     Row(
         modifier = modifier
+            .scale(scale)
             .heightIn(min = 44.dp)
             .shadow(
                 elevation = if (colors.isDark || !enabled || container == Color.Transparent) 0.dp else 2.dp,
@@ -265,7 +323,12 @@ private fun MizanButtonBase(
                 indication = ripple(color = content.copy(alpha = 0.2f)),
                 enabled = enabled && !loading,
                 role = Role.Button,
-                onClick = onClick,
+                onClick = {
+                    try {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    } catch (_: Throwable) {}
+                    onClick()
+                },
             )
             .padding(horizontal = Space.lg, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -487,7 +550,7 @@ fun MizanIconButton(
             .size(48.dp)
             .clip(ShapeControl)
             .background(if (selected) colors.accentMuted else Color.Transparent)
-            .clickable(role = Role.Button, onClick = onClick)
+            .mizanBounceClick(role = Role.Button, onClick = onClick)
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
@@ -660,7 +723,7 @@ fun CraftSelectableCard(
             .clip(ShapeCard)
             .background(bg)
             .border(BorderStroke(borderWidth, borderColor), ShapeCard)
-            .clickable(role = Role.RadioButton, onClick = onSelect)
+            .mizanBounceClick(role = Role.RadioButton, onClick = onSelect)
             .padding(Space.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
