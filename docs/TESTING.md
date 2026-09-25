@@ -10,9 +10,14 @@ Tests exist. The Gradle wrapper now exists, but no JVM, Android SDK, or dependen
 | `domain/.../ExecutionInvariantsTest.kt` | Happy path, timeout-after-send is ambiguous, verified is not re-executed, idempotency block and replay, tenant-scoped keys, recovery of unknown dispatch, proof freshness |
 | `domain/.../InterpreterAndAuditTest.kt` | Missing fields are questions, injection is rejected, chain detects a changed copy |
 | `integration/.../IntegrationTest.kt` | Redaction, writes are not retried, JSON-2 URL rejects cleartext, XML-RPC escapes and parses a fault, HTTP 200 `accepted` is not verification |
+| `integration/.../RedactorTest.kt` | Bearer, Basic, named secrets and bare JWTs are masked; ordinary text is untouched; redaction is idempotent |
+| `integration/.../MizanApiContractTest.kt` | The request the device builds: POST path, session headers, canonical argument names, no credential in the body, cleartext and missing token refused before a request is built |
 | `service/.../MizanServiceHttpTest.kt` | Real listener on an ephemeral port: sign-in and throttling, verified write after read-back, idempotent replay, key reuse is a 409, separation of duties, auditor refusal, tenant isolation, the ambiguous path, invoice and payment chain, cancellation blocks invoicing, audit chain, health |
 | `service/.../JsonTest.kt` | Round trip, escaping, nested arrays, and that eight malformed bodies are rejected instead of guessed at |
 | `service/.../ServiceUnitTest.kt` | Password hashing and salting, token hashing, session expiry without extension, audit chain linkage, tenant scoping of the ledger and the ERP adapter, read-back semantics |
+| `service/.../ContractParityTest.kt` | The service parses exactly what the phone canonicalises: every tool's argument names, the byte-for-byte idempotency material, and the wire names |
+| `domain/.../MoneyAndCanonicalTest.kt` | Money parsing rejects negative and scientific-notation amounts, formatting is locale independent, canonical JSON sorts keys and escapes control characters, idempotency keys are deterministic and tenant scoped |
+| `domain/.../RecoveryAttentionAndFreshnessTest.kt` | An expired lease never resends, unknown dispatch is treated as sent, a live lease and a terminal execution are left alone, attention ordering and its failure cap, proof freshness windows and expiry, risk classification |
 
 ## What is not covered
 

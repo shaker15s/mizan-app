@@ -26,9 +26,13 @@ identifiers, not promises.
   wrapper, Room index coverage against `MIGRATION_1_2`, brace balance,
   credential literals, module inventory) that writes `docs/HEALTH.md`.
 - Continuous integration: static checks, JVM tests, Android assemble and lint.
+  The workflow lives in `docs/CI.md` because the sandbox token that produced
+  this tree may not push files under `.github/workflows/`.
 - `docs/SERVICE.md` (the HTTP contract) and `docs/HEALTH.md` (generated).
 - Tests: `service` HTTP end-to-end tests, JSON parser tests, service unit
-  tests.
+  tests, client/service contract parity, `MizanApiContractTest` (the request
+  the device builds, without a network), `RedactorTest`, and domain tests for
+  money, canonicalisation, recovery, attention, and proof freshness.
 
 ### Fixed
 

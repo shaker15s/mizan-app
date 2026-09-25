@@ -37,14 +37,7 @@ class MizanApiClient(
                 AppError.Authentication("SESSION_MISSING", "no session token"),
             )
         }
-        val body = CanonicalJson.write(payload(proposal, approverId))
-        val request = Request.Builder()
-            .url(baseUrl.trimEnd('/') + "/v1/executions")
-            .header("Authorization", "Bearer $token")
-            .header("X-Trace-Id", proposal.traceId.value)
-            .header("Idempotency-Key", proposal.idempotencyKey.value)
-            .post(body.toRequestBody(JSON))
-            .build()
+        val request = executionRequest(proposal, approverId, token)
         return try {
             http.newCall(request).execute().use { response ->
                 val text = response.body?.string().orEmpty()
@@ -57,6 +50,22 @@ class MizanApiClient(
                 emptyList(),
             ).also { io.message?.let { Redactor.redact(it) } }
         }
+    }
+
+    /**
+     * The exact request the device sends. Visible for the contract test,
+     * which asserts the path, the headers, and the argument names the
+     * service expects. The URL is built once, here, and nowhere else.
+     */
+    internal fun executionRequest(proposal: Proposal, approverId: String, token: String): Request {
+        val body = CanonicalJson.write(payload(proposal, approverId))
+        return Request.Builder()
+            .url(baseUrl.trimEnd('/') + "/v1/executions")
+            .header("Authorization", "Bearer $token")
+            .header("X-Trace-Id", proposal.traceId.value)
+            .header("Idempotency-Key", proposal.idempotencyKey.value)
+            .post(body.toRequestBody(JSON))
+            .build()
     }
 
     fun map(status: Int, body: String, executionId: ExecutionId): AuthorityOutcome {
