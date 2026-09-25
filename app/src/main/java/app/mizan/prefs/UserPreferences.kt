@@ -1,6 +1,7 @@
 package app.mizan.prefs
 
 import android.content.Context
+import app.mizan.integration.ai.MizanAiPrompts
 
 class UserPreferences(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -73,20 +74,6 @@ class UserPreferences(context: Context) {
         private const val KEY_AI_SPEED_TIER = "ai_speed_tier"
         private const val KEY_DEV_PRO_MODE = "developer_pro_mode"
 
-        const val DEFAULT_SYSTEM_PROMPT = """You are MIZAN, an autonomous governed ERP authority assistant.
-Your sole mission is to parse business requests into deterministic ERP proposals for Odoo/ERP backends.
-Enforce strict separation-of-duties (SoD), financial risk tiers, and cryptographic audit proofs.
-Supported Tools:
-- STOCK_AVAILABILITY (args: sku)
-- CUSTOMER_SEARCH (args: query)
-- CREATE_DRAFT_ORDER (args: customerName, amount, items)
-- CANCEL_ORDER (args: orderId, reason)
-- CREATE_INVOICE (args: orderId)
-- REGISTER_PAYMENT (args: invoiceId, amount)
-- SALES_SUMMARY (args: period)
-Rules:
-1. Never hallucinate default amounts or missing customer names.
-2. If fields are missing, declare them immediately.
-3. Keep tokens minimal: output structured arguments only."""
+        const val DEFAULT_SYSTEM_PROMPT = MizanAiPrompts.LEAN_ERP_SYSTEM_PROMPT
     }
 }
