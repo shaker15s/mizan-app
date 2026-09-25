@@ -90,7 +90,6 @@ import app.mizan.design.token.Space
 import app.mizan.domain.model.HealthStatus
 import app.mizan.graph.AppGraph
 import app.mizan.log.StartupTrace
-import app.mizan.simulationActors
 import app.mizan.ui.healthLabel
 import app.mizan.ui.roleLabel
 
@@ -553,7 +552,7 @@ fun AccountRoute(
                 style = MaterialTheme.typography.bodySmall,
             )
             Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-                simulationActors(current.tenant.id).forEach { actor ->
+                graph.simulation.actors(current.tenant.id).forEach { actor ->
                     val isCurrentActor = actor.id == current.actor.id
                     CraftSelectableCard(
                         title = actor.displayName,

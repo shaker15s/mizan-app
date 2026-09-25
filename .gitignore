@@ -17,3 +17,7 @@ build/
 local.properties
 .env
 debug.keystore
+
+# Python tooling (tools/ is dependency free and needs no virtualenv)
+__pycache__/
+*.pyc

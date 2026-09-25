@@ -87,10 +87,8 @@ import app.mizan.domain.model.TenantId
 import app.mizan.graph.AppGraph
 import app.mizan.integration.api.SessionApi
 import app.mizan.integration.api.SignInResult
-import app.mizan.onSimulationEntered
 import app.mizan.session.SessionController
 import app.mizan.session.WorkspaceSession
-import app.mizan.simulationEntry
 import app.mizan.ui.reasonLabel
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -580,21 +578,25 @@ private fun DemoSignInCard(graph: AppGraph, onSignedIn: () -> Unit) {
             color = colors.textSecondary,
         )
 
-        MizanPrimaryButton(
-            text = stringResource(R.string.demo_enter),
-            onClick = {
-                scope.launch {
-                    val entry = simulationEntry() ?: return@launch
-                    val (actor, tenant) = entry
-                    onSimulationEntered(graph, tenant.id)
-                    graph.session.open(
-                        WorkspaceSession(actor, tenant, SessionMode.SIMULATION, expiresAt = null),
-                    )
-                    onSignedIn()
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-        )
+        // Outside the demo flavor there is no simulation to enter, and a
+        // button that does nothing is worse than no button.
+        if (graph.simulation.isAvailable) {
+            MizanPrimaryButton(
+                text = stringResource(R.string.demo_enter),
+                onClick = {
+                    scope.launch {
+                        val entry = graph.simulation.entry() ?: return@launch
+                        val (actor, tenant) = entry
+                        graph.simulation.seed(graph, tenant.id)
+                        graph.session.open(
+                            WorkspaceSession(actor, tenant, SessionMode.SIMULATION, expiresAt = null),
+                        )
+                        onSignedIn()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 

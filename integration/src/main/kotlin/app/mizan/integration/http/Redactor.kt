@@ -8,6 +8,9 @@ object Redactor {
     private val patterns = listOf(
         Regex("""(?i)(authorization\s*[:=]\s*)(bearer\s+)?\S+"""),
         Regex("""(?i)(bearer\s+)\S+"""),
+        Regex("""(?i)(basic\s+)[A-Za-z0-9+/=]{8,}"""),
+        // A JWT is a secret even when no field name precedes it.
+        Regex("""eyJ[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}"""),
         Regex("""(?i)(api[_-]?key|password|secret|token|cookie|apiKeyOrPassword)(["']?\s*[:=]\s*["']?)([^"'\s,}]+)"""),
     )
 

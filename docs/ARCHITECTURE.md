@@ -10,12 +10,14 @@ Date: 2026-09-23. This describes the tree as written, not a target that is only 
 :data          Room 2, tenant-scoped stores, encrypted session token.
 :design        Tokens and components. No business rules.
 :app           Shell, screens, flavors, composition root.
+:service       JVM server. The reference authority. Not packaged into the app.
 ```
 
 ```text
 app → design, domain, data, integration
 data → domain
 integration → domain
+service → domain
 ```
 
 The UI does not import a DAO. The production and staging source sets do not include the simulator. The demo source set does not include the remote authority.
@@ -24,10 +26,28 @@ The UI does not import a DAO. The production and staging source sets do not incl
 
 `MizanApplication` builds `AppGraph`. There is no Hilt. AGP 9.1.1 and current Hilt do not combine reliably; an explicit graph is the dependency injection that exists.
 
-`createAuthority` is supplied by the flavor:
+## Flavors
 
-- demo → `SimulatedExecutionAuthority`
-- staging and production → `RemoteExecutionAuthority`
+`app/build.gradle.kts` declares one dimension, `channel`, with three flavors.
+
+| flavor | application id | `DEMO_MODE` | service URL | simulator |
+| --- | --- | --- | --- | --- |
+| demo | `app.mizan.demo` | true | empty | compiled in from `src/demo` |
+| staging | `app.mizan.staging` | false | `MIZAN_API_BASE_URL` | absent |
+| production | `app.mizan` | false | `MIZAN_API_BASE_URL` | absent |
+
+Two functions are supplied per flavor, each in its own source set:
+
+- `createAuthority`: demo → `SimulatedExecutionAuthority`, staging and
+  production → `RemoteExecutionAuthority`.
+- `createSimulationDirectory`: demo → `MizanSimulationDirectory`, staging and
+  production → `NoSimulationDirectory`.
+
+`SimulationDirectory` is the seam. A non-demo build links an empty
+implementation, so no screen can reach a simulated actor, tenant, or ledger
+row. `RemoteExecutionAuthority` stays in `main` on purpose: it is the client of
+the service and it refuses a write when the URL is missing or not HTTPS, so
+shipping it everywhere is safe and shipping the simulator is not.
 
 ## Pipeline
 
@@ -49,11 +69,13 @@ Production:
 ```text
 Phone
   → HTTPS MIZAN service (POST /v1/sessions, POST /v1/executions)
-    → service policy, approval, idempotency
+    → service policy, approval, idempotency, read-back
       → ERP
 ```
 
-That service is not in this repository. A blank or non-HTTPS URL refuses the write. The phone never sends an ERP password.
+A reference implementation of that service is now in this repository, in
+`:service`. It is a JVM server with an in-memory ERP adapter, not a production
+deployment and not Odoo. See `docs/SERVICE.md`. A blank or non-HTTPS URL refuses the write. The phone never sends an ERP password.
 
 Demo:
 
@@ -83,3 +105,6 @@ A remote session is an actor id, role, tenant id, and a token from `POST /v1/ses
 - No unscoped “list every tenant” on the store interfaces. The audit chain’s previous hash is the previous event **of that tenant**.
 - No `fallbackToDestructiveMigration()`.
 - No measured baseline profile. None was recorded.
+- The `:service` module is not a deployment. It holds a reference ERP adapter
+  in memory and labeled demo accounts, and it answers plain HTTP because a TLS
+  terminator belongs in front of it.

@@ -26,6 +26,24 @@ data class Money(
         return copy(minorUnits = minorUnits + other.minorUnits)
     }
 
+    operator fun minus(other: Money): Money {
+        requireSameCurrency(other)
+        return copy(minorUnits = minorUnits - other.minorUnits)
+    }
+
+    /** True when the value is below zero. A refund or a reversal, not an amount to approve. */
+    val isNegative: Boolean get() = minorUnits < 0L
+
+    val isZero: Boolean get() = minorUnits == 0L
+
+    /**
+     * Major units with exactly two decimals, locale independent and without
+     * grouping separators. Use this for machine output, receipts and tests.
+     * Presentation formatting with grouping belongs in [format].
+     */
+    fun majorUnitsFormatted(): String =
+        BigDecimal.valueOf(minorUnits, 2).setScale(2, RoundingMode.UNNECESSARY).toPlainString()
+
     override fun compareTo(other: Money): Int {
         requireSameCurrency(other)
         return minorUnits.compareTo(other.minorUnits)
@@ -48,10 +66,20 @@ data class Money(
     }
 
     companion object {
+        /**
+         * Parses a human major-unit amount. Returns null for anything that is
+         * not a plain positive decimal with at most two fraction digits, so a
+         * negative amount can never reach policy as an ordinary small value.
+         */
         fun parseMajor(raw: String, currency: String): Money? {
             val normalized = raw.trim().replace(",", "").replace(" ", "")
             if (normalized.isEmpty()) return null
+            if (normalized.startsWith("+")) return null
+            if (normalized.startsWith("-")) return null
+            // Scientific notation is not a human amount and hides the scale.
+            if (normalized.contains('e', ignoreCase = true)) return null
             val decimal = normalized.toBigDecimalOrNull() ?: return null
+            if (decimal.signum() < 0) return null
             if (decimal.scale() > 2) return null
             val minor = decimal.movePointRight(2).setScale(0, RoundingMode.UNNECESSARY)
             return Money(minor.longValueExact(), currency.uppercase())

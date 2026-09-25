@@ -98,7 +98,6 @@ import app.mizan.feature.home.simpleFactory
 import app.mizan.graph.AppGraph
 import app.mizan.security.BiometricAuthModal
 import app.mizan.security.confirmDevice
-import app.mizan.simulationActors
 import app.mizan.ui.missingLabel
 import app.mizan.ui.reasonLabel
 import app.mizan.ui.toolLabel
@@ -201,7 +200,7 @@ class AgentViewModel(private val graph: AppGraph) : ViewModel() {
     fun requestApproval() {
         val proposal = pending ?: return
         val session = graph.session.session.value ?: return
-        val second = simulationActors(session.tenant.id).find { it.id.value == secondApproverId }
+        val second = graph.simulation.actors(session.tenant.id).find { it.id.value == secondApproverId }
         val approvals = listOf(ApprovalRecord(session.actor, graph.time.now().toEpochMilli())) +
             listOfNotNull(second?.let { ApprovalRecord(it, graph.time.now().toEpochMilli()) })
         val sod = graph.sod.check(
@@ -259,7 +258,7 @@ class AgentViewModel(private val graph: AppGraph) : ViewModel() {
         val session = graph.session.session.value ?: return
         busy = true
         viewModelScope.launch {
-            val second = simulationActors(session.tenant.id).find { it.id.value == secondApproverId }
+            val second = graph.simulation.actors(session.tenant.id).find { it.id.value == secondApproverId }
             val outcome = graph.authority.execute(
                 ExecuteCommand(
                     proposal = proposal,
@@ -398,7 +397,7 @@ fun AgentRoute(graph: AppGraph, activity: FragmentActivity, expanded: Boolean) {
                                 proposal = line.proposal,
                                 demo = graph.demoMode,
                                 secondId = vm.secondApproverId,
-                                actors = graph.session.session.value?.let { simulationActors(it.tenant.id) }.orEmpty(),
+                                actors = graph.session.session.value?.let { graph.simulation.actors(it.tenant.id) }.orEmpty(),
                                 onSecond = { vm.secondApproverId = it },
                                 onReview = vm::requestApproval,
                                 onDismiss = vm::dismiss,

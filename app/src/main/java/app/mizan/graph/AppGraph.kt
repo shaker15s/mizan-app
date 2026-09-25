@@ -31,9 +31,11 @@ import app.mizan.domain.store.ReceiptStore
 import app.mizan.domain.store.ReconciliationStore
 import app.mizan.domain.store.SyncStore
 import app.mizan.createAuthority
+import app.mizan.createSimulationDirectory
 import app.mizan.health.DeviceHealth
 import app.mizan.prefs.UserPreferences
 import app.mizan.session.SessionController
+import app.mizan.SimulationDirectory
 
 class AppGraph(context: Context) {
     val preferences = UserPreferences(context)
@@ -55,6 +57,7 @@ class AppGraph(context: Context) {
     val policy: PolicyEvaluator
     val proposals: ProposalService
     val authority: ExecutionAuthority
+    val simulation: SimulationDirectory = createSimulationDirectory()
     val reauth: ReauthenticationPolicy
     val sod = SeparationOfDuties()
     val attention = AttentionPlanner()

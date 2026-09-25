@@ -89,6 +89,11 @@ class PolicyEvaluator(
                 requiresSeparationOfDuties = false,
             )
         }
+        if (request.amount != null && request.amount.isNegative) {
+            // A negative amount is not a small amount. It is a different
+            // operation and it never inherits the lowest approval level.
+            return deny("POL-NEGATIVE-AMOUNT", "NEGATIVE_AMOUNT", ApprovalLevel.L5_MULTI_PARTY)
+        }
         if (request.actor.role == Role.AUDITOR) {
             return deny("POL-AUDITOR-READONLY", "AUDITOR_READONLY", ApprovalLevel.L5_MULTI_PARTY)
         }
