@@ -29,7 +29,8 @@ class MoneyAndCanonicalTest {
     @Test
     fun parsingRejectsAnythingThatIsNotAPlainPositiveAmount() {
         assertEquals(Money(250_000L, "USD"), Money.parseMajor("2,500.00", "USD"))
-        assertEquals(Money(250_000L, "usd"), Money.parseMajor("2500", "usd"))
+        // parseMajor normalises the currency, so a lowercase input yields an uppercase code.
+        assertEquals(Money(250_000L, "USD"), Money.parseMajor("2500", "usd"))
         assertNull(Money.parseMajor("-2500", "USD"))
         assertNull(Money.parseMajor("+2500", "USD"))
         assertNull(Money.parseMajor("2.500,00", "USD"))

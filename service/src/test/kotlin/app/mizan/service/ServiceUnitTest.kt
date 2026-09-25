@@ -41,7 +41,7 @@ class ServiceUnitTest {
         val second = PasswordHash.hash("correct horse battery staple")
         assertNotEquals(stored, second)
         assertTrue(PasswordHash.verify("correct horse battery staple", second))
-        assertFalse(PasswordHash.verify("correct horse battery staple", "pbkdf2$1$aaaa$bbbb"))
+        assertFalse(PasswordHash.verify("correct horse battery staple", "pbkdf2${'$'}1${'$'}aaaa${'$'}bbbb"))
     }
 
     @Test

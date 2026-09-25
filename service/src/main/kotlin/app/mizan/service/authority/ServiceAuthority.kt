@@ -1,11 +1,10 @@
 package app.mizan.service.authority
 
 import app.mizan.domain.model.Actor
-import app.mizan.domain.model.ApprovalLevel
 import app.mizan.domain.model.ActorId
+import app.mizan.domain.model.ApprovalLevel
 import app.mizan.domain.model.ConnectorCapabilities
 import app.mizan.domain.model.Money
-import app.mizan.domain.model.RiskInput
 import app.mizan.domain.model.RiskTier
 import app.mizan.domain.model.Role
 import app.mizan.domain.model.TenantId
@@ -16,8 +15,10 @@ import app.mizan.domain.policy.PolicyRequest
 import app.mizan.domain.policy.SeparationOfDuties
 import app.mizan.domain.policy.SodCode
 import app.mizan.domain.risk.RiskEvaluator
+import app.mizan.domain.risk.RiskInput
 import app.mizan.service.erp.InMemoryErp
 import app.mizan.service.json.text
+import app.mizan.service.json.wholeOrNumericText
 import app.mizan.service.json.whole
 import app.mizan.service.ledger.AuditLedger
 import app.mizan.service.ledger.ExecutionLedger
@@ -318,7 +319,8 @@ class ServiceAuthority(
     }
 
     private fun moneyOf(request: ExecutionRequest): Money? {
-        val minor = request.arguments.whole(MizanContract.ArgumentField.AMOUNT_MINOR) ?: return null
+        val minor = request.arguments.wholeOrNumericText(MizanContract.ArgumentField.AMOUNT_MINOR)
+            ?: return null
         val currency = request.arguments.text(MizanContract.ArgumentField.CURRENCY) ?: return null
         return runCatching { Money(minor, currency) }.getOrNull()
     }

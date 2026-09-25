@@ -1,7 +1,9 @@
 package app.mizan.service
 
 import app.mizan.service.json.Json
+import app.mizan.service.json.asLong
 import app.mizan.service.json.asObject
+import app.mizan.service.json.field
 import app.mizan.service.json.flag
 import app.mizan.service.json.text
 import app.mizan.service.protocol.MizanContract
@@ -35,6 +37,7 @@ class MizanServiceHttpTest {
 
     data class Reply(val status: Int, val body: String) {
         fun field(name: String): String? = Json.parseOrNull(body)?.asObject()?.text(name)
+        fun number(name: String): Long? = Json.parseOrNull(body)?.asObject()?.field(name)?.asLong()
         fun isStatus(value: String): Boolean = field("status") == value
     }
 
@@ -121,7 +124,7 @@ class MizanServiceHttpTest {
         assertEquals("SALES_REP", reply.field("role"))
         assertEquals("sim-alamal", reply.field("tenantId"))
         assertNotNull(reply.field("token"))
-        assertNotNull(reply.field("expiresAtEpochMillis"))
+        assertNotNull(reply.number("expiresAtEpochMillis"))
     }
 
     @Test

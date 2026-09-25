@@ -36,6 +36,21 @@ fun JsonValue.Obj.whole(name: String): Long? = fields[name]?.asLong()
 
 fun JsonValue.Obj.flag(name: String): Boolean? = fields[name]?.asBoolean()
 
+/**
+ * Reads a whole number that may have arrived as a JSON string.
+ *
+ * The Android client canonicalises every number as a string before it hashes a
+ * request -- `CanonicalValue.Num` -- so `amountMinor` reaches the service as
+ * `"250000"` even though a plain JSON client would send `250000`. Both shapes
+ * are one value; anything else is not a number and must be refused, not
+ * coerced.
+ */
+fun JsonValue.Obj.wholeOrNumericText(name: String): Long? = when (val value = fields[name]) {
+    is JsonValue.Num -> value.raw.toLongOrNull()
+    is JsonValue.Str -> value.value.trim().toLongOrNull()
+    else -> null
+}
+
 object Json {
 
     fun parse(text: String): JsonValue {

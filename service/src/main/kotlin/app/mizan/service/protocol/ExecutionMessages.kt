@@ -3,6 +3,7 @@ package app.mizan.service.protocol
 import app.mizan.service.json.Json
 import app.mizan.service.json.JsonValue
 import app.mizan.service.json.asObject
+import app.mizan.service.json.field
 import app.mizan.service.json.text
 
 /** One execution request as the client sends it. */
