@@ -21,6 +21,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import android.os.Build
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
@@ -359,50 +363,43 @@ fun AccountRoute(
             color = colors.textSecondary,
             fontWeight = FontWeight.SemiBold,
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(Space.xs),
-        ) {
-            ThemePresetTile(
-                name = "Cyber",
-                color = Color(0xFF00F2FE),
-                selected = graph.preferences.activeThemePreset == "cyber_mizan",
-                onClick = {
-                    graph.preferences.activeThemePreset = "cyber_mizan"
-                    onPreferencesChanged()
-                },
-                modifier = Modifier.weight(1f),
-            )
-            ThemePresetTile(
-                name = "Gold",
-                color = Color(0xFFF59E0B),
-                selected = graph.preferences.activeThemePreset == "sovereign_gold",
-                onClick = {
-                    graph.preferences.activeThemePreset = "sovereign_gold"
-                    onPreferencesChanged()
-                },
-                modifier = Modifier.weight(1f),
-            )
-            ThemePresetTile(
-                name = "Emerald",
-                color = Color(0xFF10B981),
-                selected = graph.preferences.activeThemePreset == "emerald_gov",
-                onClick = {
-                    graph.preferences.activeThemePreset = "emerald_gov"
-                    onPreferencesChanged()
-                },
-                modifier = Modifier.weight(1f),
-            )
-            ThemePresetTile(
-                name = "Obsidian",
-                color = Color(0xFF38BDF8),
-                selected = graph.preferences.activeThemePreset == "obsidian_dark",
-                onClick = {
-                    graph.preferences.activeThemePreset = "obsidian_dark"
-                    onPreferencesChanged()
-                },
-                modifier = Modifier.weight(1f),
-            )
+        val presets: List<Triple<String, String, List<Color>>> = buildList {
+            add(Triple("Cyber", "cyber_mizan", listOf(Color(0xFF22D3EE))))
+            add(Triple("Emerald", "emerald_gov", listOf(Color(0xFF34D399))))
+            add(Triple("Indigo", "royal_indigo", listOf(Color(0xFF818CF8))))
+            add(Triple("Gold", "sovereign_gold", listOf(Color(0xFFFBBF24))))
+            add(Triple("Ledger", "crimson_ledger", listOf(Color(0xFFFB7185))))
+            add(Triple("Obsidian", "obsidian_dark", listOf(Color(0xFF93C5FD))))
+            // Material You exists from Android 12. Offering the tile on an
+            // older device would be a button that quietly does nothing.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                add(
+                    Triple(
+                        "Dynamic",
+                        "system_dynamic",
+                        listOf(Color(0xFF7C4DFF), Color(0xFF00BCD4), Color(0xFFFF8A65)),
+                    ),
+                )
+            }
+        }
+        presets.chunked(4).forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.xs),
+            ) {
+                row.forEach { (name, id, swatch) ->
+                    ThemePresetTile(
+                        name = name,
+                        swatch = swatch,
+                        selected = graph.preferences.activeThemePreset == id,
+                        onClick = {
+                            graph.preferences.activeThemePreset = id
+                            onPreferencesChanged()
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
         }
 
         // Section: AI Tuning & Specialized Prompt
@@ -945,21 +942,38 @@ fun SecurityRoute(graph: AppGraph, onBack: () -> Unit) {
 @Composable
 private fun ThemePresetTile(
     name: String,
-    color: Color,
+    swatch: List<Color>,
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalMizanColors.current
+    val brush: Brush = if (swatch.size > 1) Brush.horizontalGradient(swatch) else SolidColor(swatch.first())
+    val borderWidth by animateDpAsState(
+        targetValue = if (selected) 2.dp else 0.6.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium,
+        ),
+        label = "preset_border",
+    )
+    val dotSize by animateDpAsState(
+        targetValue = if (selected) 20.dp else 16.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium,
+        ),
+        label = "preset_dot",
+    )
     Box(
         modifier = modifier
             .clip(ShapeControl)
-            .background(if (selected) color.copy(alpha = 0.22f) else colors.surfaceElevated)
+            .background(if (selected) swatch.first().copy(alpha = 0.18f) else colors.surfaceElevated)
             .border(
-                BorderStroke(if (selected) 1.5.dp else 0.6.dp, if (selected) color else colors.border),
+                BorderStroke(borderWidth, if (selected) swatch.first() else colors.border),
                 ShapeControl,
             )
-            .clickable(onClick = onClick)
+            .mizanBounceClick(onClick = onClick)
             .padding(vertical = 10.dp, horizontal = 4.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -969,15 +983,14 @@ private fun ThemePresetTile(
         ) {
             Box(
                 modifier = Modifier
-                    .size(16.dp)
+                    .size(dotSize)
                     .clip(CircleShape)
-                    .background(color),
+                    .background(brush),
             )
             Text(
                 text = name,
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
                 color = if (selected) colors.textPrimary else colors.textSecondary,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                 maxLines = 1,
             )
         }

@@ -4,6 +4,57 @@ All notable changes. The format follows [Keep a Changelog](https://keepachangelo
 This project is not publicly released yet, so versions here are build
 identifiers, not promises.
 
+## [Unreleased] — 2026-09-25
+
+### Brand
+
+- New identity: a balance at rest inside a seal, replacing the robot-scale
+  mark. The geometry lives once in `tools/render_brand.py`, which writes the
+  SVG sources, the five mipmap densities, the adaptive icon layers, and the
+  in-app vector. The icon is now generated, not hand-edited.
+- `MizanMark` draws the same geometry on a Canvas, so it is crisp at any size.
+  Its beam settles by 1.4 degrees; that is the only motion in the logo.
+- `MizanHeroEmblem` and `MizanWordmark` for headers and empty states.
+
+### Design system
+
+- `MizanColors` gained `accentSecondary` and `accentTertiary`, so gradients are
+  tokens. `accentBrush()` and `heroBrush()` are the only two.
+- Seven real presets, each with a complete light and dark palette: Cyber,
+  Emerald, Royal Indigo, Sovereign Gold, Crimson Ledger, Obsidian (true black),
+  and Material You from Android 12. Previously two of the four presets fell
+  back to the base palette and two of them did nothing at all.
+- Palettes are derived from a `PaletteSeed`, so borders, containers, focus and
+  scrim cannot be forgotten.
+- Typography now defines display and headline steps with tracking that
+  tightens as size grows.
+
+### Motion
+
+- `design/.../motion/Interactions.kt`: `mizanTap`, `mizanPressable`,
+  `mizanReveal`, `mizanShimmer`, `mizanPulse`, `mizanGlow`, and named haptics.
+  `mizanBounceClick` now delegates to `mizanTap`, so there is one press.
+- Buttons are 48 dp, the primary button carries the accent gradient, and the
+  row no longer jumps when the loader appears.
+- Banners reveal as rounded cards. The loading state shows the shape of what is
+  coming. Status dots breathe on warning and danger.
+- Screen transitions add a 2% scale and leave faster than they arrive.
+- Theme preset tiles are data driven, animate their selection, and the
+  Material You tile only appears on Android 12 and later.
+
+### Tooling
+
+- `tools/render_brand.py` (icons and vectors, no external tools) and
+  `tools/render_preview.py` (a contact sheet rendered from the real palettes).
+- `tools/repo_check.py` now fails on ambiguous imports — two imports with the
+  same simple name — which is a compile error that a static check can catch.
+
+### Unverified
+
+Nothing in this entry was rendered on a device or compiled. No screenshots,
+no frame timings, no TalkBack pass. The palettes and the icon are
+mathematically derived and reviewable, not measured.
+
 ## [2.1.0] — 2026-09-25
 
 ### Added

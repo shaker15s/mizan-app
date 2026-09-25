@@ -9,6 +9,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -312,29 +314,36 @@ fun MizanShell(
                             navController = nav,
                             startDestination = start,
                             modifier = Modifier.weight(1f),
+                            // A screen arrives by sliding, fading and settling
+                            // by two percent. It leaves faster than it came,
+                            // which is what makes a back press feel answered.
                             enterTransition = {
                                 slideIntoContainer(
                                     AnimatedContentTransitionScope.SlideDirection.Start,
-                                    animationSpec = tween(340, easing = FastOutSlowInEasing),
-                                ) + fadeIn(animationSpec = tween(340))
+                                    animationSpec = tween(320, easing = FastOutSlowInEasing),
+                                ) + fadeIn(animationSpec = tween(220)) +
+                                    scaleIn(initialScale = 0.98f, animationSpec = tween(320, easing = FastOutSlowInEasing))
                             },
                             exitTransition = {
                                 slideOutOfContainer(
                                     AnimatedContentTransitionScope.SlideDirection.Start,
-                                    animationSpec = tween(340, easing = FastOutSlowInEasing),
-                                ) + fadeOut(animationSpec = tween(220))
+                                    animationSpec = tween(320, easing = FastOutSlowInEasing),
+                                ) + fadeOut(animationSpec = tween(160)) +
+                                    scaleOut(targetScale = 0.99f, animationSpec = tween(160))
                             },
                             popEnterTransition = {
                                 slideIntoContainer(
                                     AnimatedContentTransitionScope.SlideDirection.End,
-                                    animationSpec = tween(340, easing = FastOutSlowInEasing),
-                                ) + fadeIn(animationSpec = tween(340))
+                                    animationSpec = tween(320, easing = FastOutSlowInEasing),
+                                ) + fadeIn(animationSpec = tween(220)) +
+                                    scaleIn(initialScale = 0.98f, animationSpec = tween(320, easing = FastOutSlowInEasing))
                             },
                             popExitTransition = {
                                 slideOutOfContainer(
                                     AnimatedContentTransitionScope.SlideDirection.End,
-                                    animationSpec = tween(340, easing = FastOutSlowInEasing),
-                                ) + fadeOut(animationSpec = tween(220))
+                                    animationSpec = tween(320, easing = FastOutSlowInEasing),
+                                ) + fadeOut(animationSpec = tween(160)) +
+                                    scaleOut(targetScale = 0.99f, animationSpec = tween(160))
                             },
                         ) {
                             composable("onboarding") {

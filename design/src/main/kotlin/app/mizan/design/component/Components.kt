@@ -2,6 +2,7 @@ package app.mizan.design.component
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -59,6 +60,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import app.mizan.design.motion.mizanPulse
+import app.mizan.design.motion.mizanReveal
+import app.mizan.design.motion.mizanShimmer
+import app.mizan.design.motion.mizanTap
 import app.mizan.design.theme.LocalMizanColors
 import app.mizan.design.theme.LocalReducedMotion
 import app.mizan.design.theme.MizanMono
@@ -86,38 +91,12 @@ fun Modifier.mizanBounceClick(
     scaleDown: Float = 0.96f,
     role: Role? = Role.Button,
     onClick: (() -> Unit)? = null,
-): Modifier {
-    val haptic = LocalHapticFeedback.current
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed && enabled) scaleDown else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium,
-        ),
-        label = "bounce_scale",
-    )
-
-    return this
-        .scale(scale)
-        .then(
-            if (onClick != null) {
-                Modifier.clickable(
-                    interactionSource = interactionSource,
-                    indication = ripple(),
-                    enabled = enabled,
-                    role = role,
-                    onClick = {
-                        try {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        } catch (_: Throwable) {}
-                        onClick()
-                    },
-                )
-            } else Modifier,
-        )
-}
+): Modifier = mizanTap(
+    enabled = enabled,
+    scaleDown = scaleDown,
+    role = role,
+    onClick = onClick,
+)
 
 @Composable
 fun MizanSurface(
@@ -231,9 +210,11 @@ fun MizanStatusBadge(label: String, tone: StatusTone, modifier: Modifier = Modif
             .semantics { contentDescription = label },
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val urgent = tone == StatusTone.Warning || tone == StatusTone.Danger
         Box(
             modifier = Modifier
                 .size(6.dp)
+                .mizanPulse(active = urgent, strength = 0.55f)
                 .clip(RoundedCornerShape(3.dp))
                 .background(fg),
         )
@@ -265,8 +246,11 @@ fun MizanBanner(text: String, tone: StatusTone, modifier: Modifier = Modifier) {
         color = fg,
         modifier = modifier
             .fillMaxWidth()
+            .mizanReveal(index = 0)
+            .clip(ShapeCard)
             .background(bg)
-            .padding(horizontal = Space.lg, vertical = Space.sm)
+            .border(BorderStroke(0.8.dp, fg.copy(alpha = 0.30f)), ShapeCard)
+            .padding(horizontal = Space.lg, vertical = Space.md)
             .semantics { contentDescription = text },
     )
 }
@@ -281,6 +265,7 @@ private fun MizanButtonBase(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     loading: Boolean = false,
+    gradient: Brush? = null,
 ) {
     val colors = LocalMizanColors.current
     val reduced = LocalReducedMotion.current
@@ -308,15 +293,27 @@ private fun MizanButtonBase(
     Row(
         modifier = modifier
             .scale(scale)
-            .heightIn(min = 44.dp)
+            .animateContentSize(animationSpec = tween(Motion.millis(MotionToken.FAST, reduced)))
+            .heightIn(min = 48.dp)
             .shadow(
-                elevation = if (colors.isDark || !enabled || container == Color.Transparent) 0.dp else 2.dp,
+                elevation = when {
+                    !enabled || container == Color.Transparent -> 0.dp
+                    colors.isDark -> 0.dp
+                    pressed -> 6.dp
+                    else -> 2.dp
+                },
                 shape = ShapePill,
                 spotColor = Color(0x140F172A),
                 ambientColor = Color(0x080F172A),
             )
             .clip(ShapePill)
-            .background(bg)
+            .then(
+                if (gradient != null && enabled) {
+                    Modifier.background(gradient, ShapePill)
+                } else {
+                    Modifier.background(bg, ShapePill)
+                },
+            )
             .then(if (border != null) Modifier.border(0.8.dp, border, ShapePill) else Modifier)
             .clickable(
                 interactionSource = interaction,
@@ -351,7 +348,17 @@ fun MizanPrimaryButton(
     loading: Boolean = false,
 ) {
     val colors = LocalMizanColors.current
-    MizanButtonBase(text, onClick, colors.accent, colors.onAccent, null, modifier, enabled, loading)
+    MizanButtonBase(
+        text = text,
+        onClick = onClick,
+        container = colors.accent,
+        content = colors.onAccent,
+        border = null,
+        modifier = modifier,
+        enabled = enabled,
+        loading = loading,
+        gradient = colors.accentBrush(),
+    )
 }
 
 @Composable
@@ -399,6 +406,7 @@ fun MizanEmptyState(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .mizanReveal(index = 0)
             .padding(Space.xl),
         verticalArrangement = Arrangement.spacedBy(Space.sm),
     ) {
@@ -442,16 +450,32 @@ fun MizanErrorState(
 @Composable
 fun MizanLoadingState(label: String, modifier: Modifier = Modifier) {
     val colors = LocalMizanColors.current
-    Row(
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(Space.xl)
             .semantics { contentDescription = label },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Space.md),
+        verticalArrangement = Arrangement.spacedBy(Space.md),
     ) {
-        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = colors.accent)
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Space.md),
+        ) {
+            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = colors.accent)
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary)
+        }
+        // The skeleton shows the shape of what is coming, so the screen does
+        // not jump when the rows arrive.
+        repeat(3) { index ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(if (index == 2) 0.62f else 1f)
+                    .height(if (index == 0) 18.dp else 12.dp)
+                    .clip(ShapeChip)
+                    .mizanShimmer(active = true)
+                    .background(colors.surfaceElevated),
+            )
+        }
     }
 }
 

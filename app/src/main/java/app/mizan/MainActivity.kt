@@ -43,7 +43,14 @@ class MainActivity : FragmentActivity() {
             }
             val reduced = prefs.reducedMotion || animatorScale() == 0f
             val preset = prefs.activeThemePreset
-            MizanTheme(dark = dark, arabic = arabic, reducedMotion = reduced, preset = preset) {
+            MizanTheme(
+                dark = dark,
+                arabic = arabic,
+                reducedMotion = reduced,
+                preset = preset,
+                // Needed for the Material You preset, and only for it.
+                context = this@MainActivity,
+            ) {
                 MizanShell(
                     graph = app.graph,
                     activity = this,

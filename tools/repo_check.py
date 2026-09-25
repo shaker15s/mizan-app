@@ -263,6 +263,34 @@ def check_hygiene(report: Report) -> None:
             report.add("warning", "hygiene", f"{size} lines: split this file", path)
 
 
+def check_imports(report: Report) -> None:
+    """Two imports with the same simple name are ambiguous, and a wildcard
+    import hides where a symbol comes from."""
+    import collections as _collections
+
+    for path in walk():
+        names = _collections.defaultdict(list)
+        lines = read(path).split("\n")
+        for index, line in enumerate(lines, start=1):
+            match = re.match(r"\s*import\s+([\w.]+)", line)
+            if not match:
+                continue
+            if match.group(1).endswith(".*"):
+                report.add("warning", "imports", f"wildcard import on line {index}", path)
+            names[match.group(1).split(".")[-1]].append((match.group(1), index))
+        for name, entries in names.items():
+            unique = {fqn for fqn, _ in entries}
+            if len(unique) > 1:
+                report.add(
+                    "error",
+                    "imports",
+                    f"ambiguous import '{name}': {sorted(unique)}",
+                    path,
+                )
+            elif len(entries) > 1:
+                report.add("warning", "imports", f"duplicate import of '{name}'", path)
+
+
 def check_secrets(report: Report) -> None:
     pattern = re.compile(
         r'(?:val\s+|const val\s+)?(\w*(?:password|secret|token|api_?key)\w*)\s*=\s*"([^"]{6,})"',
@@ -366,6 +394,7 @@ def main() -> int:
     check_invariants(report)
     check_migration(report)
     check_hygiene(report)
+    check_imports(report)
     check_secrets(report)
     inventory(report)
 
