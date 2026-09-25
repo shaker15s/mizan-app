@@ -23,8 +23,10 @@ identifiers, not promises.
 - `SimulationDirectory`: the seam that keeps simulated actors, tenants, and
   ledger rows out of every non-demo build.
 - `tools/repo_check.py`, a dependency-free static health check (invariants,
-  wrapper, Room index coverage against `MIGRATION_1_2`, brace balance,
-  credential literals, module inventory) that writes `docs/HEALTH.md`.
+  wrapper, Room index coverage against `MIGRATION_1_2`, brace balance, file
+  length, credential literals, module inventory) that writes `docs/HEALTH.md`.
+  Errors fail; warnings only lower the score. On this tree: 88/100, four
+  warnings, all of them UI files over 800 lines.
 - Continuous integration: static checks, JVM tests, Android assemble and lint.
   The workflow lives in `docs/CI.md` because the sandbox token that produced
   this tree may not push files under `.github/workflows/`.

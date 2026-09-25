@@ -257,6 +257,10 @@ def check_hygiene(report: Report) -> None:
     )[:3]
     report.stats["largest_files"] = [{"lines": n, "path": p} for n, p in biggest]
     report.stats["files_over_140_columns"] = long_lines
+    # A screen that needs four digits of lines is a screen that hides a bug.
+    for size, path in sorted(((len(read(p).split("\n")), p) for p in walk()), reverse=True):
+        if size > 800:
+            report.add("warning", "hygiene", f"{size} lines: split this file", path)
 
 
 def check_secrets(report: Report) -> None:

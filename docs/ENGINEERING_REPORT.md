@@ -85,8 +85,10 @@ is impossible. Everything below is reasoned and reviewed, not measured.
   re-checks the invariants the documentation claims, verifies that every Room
   index declared in `Entities.kt` is created by `MIGRATION_1_2`, catches
   credential literals, and writes `docs/HEALTH.md`. It was run here against
-  this tree: 100/100 with no errors. That number is a static score, not a
-  build result.
+  this tree: 88/100, no errors, four warnings, all of them the same finding —
+  four UI files are longer than 800 lines (`HistoricalErpActionLogsList`,
+  `Agent`, `Account`, `Components`). Errors fail the check; warnings do not.
+  That number is a static score, not a build result.
 
 ### Still not verified
 
