@@ -85,6 +85,8 @@ import app.mizan.design.component.MizanKeyValue
 import app.mizan.design.component.MizanSectionHeader
 import app.mizan.design.component.MizanStatusBadge
 import app.mizan.design.component.ShapeCard
+import app.mizan.design.component.GlassTone
+import app.mizan.design.component.MizanGlassSurface
 import app.mizan.design.component.ShapeControl
 import app.mizan.design.component.ShapePill
 import app.mizan.design.component.StatusTone
@@ -363,13 +365,19 @@ fun AccountRoute(
             color = colors.textSecondary,
             fontWeight = FontWeight.SemiBold,
         )
+        // Each swatch is the preset's own gradient, so the tile previews the
+        // palette instead of hinting at it with one colour.
         val presets: List<Triple<String, String, List<Color>>> = buildList {
-            add(Triple("Cyber", "cyber_mizan", listOf(Color(0xFF22D3EE))))
-            add(Triple("Emerald", "emerald_gov", listOf(Color(0xFF34D399))))
-            add(Triple("Indigo", "royal_indigo", listOf(Color(0xFF818CF8))))
-            add(Triple("Gold", "sovereign_gold", listOf(Color(0xFFFBBF24))))
-            add(Triple("Ledger", "crimson_ledger", listOf(Color(0xFFFB7185))))
-            add(Triple("Obsidian", "obsidian_dark", listOf(Color(0xFF93C5FD))))
+            add(Triple("Cyber", "cyber_mizan", listOf(Color(0xFF22D3EE), Color(0xFF0E9F9F), Color(0xFF67E8F9))))
+            add(Triple("Emerald", "emerald_gov", listOf(Color(0xFF34D399), Color(0xFF059669))))
+            add(Triple("Indigo", "royal_indigo", listOf(Color(0xFF818CF8), Color(0xFF4F46E5))))
+            add(Triple("Gold", "sovereign_gold", listOf(Color(0xFFFBBF24), Color(0xFFB45309))))
+            add(Triple("Ledger", "crimson_ledger", listOf(Color(0xFFFB7185), Color(0xFFBE123C))))
+            add(Triple("Obsidian", "obsidian_dark", listOf(Color(0xFF93C5FD), Color(0xFF334155))))
+            add(Triple("Aurora", "aurora_glass", listOf(Color(0xFFA78BFA), Color(0xFF2DD4BF), Color(0xFF60A5FA))))
+            add(Triple("Arctic", "arctic_prism", listOf(Color(0xFF7DD3FC), Color(0xFF38BDF8), Color(0xFF22D3EE))))
+            add(Triple("Basalt", "basalt_neutral", listOf(Color(0xFFCBD5E1), Color(0xFF64748B))))
+            add(Triple("Sandstone", "sandstone_amber", listOf(Color(0xFFFBBF24), Color(0xFFB45309), Color(0xFFF59E0B))))
             // Material You exists from Android 12. Offering the tile on an
             // older device would be a button that quietly does nothing.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -965,34 +973,39 @@ private fun ThemePresetTile(
         ),
         label = "preset_dot",
     )
-    Box(
-        modifier = modifier
-            .clip(ShapeControl)
-            .background(if (selected) swatch.first().copy(alpha = 0.18f) else colors.surfaceElevated)
-            .border(
-                BorderStroke(borderWidth, if (selected) swatch.first() else colors.border),
-                ShapeControl,
-            )
-            .mizanBounceClick(onClick = onClick)
-            .padding(vertical = 10.dp, horizontal = 4.dp),
+    MizanGlassSurface(
+        modifier = modifier.mizanBounceClick(onClick = onClick),
+        shape = ShapeControl,
+        tone = GlassTone.THIN,
+        interactive = true,
         contentAlignment = Alignment.Center,
     ) {
         Column(
+            modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Box(
                 modifier = Modifier
                     .size(dotSize)
+                    .then(if (selected) Modifier.mizanGlow(radius = 26.dp, strength = 0.45f) else Modifier)
                     .clip(CircleShape)
-                    .background(brush),
+                    .background(brush)
+                    .mizanLiquidSheen(CircleShape, strength = 0.34f),
             )
             Text(
                 text = name,
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                 color = if (selected) colors.textPrimary else colors.textSecondary,
                 maxLines = 1,
             )
         }
+        // The selection ring sits above the sheen so it always reads.
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .border(borderWidth, if (selected) swatch.first() else colors.border, ShapeControl),
+        )
     }
 }

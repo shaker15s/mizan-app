@@ -59,6 +59,20 @@ data class MizanColors(
     /** Three-stop brand gradient. Used by marks, hero cards and progress. */
     fun accentBrush(): Brush = Brush.linearGradient(listOf(accentSecondary, accent, accentTertiary))
 
+    /**
+     * The wash behind the whole page, and the thing every glass pane refracts.
+     *
+     * Glass with nothing behind it is a grey rectangle, so the page owns a
+     * gradient: the accent, diluted, top to bottom.
+     */
+    fun backdropBrush(): Brush = Brush.verticalGradient(
+        listOf(
+            accentMuted,
+            background,
+            background,
+        ),
+    )
+
     /** Vertical wash behind a hero surface. Subtle on purpose. */
     fun heroBrush(): Brush = Brush.verticalGradient(
         listOf(
@@ -105,6 +119,10 @@ object ThemePresets {
     const val SOVEREIGN_GOLD = "sovereign_gold"
     const val CRIMSON_LEDGER = "crimson_ledger"
     const val OBSIDIAN_DARK = "obsidian_dark"
+    const val AURORA_GLASS = "aurora_glass"
+    const val ARCTIC_PRISM = "arctic_prism"
+    const val BASALT_NEUTRAL = "basalt_neutral"
+    const val SANDSTONE_AMBER = "sandstone_amber"
     const val SYSTEM_DYNAMIC = "system_dynamic"
     const val DEFAULT = CYBER_MIZAN
 
@@ -115,6 +133,10 @@ object ThemePresets {
         SOVEREIGN_GOLD,
         CRIMSON_LEDGER,
         OBSIDIAN_DARK,
+        AURORA_GLASS,
+        ARCTIC_PRISM,
+        BASALT_NEUTRAL,
+        SANDSTONE_AMBER,
         SYSTEM_DYNAMIC,
     )
 }
@@ -224,7 +246,7 @@ private fun cyberLight() = PaletteSeed(
     glass = Color(0xF2FFFFFF),
     textPrimary = Color(0xFF0B192C),
     textSecondary = Color(0xFF3D5165),
-    textTertiary = Color(0xFF6B8296),
+    textTertiary = Color(0xFF596C7C),
     ink = Color(0xFF0B192C),
     userBubble = Color(0xFF0B192C),
     onUserBubble = Color(0xFFF8FDFF),
@@ -241,7 +263,7 @@ private fun cyberDark() = PaletteSeed(
     glass = Color(0xDE0E1724),
     textPrimary = Color(0xFFEAF6FB),
     textSecondary = Color(0xFF9DB4C6),
-    textTertiary = Color(0xFF6C8698),
+    textTertiary = Color(0xFF7890A0),
     ink = Color(0xFF000000),
     userBubble = Color(0xFF16283A),
     onUserBubble = Color(0xFFEAF6FB),
@@ -258,7 +280,7 @@ private fun emeraldLight() = PaletteSeed(
     glass = Color(0xF2FFFFFF),
     textPrimary = Color(0xFF08251B),
     textSecondary = Color(0xFF3B5A4E),
-    textTertiary = Color(0xFF6A8A7C),
+    textTertiary = Color(0xFF567064),
     ink = Color(0xFF08251B),
     userBubble = Color(0xFF08251B),
     onUserBubble = Color(0xFFF1FBF6),
@@ -275,7 +297,7 @@ private fun emeraldDark() = PaletteSeed(
     glass = Color(0xDE0C1F18),
     textPrimary = Color(0xFFE9FBF3),
     textSecondary = Color(0xFF9DBCAA),
-    textTertiary = Color(0xFF6B8E7C),
+    textTertiary = Color(0xFF7E9D8D),
     ink = Color(0xFF000000),
     userBubble = Color(0xFF123026),
     onUserBubble = Color(0xFFE9FBF3),
@@ -292,7 +314,7 @@ private fun indigoLight() = PaletteSeed(
     glass = Color(0xF2FFFFFF),
     textPrimary = Color(0xFF141338),
     textSecondary = Color(0xFF464466),
-    textTertiary = Color(0xFF737198),
+    textTertiary = Color(0xFF666587),
     ink = Color(0xFF141338),
     userBubble = Color(0xFF141338),
     onUserBubble = Color(0xFFF5F5FF),
@@ -309,7 +331,7 @@ private fun indigoDark() = PaletteSeed(
     glass = Color(0xDE12122B),
     textPrimary = Color(0xFFF0F0FF),
     textSecondary = Color(0xFFA9A8CC),
-    textTertiary = Color(0xFF7A79A0),
+    textTertiary = Color(0xFF8988AA),
     ink = Color(0xFF000000),
     userBubble = Color(0xFF1B1B3C),
     onUserBubble = Color(0xFFF0F0FF),
@@ -326,7 +348,7 @@ private fun goldLight() = PaletteSeed(
     glass = Color(0xF2FFFFFF),
     textPrimary = Color(0xFF241B0E),
     textSecondary = Color(0xFF5A4A34),
-    textTertiary = Color(0xFF8A7860),
+    textTertiary = Color(0xFF776753),
     ink = Color(0xFF241B0E),
     userBubble = Color(0xFF241B0E),
     onUserBubble = Color(0xFFFDF6E9),
@@ -343,7 +365,7 @@ private fun goldDark() = PaletteSeed(
     glass = Color(0xDE1E1810),
     textPrimary = Color(0xFFFDF6E9),
     textSecondary = Color(0xFFC6B79C),
-    textTertiary = Color(0xFF93866F),
+    textTertiary = Color(0xFF998D78),
     ink = Color(0xFF000000),
     userBubble = Color(0xFF2B2216),
     onUserBubble = Color(0xFFFDF6E9),
@@ -360,7 +382,7 @@ private fun crimsonLight() = PaletteSeed(
     glass = Color(0xF2FFFFFF),
     textPrimary = Color(0xFF2B0A14),
     textSecondary = Color(0xFF5F3441),
-    textTertiary = Color(0xFF8E6A75),
+    textTertiary = Color(0xFF805F69),
     ink = Color(0xFF2B0A14),
     userBubble = Color(0xFF2B0A14),
     onUserBubble = Color(0xFFFEF2F4),
@@ -377,7 +399,7 @@ private fun crimsonDark() = PaletteSeed(
     glass = Color(0xDE1E1015),
     textPrimary = Color(0xFFFEF2F4),
     textSecondary = Color(0xFFC7A2AC),
-    textTertiary = Color(0xFF957681),
+    textTertiary = Color(0xFF9D818B),
     ink = Color(0xFF000000),
     userBubble = Color(0xFF2C1620),
     onUserBubble = Color(0xFFFEF2F4),
@@ -395,7 +417,7 @@ private fun obsidianLight() = PaletteSeed(
     glass = Color(0xF2FFFFFF),
     textPrimary = Color(0xFF0B0D10),
     textSecondary = Color(0xFF454A52),
-    textTertiary = Color(0xFF767C86),
+    textTertiary = Color(0xFF646972),
     ink = Color(0xFF0B0D10),
     userBubble = Color(0xFF0B0D10),
     onUserBubble = Color(0xFFF8F9FB),
@@ -412,10 +434,146 @@ private fun obsidianDark() = PaletteSeed(
     glass = Color(0xE00A0A0A),
     textPrimary = Color(0xFFF5F7FA),
     textSecondary = Color(0xFFA6ADB8),
-    textTertiary = Color(0xFF737A85),
+    textTertiary = Color(0xFF7D838E),
     ink = Color(0xFF000000),
     userBubble = Color(0xFF151515),
     onUserBubble = Color(0xFFF5F7FA),
+)
+
+private fun auroraLight() = PaletteSeed(
+    accent = Color(0xFF6D28D9),
+    accentSecondary = Color(0xFF0E9F9F),
+    accentTertiary = Color(0xFF2563EB),
+    onAccent = Color(0xFFFFFFFF),
+    background = Color(0xFFF6F4FB),
+    surface = Color(0xFFFFFFFF),
+    surfaceElevated = Color(0xFFEFECF9),
+    glass = Color(0xF2FFFFFF),
+    textPrimary = Color(0xFF150E2B),
+    textSecondary = Color(0xFF4A3F6B),
+    textTertiary = Color(0xFF6D6286),
+    ink = Color(0xFF150E2B),
+    userBubble = Color(0xFF150E2B),
+    onUserBubble = Color(0xFFF7F5FF),
+)
+
+private fun auroraDark() = PaletteSeed(
+    accent = Color(0xFFA78BFA),
+    accentSecondary = Color(0xFF2DD4BF),
+    accentTertiary = Color(0xFF60A5FA),
+    onAccent = Color(0xFF1A0F33),
+    background = Color(0xFF08060F),
+    surface = Color(0xFF141024),
+    surfaceElevated = Color(0xFF1D1834),
+    glass = Color(0xE6141024),
+    textPrimary = Color(0xFFF2EEFF),
+    textSecondary = Color(0xFFB3AAD1),
+    textTertiary = Color(0xFF8B83AC),
+    ink = Color(0xFF000000),
+    userBubble = Color(0xFF2C2250),
+    onUserBubble = Color(0xFFF2EEFF),
+)
+
+private fun arcticLight() = PaletteSeed(
+    accent = Color(0xFF0369A1),
+    accentSecondary = Color(0xFF0EA5E9),
+    accentTertiary = Color(0xFF0891B2),
+    onAccent = Color(0xFFFFFFFF),
+    background = Color(0xFFF7FBFD),
+    surface = Color(0xFFFFFFFF),
+    surfaceElevated = Color(0xFFEAF3F8),
+    glass = Color(0xF2FFFFFF),
+    textPrimary = Color(0xFF0A1A24),
+    textSecondary = Color(0xFF39566B),
+    textTertiary = Color(0xFF566D7E),
+    ink = Color(0xFF0A1A24),
+    userBubble = Color(0xFF0A1A24),
+    onUserBubble = Color(0xFFF4FBFE),
+)
+
+private fun arcticDark() = PaletteSeed(
+    accent = Color(0xFF7DD3FC),
+    accentSecondary = Color(0xFF38BDF8),
+    accentTertiary = Color(0xFF22D3EE),
+    onAccent = Color(0xFF04222E),
+    background = Color(0xFF04090E),
+    surface = Color(0xFF0C1620),
+    surfaceElevated = Color(0xFF14232F),
+    glass = Color(0xE60C1620),
+    textPrimary = Color(0xFFEAF6FC),
+    textSecondary = Color(0xFFA9C4D4),
+    textTertiary = Color(0xFF7A94A5),
+    ink = Color(0xFF000000),
+    userBubble = Color(0xFF14232F),
+    onUserBubble = Color(0xFFEAF6FC),
+)
+
+private fun basaltLight() = PaletteSeed(
+    accent = Color(0xFF334155),
+    accentSecondary = Color(0xFF64748B),
+    accentTertiary = Color(0xFF0F172A),
+    onAccent = Color(0xFFFFFFFF),
+    background = Color(0xFFF5F6F7),
+    surface = Color(0xFFFFFFFF),
+    surfaceElevated = Color(0xFFE9EBEE),
+    glass = Color(0xF2FFFFFF),
+    textPrimary = Color(0xFF11161C),
+    textSecondary = Color(0xFF414A57),
+    textTertiary = Color(0xFF5D6772),
+    ink = Color(0xFF11161C),
+    userBubble = Color(0xFF11161C),
+    onUserBubble = Color(0xFFF7F8F9),
+)
+
+private fun basaltDark() = PaletteSeed(
+    accent = Color(0xFFCBD5E1),
+    accentSecondary = Color(0xFF94A3B8),
+    accentTertiary = Color(0xFFF1F5F9),
+    onAccent = Color(0xFF0B1017),
+    background = Color(0xFF0A0C0F),
+    surface = Color(0xFF14181D),
+    surfaceElevated = Color(0xFF1E242B),
+    glass = Color(0xE614181D),
+    textPrimary = Color(0xFFEDF0F4),
+    textSecondary = Color(0xFFA9B2BE),
+    textTertiary = Color(0xFF858F9B),
+    ink = Color(0xFF000000),
+    userBubble = Color(0xFF1E242B),
+    onUserBubble = Color(0xFFEDF0F4),
+)
+
+private fun sandstoneLight() = PaletteSeed(
+    accent = Color(0xFFB45309),
+    accentSecondary = Color(0xFFF59E0B),
+    accentTertiary = Color(0xFFD97706),
+    onAccent = Color(0xFFFFFDF7),
+    background = Color(0xFFFDF9F3),
+    surface = Color(0xFFFFFFFF),
+    surfaceElevated = Color(0xFFF6EEDF),
+    glass = Color(0xF2FFFFFF),
+    textPrimary = Color(0xFF231708),
+    textSecondary = Color(0xFF5B4527),
+    textTertiary = Color(0xFF7C6547),
+    ink = Color(0xFF231708),
+    userBubble = Color(0xFF231708),
+    onUserBubble = Color(0xFFFDF6EA),
+)
+
+private fun sandstoneDark() = PaletteSeed(
+    accent = Color(0xFFFBBF24),
+    accentSecondary = Color(0xFFFCD34D),
+    accentTertiary = Color(0xFFF59E0B),
+    onAccent = Color(0xFF2A1A02),
+    background = Color(0xFF100B05),
+    surface = Color(0xFF1A140C),
+    surfaceElevated = Color(0xFF261E12),
+    glass = Color(0xE61A140C),
+    textPrimary = Color(0xFFFBF3E4),
+    textSecondary = Color(0xFFCDBA98),
+    textTertiary = Color(0xFF9B896E),
+    ink = Color(0xFF000000),
+    userBubble = Color(0xFF261E12),
+    onUserBubble = Color(0xFFFBF3E4),
 )
 
 /** Resolves a preset. Every branch returns a real palette. */
@@ -426,6 +584,10 @@ fun resolveThemeColors(preset: String, isDark: Boolean): MizanColors = when (pre
     ThemePresets.SOVEREIGN_GOLD -> if (isDark) goldDark().materialize(true) else goldLight().materialize(false)
     ThemePresets.CRIMSON_LEDGER -> if (isDark) crimsonDark().materialize(true) else crimsonLight().materialize(false)
     ThemePresets.OBSIDIAN_DARK -> if (isDark) obsidianDark().materialize(true) else obsidianLight().materialize(false)
+    ThemePresets.AURORA_GLASS -> if (isDark) auroraDark().materialize(true) else auroraLight().materialize(false)
+    ThemePresets.ARCTIC_PRISM -> if (isDark) arcticDark().materialize(true) else arcticLight().materialize(false)
+    ThemePresets.BASALT_NEUTRAL -> if (isDark) basaltDark().materialize(true) else basaltLight().materialize(false)
+    ThemePresets.SANDSTONE_AMBER -> if (isDark) sandstoneDark().materialize(true) else sandstoneLight().materialize(false)
     else -> if (isDark) cyberDark().materialize(true) else cyberLight().materialize(false)
 }
 
@@ -437,6 +599,10 @@ fun normalizePreset(preset: String?): String = when (preset) {
     ThemePresets.SOVEREIGN_GOLD,
     ThemePresets.CRIMSON_LEDGER,
     ThemePresets.OBSIDIAN_DARK,
+    ThemePresets.AURORA_GLASS,
+    ThemePresets.ARCTIC_PRISM,
+    ThemePresets.BASALT_NEUTRAL,
+    ThemePresets.SANDSTONE_AMBER,
     ThemePresets.SYSTEM_DYNAMIC,
     -> preset
     else -> ThemePresets.DEFAULT

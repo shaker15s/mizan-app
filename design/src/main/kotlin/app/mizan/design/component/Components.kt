@@ -98,62 +98,60 @@ fun Modifier.mizanBounceClick(
     onClick = onClick,
 )
 
+/**
+ * The default card. Glass, because the page behind it is a wash and a flat
+ * panel over a wash looks like a bug.
+ */
 @Composable
 fun MizanSurface(
     modifier: Modifier = Modifier,
     elevated: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val colors = LocalMizanColors.current
-    Column(
-        modifier = modifier
-            .shadow(
-                elevation = if (colors.isDark) 0.dp else if (elevated) 4.dp else 2.dp,
-                shape = ShapeCard,
-                spotColor = Color(0x0F0F172A),
-                ambientColor = Color(0x080F172A),
-            )
-            .clip(ShapeCard)
-            .background(
-                if (colors.isDark) {
-                    SolidColor(if (elevated) colors.surfaceElevated else colors.glass)
-                } else {
-                    if (elevated) SolidColor(colors.surfaceElevated) else Brush.verticalGradient(
-                        listOf(Color(0xF7FFFFFF), Color(0xEBFFFFFF)),
-                    )
-                },
-            )
-            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
-            .padding(Space.md),
+    MizanGlassCard(
+        modifier = modifier,
+        tone = if (elevated) GlassTone.OVERLAY else GlassTone.REGULAR,
+        border = null,
         content = content,
     )
 }
 
+/**
+ * A card made of glass.
+ *
+ * It refracts the page wash behind it, carries a specular sheen, and has a
+ * hairline edge that is brighter at the top than at the bottom. `interactive`
+ * lets the sheen follow the finger, which is the part that makes it feel like
+ * a liquid rather than a sheet of plastic.
+ */
 @Composable
 fun MizanGlassCard(
     modifier: Modifier = Modifier,
+    tone: GlassTone = GlassTone.REGULAR,
+    interactive: Boolean = false,
     border: BorderStroke? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = LocalMizanColors.current
-    Column(
-        modifier = modifier
-            .shadow(
-                elevation = if (colors.isDark) 0.dp else 3.dp,
-                shape = ShapeCard,
-                spotColor = Color(0x0F0F172A),
-                ambientColor = Color(0x080F172A),
-            )
-            .clip(ShapeCard)
-            .background(
-                if (colors.isDark) SolidColor(colors.glass) else Brush.verticalGradient(
-                    listOf(Color(0xF7FFFFFF), Color(0xEBFFFFFF)),
-                ),
-            )
-            .border(border ?: BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
-            .padding(Space.md),
-        content = content,
-    )
+    MizanGlassSurface(
+        modifier = modifier.shadow(
+            elevation = if (colors.isDark) 0.dp else 4.dp,
+            shape = ShapeCard,
+            spotColor = Color(0x0F0F172A),
+            ambientColor = Color(0x080F172A),
+        ),
+        shape = ShapeCard,
+        tone = tone,
+        interactive = interactive,
+        edge = border == null,
+    ) {
+        Column(
+            modifier = Modifier
+                .then(if (border != null) Modifier.border(border, ShapeCard) else Modifier)
+                .padding(Space.md),
+            content = content,
+        )
+    }
 }
 
 @Composable
@@ -309,7 +307,11 @@ private fun MizanButtonBase(
             .clip(ShapePill)
             .then(
                 if (gradient != null && enabled) {
-                    Modifier.background(gradient, ShapePill)
+                    Modifier
+                        .background(gradient, ShapePill)
+                        // A gradient alone reads as flat colour. The highlight
+                        // is what makes the button look lit and pressable.
+                        .mizanLiquidSheen(ShapePill)
                 } else {
                     Modifier.background(bg, ShapePill)
                 },
