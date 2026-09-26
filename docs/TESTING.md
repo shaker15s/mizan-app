@@ -1,6 +1,16 @@
 # Testing
 
-Tests exist. The Gradle wrapper now exists, but no JVM, Android SDK, or dependency resolver was available in the environment that produced this tree, so they have still not been executed.
+Tests exist, and the three JVM modules now run them:
+
+```bash
+python3 tools/bootstrap_toolchain.py   # provisions a JDK and a Kotlin compiler
+JAVA_HOME=<toolchain>/jdk/jdk4py/java-runtime KOTLINC_HOME=<toolchain>/kotlinc \
+  python3 tools/jvm_check.py           # 300 tests, all passing
+```
+
+The Android modules still have not been assembled: no Android SDK and no
+dependency resolver are reachable from the environment that produced this tree.
+Every claim below therefore separates what runs from what is merely written.
 
 ## What is written
 
@@ -17,10 +27,20 @@ Tests exist. The Gradle wrapper now exists, but no JVM, Android SDK, or dependen
 | `service/.../ServiceUnitTest.kt` | Password hashing and salting, token hashing, session expiry without extension, audit chain linkage, tenant scoping of the ledger and the ERP adapter, read-back semantics |
 | `service/.../ContractParityTest.kt` | The service parses exactly what the phone canonicalises: every tool's argument names, the byte-for-byte idempotency material, and the wire names |
 | `domain/.../MoneyAndCanonicalTest.kt` | Money parsing rejects negative and scientific-notation amounts, formatting is locale independent, canonical JSON sorts keys and escapes control characters, idempotency keys are deterministic and tenant scoped |
+| `domain/.../ExecutionJournalTest.kt` | The stage machine's *refusals*: no dispatch before authorisation, `VERIFIED` unreachable without a read-back, an uncertain write may only move towards reconciliation, a terminal entry cannot be edited, and a failed read is a failure rather than an ambiguity |
+| `domain/.../ReceiptsAndDevicesTest.kt` | A receipt stops verifying the moment one field changes; a rotated key still verifies old receipts and says they are old; a device signature is bound to one proposal and is refused the second time; enrolled keys must parse; Ed25519 and P-256 both work |
+| `service/.../DurableStoresTest.kt` | A half-written frame is dropped and only it; a corrupted record is not decoded; the journal, idempotency index, receipts, devices, approvals and reconciliation cases all survive a restart, including a receipt that still verifies |
+| `service/.../OdooJson2ConnectorTest.kt` | The JSON-2 request shape; 401/403/404/4xx named; **a 5xx or 429 during a write is `Unknown`, during a read it is retryable**; a lost answer is `Unknown` and an unmade connection is retryable; money converted once; read-back fields and their absences |
+| `service/.../GovernedExecutionTest.kt` | The whole governed pipeline over a real listener: device proof required and single-use, approval identity validated against proposal revision, fingerprint and policy version, signed receipts that verify, reconciliation opened, listed and resolved by a person, idempotent replay that returns the same receipt, rate limiting with `Retry-After`, tenant isolation on every route |
 | `domain/.../RecoveryAttentionAndFreshnessTest.kt` | An expired lease never resends, unknown dispatch is treated as sent, a live lease and a terminal execution are left alone, attention ordering and its failure cap, proof freshness windows and expiry, risk classification |
 
 ## What is not covered
 
+- Anything Android: no instrumented test, no screenshot golden, no lint run.
+- PostgreSQL. The durable store is file-backed; the interface it will sit
+  behind exists, the server does not.
+- A real Odoo. The connector is exercised against a scripted transport that
+  answers with the bytes Odoo 19 sends; that is not the same as an integration.
 - Room migration against a version-1 fixture. The SQL is in `MIGRATION_1_2`. It has not been run.
 - Screenshot tests. The old greeting screenshot was removed with `com.example`. No new golden was captured, because nothing was rendered.
 - Instrumented UI tests. The old `ExampleInstrumentedTest` was removed. No replacement was run.

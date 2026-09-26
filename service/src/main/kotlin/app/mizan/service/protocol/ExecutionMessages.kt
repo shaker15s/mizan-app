@@ -17,6 +17,15 @@ data class ExecutionRequest(
     val arguments: JsonValue.Obj,
     val approverId: String?,
     val idempotencyKey: String?,
+    /** The approval object this request claims, when the client has one. */
+    val approvalId: String? = null,
+    /** The fingerprint the client believes it is executing. */
+    val proposalFingerprint: String? = null,
+    /** Server-issued challenge id and the device's signature over it. */
+    val deviceChallengeId: String? = null,
+    val deviceSignature: String? = null,
+    /** Opaque reference to the proof of presence, kept in the journal. */
+    val proofReference: String? = null,
 ) {
     companion object {
         /**
@@ -47,6 +56,11 @@ data class ExecutionRequest(
                 approverId = body.text(MizanContract.RequestField.APPROVER_ID),
                 idempotencyKey = idempotencyHeader?.takeIf { it.isNotBlank() }
                     ?: body.text(MizanContract.RequestField.IDEMPOTENCY_KEY),
+                approvalId = body.text(MizanContract.RequestField.APPROVAL_ID),
+                proposalFingerprint = body.text(MizanContract.RequestField.PROPOSAL_FINGERPRINT),
+                deviceChallengeId = body.text(MizanContract.RequestField.DEVICE_CHALLENGE_ID),
+                deviceSignature = body.text(MizanContract.RequestField.DEVICE_SIGNATURE),
+                proofReference = body.text(MizanContract.RequestField.PROOF_REFERENCE),
             )
         }
     }
@@ -64,6 +78,12 @@ sealed interface ExecutionOutcome {
         val erpRecordId: String,
         val erpModel: String,
         val summary: String,
+        /** Present when the authority signed a receipt for this write. */
+        val receiptId: String? = null,
+        val receiptSignature: String? = null,
+        val receiptKeyId: String? = null,
+        /** The fields the read-back actually matched. Not a bare tick. */
+        val verifiedFields: List<String> = emptyList(),
     ) : ExecutionOutcome
 
     /** Applied but not read back. Honest, and not a success claim. */
@@ -77,6 +97,9 @@ sealed interface ExecutionOutcome {
 
     /** The write may have happened. A person must reconcile it. */
     data class Ambiguous(
+        val reasonCode: String? = null,
+        val possibleRecordId: String? = null,
+        val possibleModel: String? = null,
         val executionId: String,
         val candidateRecordIds: List<String>,
     ) : ExecutionOutcome
@@ -86,6 +109,8 @@ sealed interface ExecutionOutcome {
         val executionId: String,
         val messageCode: String,
         val httpStatus: Int,
+        /** Sent as `Retry-After` when the refusal is a rate limit. */
+        val retryAfterSeconds: Long = 0L,
     ) : ExecutionOutcome
 
     /** The ERP refused the write. Nothing was written. */
@@ -114,7 +139,7 @@ internal fun ExecutionOutcome.statusOf(): String = when (this) {
 internal fun ExecutionOutcome.messageCodeOf(): String = when (this) {
     is ExecutionOutcome.Verified -> "VERIFIED_BY_READ_BACK"
     is ExecutionOutcome.Accepted -> messageCode
-    is ExecutionOutcome.Ambiguous -> "SERVICE_AMBIGUOUS"
+    is ExecutionOutcome.Ambiguous -> reasonCode ?: "SERVICE_AMBIGUOUS"
     is ExecutionOutcome.Rejected -> messageCode
     is ExecutionOutcome.Failed -> messageCode
 }
