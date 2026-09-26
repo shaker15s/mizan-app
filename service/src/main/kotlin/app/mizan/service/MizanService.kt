@@ -312,7 +312,19 @@ class MizanService(
             return@serve
         }
         val headers = exchange.requestHeaders
-        val body = Http.readJsonObject(exchange)
+        val read = Http.readBody(exchange)
+        if (read.tooLarge) {
+            Http.respond(
+                exchange,
+                413,
+                Json.obj(
+                    "status" to Json.str(MizanContract.Status.REJECTED),
+                    "messageCode" to Json.str("REQUEST_TOO_LARGE"),
+                ),
+            )
+            return@serve
+        }
+        val body = read.value
         if (body == null) {
             Http.respond(
                 exchange,

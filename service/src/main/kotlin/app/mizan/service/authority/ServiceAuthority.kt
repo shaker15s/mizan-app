@@ -353,6 +353,8 @@ class ServiceAuthority(
         val messageCode: String,
         val candidateRecordIds: List<String>,
         val summary: String?,
+        /** The receipt this key already produced, when it produced one. */
+        val receiptId: String?,
     )
 
     private fun priorFor(tenantId: String, key: String?, canonicalArguments: String): Prior {
@@ -378,6 +380,7 @@ class ServiceAuthority(
                         messageCode = durable.messageCode,
                         candidateRecordIds = durable.candidateRecordIds,
                         summary = durable.summary,
+                        receiptId = stores?.receipts?.forExecution(durable.executionId)?.claims?.receiptId,
                     ),
                 )
 
@@ -408,6 +411,7 @@ class ServiceAuthority(
                 messageCode = existing.messageCode,
                 candidateRecordIds = existing.candidateRecordIds,
                 summary = existing.summary,
+                receiptId = stores?.receipts?.forExecution(existing.executionId)?.claims?.receiptId,
             ),
         )
     }
@@ -791,10 +795,10 @@ class ServiceAuthority(
                 )
                 accepted(request, "READ_RESULT", summary.recordId, summary.model, summary.summary)
             }
-            is ErpResult.Refused -> {
-                stores?.journals?.save(advance(dispatching, JournalEvent.FAILED).copy(errorCode = result.reasonCode))
-                accepted(request, result.reasonCode)
-            }
+            // The ERP answered, and the answer was "no such record". That is
+            // a failed read, not an empty result: a client that renders it as
+            // "zero available" would be inventing stock levels.
+            is ErpResult.Refused -> failed(request, result.reasonCode, dispatching)
             is ErpResult.NotSupported -> failed(request, "TOOL_NOT_SUPPORTED_BY_ERP", dispatching)
             is ErpResult.Unavailable -> failed(request, result.reasonCode, dispatching)
             is ErpResult.Malformed -> failed(request, result.reasonCode, dispatching)
@@ -871,13 +875,27 @@ class ServiceAuthority(
         journal?.let { stores?.journals?.save(it) }
     }
 
+    /**
+     * The answer a key already produced, returned again unchanged.
+     *
+     * A replay that dropped the receipt would be a replay that dropped the
+     * proof: the caller asked the same question twice and is entitled to the
+     * same evidence, not a weaker version of it.
+     */
     private fun replay(entry: PriorEntry): ExecutionOutcome = when (entry.status) {
-        MizanContract.Status.VERIFIED -> ExecutionOutcome.Verified(
-            executionId = entry.executionId,
-            erpRecordId = entry.erpRecordId ?: "",
-            erpModel = entry.erpModel ?: "",
-            summary = entry.summary ?: "",
-        )
+        MizanContract.Status.VERIFIED -> {
+            val receipt = stores?.receipts?.forExecution(entry.executionId)
+            ExecutionOutcome.Verified(
+                executionId = entry.executionId,
+                erpRecordId = entry.erpRecordId ?: "",
+                erpModel = entry.erpModel ?: "",
+                summary = entry.summary ?: "",
+                receiptId = receipt?.claims?.receiptId ?: entry.receiptId,
+                receiptSignature = receipt?.signature,
+                receiptKeyId = receipt?.keyId,
+                verifiedFields = receipt?.claims?.verifiedFields ?: emptyList(),
+            )
+        }
         MizanContract.Status.ACCEPTED -> ExecutionOutcome.Accepted(
             executionId = entry.executionId,
             messageCode = entry.messageCode,
