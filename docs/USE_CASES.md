@@ -6,7 +6,7 @@ listener on a real port (`MizanService`, `com.sun.net.httpserver`) and against
 the real interpreter, on a real JVM:
 
 ```bash
-python3 tools/jvm_check.py      # 300 tests, all passing
+python3 tools/jvm_check.py      # 341 tests, all passing
 ```
 
 Twenty-two use cases are listed; the tests around them are more granular than

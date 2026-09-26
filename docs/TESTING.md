@@ -5,7 +5,7 @@ Tests exist, and the three JVM modules now run them:
 ```bash
 python3 tools/bootstrap_toolchain.py   # provisions a JDK and a Kotlin compiler
 JAVA_HOME=<toolchain>/jdk/jdk4py/java-runtime KOTLINC_HOME=<toolchain>/kotlinc \
-  python3 tools/jvm_check.py           # 300 tests, all passing
+  python3 tools/jvm_check.py           # 341 tests, all passing
 ```
 
 The Android modules still have not been assembled: no Android SDK and no
@@ -32,13 +32,18 @@ Every claim below therefore separates what runs from what is merely written.
 | `service/.../DurableStoresTest.kt` | A half-written frame is dropped and only it; a corrupted record is not decoded; the journal, idempotency index, receipts, devices, approvals and reconciliation cases all survive a restart, including a receipt that still verifies |
 | `service/.../OdooJson2ConnectorTest.kt` | The JSON-2 request shape; 401/403/404/4xx named; **a 5xx or 429 during a write is `Unknown`, during a read it is retryable**; a lost answer is `Unknown` and an unmade connection is retryable; money converted once; read-back fields and their absences |
 | `service/.../GovernedExecutionTest.kt` | The whole governed pipeline over a real listener: device proof required and single-use, approval identity validated against proposal revision, fingerprint and policy version, signed receipts that verify, reconciliation opened, listed and resolved by a person, idempotent replay that returns the same receipt, rate limiting with `Retry-After`, tenant isolation on every route |
+| `service/.../OutboxTest.kt` | The retry queue: an entry survives a restart, backoff grows and is capped, five attempts then a person, an in-flight entry is recovered after a crash, the worker refuses to re-dispatch a write, an unknown actor and a final refusal are dead-lettered, the service's own sweeper drains the queue, and `/v1/health` reports it |
+| `service/.../JournalDurabilityTest.kt` | A second service over the same directory: a read's record and a verified write's record (with its receipt) are still there, the same key replays the same answer without a second ERP call, and a definite failure is re-evaluated rather than blocked |
+| `service/.../PostgresStoreTest.kt` | The SQL deployment: the schema it creates, every column the statements name exists in the DDL, reads come back in sequence order, a compaction is one transaction that rolls back whole on failure, and a whole service runs on the SQL path while a second process reads its journal and replays its key |
 | `domain/.../RecoveryAttentionAndFreshnessTest.kt` | An expired lease never resends, unknown dispatch is treated as sent, a live lease and a terminal execution are left alone, attention ordering and its failure cap, proof freshness windows and expiry, risk classification |
 
 ## What is not covered
 
 - Anything Android: no instrumented test, no screenshot golden, no lint run.
-- PostgreSQL. The durable store is file-backed; the interface it will sit
-  behind exists, the server does not.
+- PostgreSQL itself. The record log, the schema, the statements and the
+  transaction boundaries are written and tested against a database double; the
+  driver, the server, the pool, failover and backup are not. There is no
+  PostgreSQL in this environment to run them against.
 - A real Odoo. The connector is exercised against a scripted transport that
   answers with the bytes Odoo 19 sends; that is not the same as an integration.
 - Room migration against a version-1 fixture. The SQL is in `MIGRATION_1_2`. It has not been run.

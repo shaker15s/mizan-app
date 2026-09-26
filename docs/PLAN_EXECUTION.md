@@ -25,7 +25,7 @@ words, and this file is written to survive that standard.
 | Modules that compile and run here | `:domain`, `:service`, `:integration` |
 | Modules that cannot be built here | `:app`, `:design`, `:data` — they need the Android SDK, AGP and Compose, and Maven Central and Google Maven are unreachable from this sandbox |
 | Test command | `JAVA_HOME=... KOTLINC_HOME=... python3 tools/jvm_check.py` |
-| Tests | 300, all passing (domain contracts, service pipeline over a real HTTP listener, the ERP boundary with a scripted transport) |
+| Tests | 341, all passing (domain contracts, service pipeline over a real HTTP listener, the outbox and its sweeper, the durable journal across a restart, the PostgreSQL record log against a database double, the ERP boundary with a scripted transport) |
 
 Anything marked **proven** below is proven by that command. Anything that needs
 an Android device, a Gradle build, a Postgres server or a real Odoo instance is
@@ -67,9 +67,34 @@ checked-in bootstrap script rather than from a developer's machine.
 * `service/store/ApprovalStore.kt` — approval objects with their own identity,
   policy version and fingerprint.
 
-PostgreSQL is **missing**. What exists is the shape it will be dropped into:
-every store is a small class over an append-only interface, and the SQL schema
-is a translation of the same records rather than a redesign.
+PostgreSQL is **written, not run**. The shape it drops into is now a seam
+rather than a hope:
+
+* `service/store/RecordLog.kt` — append (durable when it returns), records (in
+  order), compaction (atomic replacement), and a provider that opens one log
+  per stream. Every store is written against it, and the file deployment is
+  one implementation of it.
+* `service/store/sql/PostgresRecordLog.kt` — the same streams as rows of one
+  narrow table (`seq BIGSERIAL`, `stream`, `payload`, `written_at`) with an
+  idempotent schema, `ORDER BY seq` reads, and compaction in a single
+  transaction. The table name is validated rather than interpolated.
+* `service/store/sql/SqlDatabase.kt` — the database boundary and its JDBC
+  implementation; no store imports `java.sql`.
+* `ServiceConfig.database` selects it, `ServiceConfig.logProvider` lets a
+  deployment bring its own durability, and a configuration that names two
+  homes for the same state is refused before anything is opened.
+
+**Proven** here: the schema and its statements, that every column the SQL names
+exists in the DDL, sequence ordering, that a failed compaction rolls back
+whole, and that two services over one database see each other's journal and
+replay each other's idempotency keys. **Not proven**: PostgreSQL itself — the
+driver, the server, the pool, replication, failover and backup.
+
+The retry outbox is **proven**: a read the ERP could not answer is written to
+the same durable store as the intention it is, the service drains it on its own
+timer (or a deployment turns the timer off and runs a sweeper elsewhere),
+backoff grows to a fifteen minute ceiling, five attempts and a person is asked,
+a crash leaves nothing stranded in flight, and a write is never re-dispatched.
 
 ### Phase 3 — Odoo 19 over JSON-2
 **Written; the wire behaviour is proven against a scripted transport, not
