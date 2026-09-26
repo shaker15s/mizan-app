@@ -1,25 +1,29 @@
-# MIZAN
+# Wakeel (وكيل)
 
 Android client for a governed agentic ERP, plus the reference service it talks
-to. The phone prepares a request, shows the rule, and waits. It does not
-authorize an ERP write by itself.
+to. Wakeel is a personal assistant for systems and ERP: a person says what they
+want in Arabic or in English, the app turns it into a proposal, shows the rule
+that governs it, and waits for the authority. The phone prepares a request, it
+does not authorize an ERP write by itself.
 
 - **Demo** (`app.mizan.demo`) is a labeled simulation. Record ids start with
   `SIM-`. Nothing in that flavor is an ERP record.
-- **Staging and production** call a MIZAN service over HTTPS. If that URL is
+- **Staging and production** call a Wakeel service over HTTPS. If that URL is
   missing, writes are refused. The app does not talk to Odoo.
 - **`:service`** is the reference authority: a dependency-free JVM server that
   decides, writes to an in-memory ERP adapter, and reads back.
 
 The audit of the previous prototype is `docs/ARCHITECTURE_AUDIT.md`. What this
 tree actually does is `docs/ENGINEERING_REPORT.md`. The HTTP contract is
-`docs/SERVICE.md`. The static health report is `docs/HEALTH.md`.
+`docs/SERVICE.md`. The static health report is `docs/HEALTH.md`. The twenty
+things a company does with the app -- each one asserted by a test -- are
+`docs/USE_CASES.md`.
 
 ## Layout
 
 ```text
 :domain        JVM. Models, policy, risk, state machine, idempotency, interpreter, audit hash.
-:integration   JVM. MIZAN HTTP client, redaction, Odoo JSON-2 request builder, legacy XML-RPC parser.
+:integration   JVM. Wakeel HTTP client, redaction, Odoo JSON-2 request builder, legacy XML-RPC parser.
 :data          Room 2, tenant-scoped stores, encrypted session token.
 :design        Tokens and components. No business rules.
 :app           Shell, screens, flavors, composition root.
@@ -41,7 +45,7 @@ the only thing you need is the toolchain.
 python3 tools/repo_check.py                              # static check, no toolchain needed
 ```
 
-`MIZAN_API_BASE_URL` supplies the service URL for staging and production at
+`Wakeel_API_BASE_URL` supplies the service URL for staging and production at
 build time. It must be an `https://` URL; the client refuses anything else.
 
 ## Run the reference service
@@ -70,8 +74,17 @@ breaks, and the CI runs it on every push:
 
 ## Status
 
-Not compiled here. The environment that produced this tree had no JDK, no
-Android SDK, and no dependency resolver, so assemble, lint, and unit tests have
-not been run. `docs/ENGINEERING_REPORT.md` keeps the exact list of what is
-verified and what is not. `docs/HEALTH.md` is a static score, not a build
-result.
+The three JVM modules are compiled and tested here, with a real Kotlin compiler
+and a real JVM: **163 tests, all passing** (`python3 tools/jvm_check.py`). They
+cover the policy engine, the interpreter, the audit chain, the AI client, the
+HTTP contract, and the reference service end to end. `tools/syntax_check.py`
+parses every Kotlin file, and `tools/check_contrast.py` re-derives the palettes
+and checks WCAG AA.
+
+The Android app has not been assembled: this environment has no Android SDK, so
+`:app:assemble*`, lint and instrumentation are unrun. The first green check from
+a real toolchain is still the one to trust for the UI. `docs/USE_CASES.md`
+states what the tests prove and what they cannot.
+
+`docs/ENGINEERING_REPORT.md` keeps the exact list of what is verified and what
+is not. `docs/HEALTH.md` is a static score, not a build result.

@@ -18,7 +18,7 @@ From the prototype at `3c6e175` (`com.example`, application id `com.aistudio.miz
 
 | Item | State |
 | --- | --- |
-| MIZAN service | Not in this repository. Production cannot execute an ERP write until it exists and `MIZAN_API_BASE_URL` points at it. |
+| Wakeel service | Not in this repository. Production cannot execute an ERP write until it exists and `Wakeel_API_BASE_URL` points at it. |
 | Odoo JSON-2 execution | Request builder exists. Nothing in the app calls it. |
 | Sync | Snapshot type exists. No successful sync is recorded. |
 | Second approver in production | The device refuses L4 without one and cannot appoint one. The service contract must carry the second approver. |

@@ -1,4 +1,4 @@
-# MIZAN reference service
+# Wakeel reference service
 
 `:service` is the authority the Android client was written to talk to. It is a
 server. It is not packaged into the application, and the application never
@@ -32,7 +32,7 @@ device at a local service, terminate TLS in front of it:
 # example, not a recommendation of a specific vendor
 caddy reverse-proxy --from https://mizan.local.test --to 127.0.0.1:8080
 # then
-export MIZAN_API_BASE_URL=https://mizan.local.test
+export Wakeel_API_BASE_URL=https://mizan.local.test
 ./gradlew :app:assembleStagingDebug
 ```
 

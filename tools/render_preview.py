@@ -91,7 +91,7 @@ def main():
     if os.path.exists(icon_path):
         icon = Image.open(icon_path).convert("RGBA").resize((128, 128), Image.LANCZOS)
         sheet.alpha_composite(icon, (margin, 30))
-    draw.text((margin + 152, 56), "MIZAN", font=font, fill=(230, 245, 250, 255))
+    draw.text((margin + 152, 56), "Wakeel", font=font, fill=(230, 245, 250, 255))
     draw.text(
         (margin + 152, 76),
         "Governed agentic ERP. The device prepares. The service decides.",

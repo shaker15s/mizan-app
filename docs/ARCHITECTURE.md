@@ -6,7 +6,7 @@ Date: 2026-09-23. This describes the tree as written, not a target that is only 
 
 ```text
 :domain        JVM. Models, policy, risk, state machine, idempotency, interpreter, audit hash.
-:integration   JVM. MIZAN HTTP client, redaction, Odoo JSON-2 request builder, legacy XML-RPC parser.
+:integration   JVM. Wakeel HTTP client, redaction, Odoo JSON-2 request builder, legacy XML-RPC parser.
 :data          Room 2, tenant-scoped stores, encrypted session token.
 :design        Tokens and components. No business rules.
 :app           Shell, screens, flavors, composition root.
@@ -33,8 +33,8 @@ The UI does not import a DAO. The production and staging source sets do not incl
 | flavor | application id | `DEMO_MODE` | service URL | simulator |
 | --- | --- | --- | --- | --- |
 | demo | `app.mizan.demo` | true | empty | compiled in from `src/demo` |
-| staging | `app.mizan.staging` | false | `MIZAN_API_BASE_URL` | absent |
-| production | `app.mizan` | false | `MIZAN_API_BASE_URL` | absent |
+| staging | `app.mizan.staging` | false | `Wakeel_API_BASE_URL` | absent |
+| production | `app.mizan` | false | `Wakeel_API_BASE_URL` | absent |
 
 Two functions are supplied per flavor, each in its own source set:
 
@@ -68,7 +68,7 @@ Production:
 
 ```text
 Phone
-  → HTTPS MIZAN service (POST /v1/sessions, POST /v1/executions)
+  → HTTPS Wakeel service (POST /v1/sessions, POST /v1/executions)
     → service policy, approval, idempotency, read-back
       → ERP
 ```

@@ -24,7 +24,7 @@ This is not “done” in the sense of a verified release. It is a rebuilt clien
 - No JDK in this environment. `./gradlew` does not exist. Assemble, unit tests, lint, and instrumented tests were not run. Do not treat this report as a green build.
 - No device. No screenshot. No startup measurement. No frame-time number. Account can show a local elapsed timestamp later; that is not a published metric.
 - `MIGRATION_1_2` was not executed against a version-1 database.
-- The MIZAN HTTP contract (`POST /v1/sessions`, `POST /v1/executions`) is what the client sends. No server implements it here. A 200 body without the expected fields is refused, not treated as success.
+- The Wakeel HTTP contract (`POST /v1/sessions`, `POST /v1/executions`) is what the client sends. No server implements it here. A 200 body without the expected fields is refused, not treated as success.
 
 ## Honesty constraints that the code follows
 
@@ -50,8 +50,8 @@ Still not compiled. This pass closed behavioral gaps, not a build:
 
 1. Add the Gradle wrapper on a machine that can fetch it, then compile demo and production.
 2. Run the JVM tests and a Room migration test against a captured version-1 file.
-3. Implement the MIZAN service that this client already refuses to impersonate.
-4. Only then point `MIZAN_API_BASE_URL` at it and prove a read-back on a non-production ERP.
+3. Implement the Wakeel service that this client already refuses to impersonate.
+4. Only then point `Wakeel_API_BASE_URL` at it and prove a read-back on a non-production ERP.
 
 ## Continuation, 2026-09-25
 
@@ -72,7 +72,7 @@ is impossible. Everything below is reasoned and reviewed, not measured.
   never declared. That single missing function meant `:integration` and
   `:app` could not compile at all. It is now declared and covered.
 - **Flavors are real.** `demo`, `staging`, and `production` now carry their own
-  `DEMO_MODE`, `MIZAN_ENV`, and `API_BASE_URL`, and the simulator lives in
+  `DEMO_MODE`, `Wakeel_ENV`, and `API_BASE_URL`, and the simulator lives in
   `src/demo`. Before this, `build.gradle.kts` had a single variant with
   `DEMO_MODE = true` hard-coded, so the documented staging and production
   channels did not exist as builds.

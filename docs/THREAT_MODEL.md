@@ -18,7 +18,7 @@ Assets: ERP records, approval decisions, session tokens, the local audit chain, 
 
 ## Out of scope for this repository
 
-- The MIZAN service, its token issuance, its policy store, and its ERP connector.
+- The Wakeel service, its token issuance, its policy store, and its ERP connector.
 - Device root, accessibility-service overlay attacks, and a user who installs the demo and believes the banner.
 - Formal verification of the regex JSON parser.
 

@@ -81,10 +81,10 @@ import app.mizan.design.component.mizanGlassPane
 import app.mizan.design.component.MizanGhostButton
 import app.mizan.design.component.MizanKeyValue
 import app.mizan.design.component.MizanPrimaryButton
-import app.mizan.design.component.MizanRobotScale
+import app.mizan.design.component.WakeelMascot
 import app.mizan.design.component.MizanSecondaryButton
 import app.mizan.design.component.MizanStatusBadge
-import app.mizan.design.component.RobotScaleState
+import app.mizan.design.component.MascotState
 import app.mizan.design.component.ShapeCard
 import app.mizan.design.component.ShapeControl
 import app.mizan.design.component.ShapePill
@@ -143,10 +143,10 @@ fun TransactionStatusContent(
     var showRawPayload by remember { mutableStateOf(false) }
 
     val robotState = when (log.phase) {
-        ExecutionPhase.VERIFIED -> RobotScaleState.SUCCESS
-        ExecutionPhase.AWAITING_APPROVAL -> RobotScaleState.VERIFYING
-        ExecutionPhase.REJECTED, ExecutionPhase.ERP_FAILURE -> RobotScaleState.ALERT
-        else -> RobotScaleState.IDLE_BALANCED
+        ExecutionPhase.VERIFIED -> MascotState.SUCCESS
+        ExecutionPhase.AWAITING_APPROVAL -> MascotState.VERIFYING
+        ExecutionPhase.REJECTED, ExecutionPhase.ERP_FAILURE -> MascotState.ALERT
+        else -> MascotState.IDLE_BALANCED
     }
 
     LazyColumn(
@@ -209,9 +209,9 @@ fun TransactionStatusContent(
                 verticalArrangement = Arrangement.spacedBy(Space.md),
             ) {
                 // Interactive Robot-Scale Emblem
-                MizanRobotScale(
+                WakeelMascot(
                     size = 110.dp,
-                    state = if (isVerifyingHash) RobotScaleState.VERIFYING else robotState,
+                    state = if (isVerifyingHash) MascotState.VERIFYING else robotState,
                     interactive = true,
                 )
 

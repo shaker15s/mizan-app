@@ -1,4 +1,4 @@
-# MIZAN architecture audit
+# Wakeel architecture audit
 
 Date: 2026-09-23. Scope: the repository as it existed at `3c6e175` (`com.example` single-module Android app, ~12k lines of Kotlin). This document was written before the rebuild. It describes what was actually in the code, not what the UI claimed.
 
@@ -134,10 +134,10 @@ Do not preserve the dishonest path behind a compatibility flag.
 1. Move platform-independent rules to `:domain` (policy, risk, state machine, canonical idempotency, interpreter, audit hash, re-authentication policy).
 2. Move Odoo transports to `:integration`. JSON-2 is the primary transport. XML-RPC becomes a legacy adapter. Neither is bound into the production Android graph.
 3. Move Room to `:data`. Explicit `1 → 2` migration. No destructive fallback. Tenant-scoped queries. Schema export enabled.
-4. Production execution goes through `ExecutionAuthority`. If the MIZAN service URL is absent, writes fail closed. The device does not invent an ERP id.
+4. Production execution goes through `ExecutionAuthority`. If the Wakeel service URL is absent, writes fail closed. The device does not invent an ERP id.
 5. Demo is a flavor (`app.mizan.demo`) with a visible simulation banner, simulated ids prefixed `SIM-`, and role switching that cannot exist in the production source set.
 6. Replace the Activity `when` and the god ViewModel with a NavHost and screen state holders.
-7. Replace the glass palette with the MIZAN design system, then rebuild screens from those components.
+7. Replace the glass palette with the Wakeel design system, then rebuild screens from those components.
 8. Keep the XML-RPC serializer/parser behavior (including XXE hardening). Retarget tests at `:integration`.
 9. Package: `com.example` → `app.mizan`. Application id: `com.aistudio.mizan.erpgov` → `app.mizan` (demo suffix `.demo`). No Play listing exists to preserve. Firebase is unused and removed, so the old application id is not load-bearing.
 10. Toolchain: stay on AGP 9.1.1 / Kotlin 2.2.10 (AGP 9.1.1's supported Kotlin line). Fix KSP to `2.2.10-2.0.2`. Upgrade Compose BOM and Room only. Do not jump to Kotlin 2.4.20 without an AGP that declares support.
@@ -150,7 +150,7 @@ User-visible behavior that is removed: fake Odoo latency, fake tamper report, qu
 
 ```text
 :domain          pure JVM. Rules, models, state machine, repository interfaces.
-:integration     pure JVM. JSON-2, legacy XML-RPC, HTTP, redaction, MIZAN API client.
+:integration     pure JVM. JSON-2, legacy XML-RPC, HTTP, redaction, Wakeel API client.
 :data            Room, tenant-scoped repositories, encrypted session token store.
 :design          tokens and components. No business rules.
 :app             shell, navigation, screen state holders, flavors.
@@ -178,7 +178,7 @@ Production trust boundary:
 
 ```text
 Android client
-  → authenticated MIZAN API (ExecutionAuthority)
+  → authenticated Wakeel API (ExecutionAuthority)
     → server policy / approval / idempotency
       → ERP connector (JSON-2 preferred, legacy RPC isolated)
         → ERP
@@ -214,4 +214,4 @@ Android client
 | No Gemini dependency | Nothing called it. Shipping Firebase AI and App Check debug to look capable violates the truth principle. |
 | Baseline profile not fabricated | No device in this environment. The benchmark class is real; the numbers are not invented. |
 
-Known gap, stated plainly: until a MIZAN service exists, the production app can prepare proposals and show cached data, and it cannot honestly execute an ERP write. The demo flavor is how the operational UX is exercised.
+Known gap, stated plainly: until a Wakeel service exists, the production app can prepare proposals and show cached data, and it cannot honestly execute an ERP write. The demo flavor is how the operational UX is exercised.

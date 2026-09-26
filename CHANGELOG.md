@@ -4,6 +4,94 @@ All notable changes. The format follows [Keep a Changelog](https://keepachangelo
 This project is not publicly released yet, so versions here are build
 identifiers, not promises.
 
+## [Unreleased] — 2026-09-26
+
+### Identity
+
+- The app is **Wakeel** (وكيل), a personal assistant for systems and ERP for
+  companies, in Arabic and in English. Every user-visible "MIZAN" is gone: the
+  launcher name, the sign-in copy, the audit PDF, the biometric prompt, the
+  health row, the prompt sent to a model, and the `User-Agent`.
+- New mark: the و of وكيل -- a loop with a tail -- wired to two nodes, inside
+  the seal. The agent carries the accent, the systems carry the only cool
+  colour in the mark. `tools/render_brand.py` grew two primitives (a stroked
+  arc, and a capsule defined by its two ends) so the raster, the vector and the
+  in-app canvas cannot drift apart. `MizanMark` / `MizanHeroEmblem` are now
+  `WakeelMark` / `WakeelEmblem`, and `MizanRobotScale` is `WakeelMascot`.
+- `WAKEEL_API_BASE_URL` and `WAKEEL_ENV` replace the build variables of the old
+  name. Package, module and Gradle project names keep the `mizan` namespace:
+  renaming a shipped package is a migration, not a rebrand.
+
+### Verified, not asserted
+
+- **22 use cases** -- the things a company actually does, from signing in to
+  cancelling an order to reading the audit trail -- now run against a real
+  listener on a real port. `service/src/test/kotlin/.../UseCaseMatrixTest.kt`.
+- **The assistant's understanding** is asserted in both languages:
+  `domain/src/test/kotlin/.../AgentUnderstandingTest.kt`, 22 cases, including
+  Arabic-Indic digits, polite English, and two injection attempts.
+- `:integration` compiles and its tests run for the first time. Its OkHttp
+  dependency cannot be downloaded here, so `tools/jvm_stubs/` stands in the
+  slice of it the module uses. Nothing in the stub performs I/O.
+- Tests: 163, passing: 163 (was 74).
+
+### Fixed
+
+- Required arguments were validated *after* the approval ladder, so an order
+  with no amount answered `SOD_ROLE_INSUFFICIENT` instead of `MISSING_AMOUNT`.
+- An invoice was judged by its own request body, which carries no amount, so
+  every invoice was amountless and therefore low risk however large the order
+  behind it was. The authority now reads the order's amount from the ERP.
+- `سداد فاتورة INV-2026-9021 بمبلغ 850 دولار` paid 2,026: both money
+  extractors took the first number in the sentence, which was the year inside
+  the invoice id.
+- The "lean" prompt was 914 characters and ~240 estimated tokens against its
+  own 750 / 160 budget. It now says the same thing in 483 characters.
+- The client's thousands pattern matched zero comma groups, so it read "450"
+  out of "4500" and left a stray "0" to be read as the amount. The domain
+  pattern was already right; the client's now is too, and both are tested.
+- A vague request produced a clarification that asked nothing, so the app
+  rendered an empty list of questions.
+- "Is SKU-DESK-01 available?" became a draft order: it names no tool keyword.
+- `سجل سداد ... على الفاتورة` was read as an invoice because invoice words were
+  tried before payment words.
+- The items marker only matched أصناف with the hamza.
+- `for Acme Corp 1,250.50 USD` named the customer "Acme Corp 1".
+- A summary ignored the period: "this month" and "today" both answered
+  `current`.
+- Two existing service tests encoded the amountless-invoice behaviour and were
+  updated; one contract test expected a quoted number the writer stopped
+  emitting.
+
+### Design
+
+- Every tappable surface now answers the finger. `mizanPressable` existed and
+  was called nowhere; the shared list row, the section action, the suggestion
+  rows, the sign-out row, and every screen-level tap go through `mizanTap`
+  (spring scale, ripple, one haptic tick).
+- `mizanLiveBorder`: a highlight that walks once around the border of the one
+  thing on the screen that is waiting on a person. Used by the attention card
+  on Home, and only there.
+- A glass pane marked interactive now presses as well as refracting light.
+- The agent's newest line reveals instead of appearing, and while the request
+  is being read, three dots breathe -- with a string resource, so it is
+  translated.
+- The agent's empty state shows the mark instead of the mascot, and its copy
+  comes from the string resources in both languages.
+
+### Docs
+
+- `docs/USE_CASES.md`: the twenty scenarios, each mapped to the test that
+  asserts it, and an explicit list of what is not verified.
+
+### The assistant's front door
+
+- `AiClientUseCasesTest` exercises `MizanAiIntegrationClient.parseErpAction` --
+  what the app calls -- with thirteen sentences: Egyptian colloquial Arabic the
+  rules do not cover, the injection refusal before anything is interpreted, a
+  secret in the sentence that must not stop the answer, a tool this ERP cannot
+  perform, and the cost the call reports.
+
 ## [Unreleased] — 2026-09-25
 
 ### Brand
@@ -147,7 +235,7 @@ are derived and reviewable, not measured.
 
 ### Added
 
-- `:service`, the reference MIZAN authority service: a dependency-free JVM
+- `:service`, the reference Wakeel authority service: a dependency-free JVM
   server (`POST /v1/sessions`, `POST /v1/executions`, `GET /v1/health`,
   `GET /v1/audit`, `GET /v1/erp`) with an in-memory ERP adapter, a
   service-side audit chain, PBKDF2 password verification, token hashing,
@@ -157,7 +245,7 @@ are derived and reviewable, not measured.
   could not be built before this; it still has not been *compiled* here
   (see Unverified below).
 - Real product flavors: `demo`, `staging`, `production`, each with its own
-  `DEMO_MODE`, `MIZAN_ENV`, and `API_BASE_URL`. The simulator now lives in
+  `DEMO_MODE`, `Wakeel_ENV`, and `API_BASE_URL`. The simulator now lives in
   `src/demo`, so a staging or production build cannot contain it.
 - `SimulationDirectory`: the seam that keeps simulated actors, tenants, and
   ledger rows out of every non-demo build.

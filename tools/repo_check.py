@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Repository health check for MIZAN.
+"""Repository health check for Wakeel.
 
 Runs without a JDK, an Android SDK, or a network connection. It answers one
 question honestly: does this tree still obey the invariants the project
@@ -383,7 +383,7 @@ def render(report: Report) -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Static health check for the MIZAN tree.")
+    parser = argparse.ArgumentParser(description="Static health check for the Wakeel tree.")
     parser.add_argument("--json", action="store_true", help="print machine readable output")
     parser.add_argument("--no-write", action="store_true", help="do not rewrite docs/HEALTH.md")
     args = parser.parse_args()
@@ -411,7 +411,7 @@ def main() -> int:
             "findings": [f.__dict__ for f in report.findings],
         }, indent=2))
     else:
-        print(f"MIZAN repository health: {report.score()}/100")
+        print(f"Wakeel repository health: {report.score()}/100")
         print(f"  errors: {len(report.errors)}  warnings: {len(report.warnings)}")
         for finding in report.findings:
             print("  " + finding.line())

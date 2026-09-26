@@ -11,24 +11,24 @@ that the app compiles or that a write reached an ERP.
 
 | module | sources | tests | lines |
 | --- | --- | --- | --- |
-| :app | 38 | 0 | 11524 |
+| :app | 38 | 0 | 11595 |
 | :data | 8 | 0 | 1173 |
-| :design | 10 | 0 | 4222 |
-| :domain | 21 | 5 | 2967 |
-| :integration | 8 | 4 | 1316 |
-| :service | 12 | 4 | 2737 |
+| :design | 10 | 0 | 4267 |
+| :domain | 21 | 6 | 3300 |
+| :integration | 8 | 5 | 1472 |
+| :service | 12 | 5 | 3335 |
 
-Test functions declared: 104.
+Test functions declared: 163.
 Room indexes declared: 20; CREATE INDEX statements in the migration: 20.
 
 ## Findings
 
 ### Warning (4)
 
-- 1276 lines: split this file — `app/src/main/java/app/mizan/feature/home/HistoricalErpActionLogsList.kt`
-- 1001 lines: split this file — `app/src/main/java/app/mizan/feature/agent/Agent.kt`
-- 991 lines: split this file — `app/src/main/java/app/mizan/feature/account/Account.kt`
-- 874 lines: split this file — `design/src/main/kotlin/app/mizan/design/component/Components.kt`
+- 1277 lines: split this file — `app/src/main/java/app/mizan/feature/home/HistoricalErpActionLogsList.kt`
+- 1065 lines: split this file — `app/src/main/java/app/mizan/feature/agent/Agent.kt`
+- 989 lines: split this file — `app/src/main/java/app/mizan/feature/account/Account.kt`
+- 875 lines: split this file — `design/src/main/kotlin/app/mizan/design/component/Components.kt`
 
 ### Info (4)
 

@@ -1,6 +1,6 @@
 # Product
 
-MIZAN is a bilingual (Arabic and English) client for governed ERP operations. A person describes what they want. The app turns that into a specific action, shows the rule and the risk classification, and does not carry it out until the right person confirms it. A checked result means the important fields were read back. An uncertain result is not marked failed and is not sent again.
+Wakeel is a bilingual (Arabic and English) client for governed ERP operations. A person describes what they want. The app turns that into a specific action, shows the rule and the risk classification, and does not carry it out until the right person confirms it. A checked result means the important fields were read back. An uncertain result is not marked failed and is not sent again.
 
 ## What a person can do
 
@@ -20,7 +20,7 @@ MIZAN is a bilingual (Arabic and English) client for governed ERP operations. A 
 | Label | Meaning |
 | --- | --- |
 | Checked inside the simulation | The demo wrote a local row, read it back, and compared customer, amount, status, and origin. It is not an ERP record. |
-| Checked against the ERP record | The MIZAN service returned `verified` with a record id and model. The phone did not perform that read itself. |
+| Checked against the ERP record | The Wakeel service returned `verified` with a record id and model. The phone did not perform that read itself. |
 | Accepted, not yet checked | The service accepted the request. The ERP record is not confirmed. |
 | Uncertain | The request may have been accepted. It is not retried. |
 | Saved copy | A lookup against rows already on the phone. Not a live ERP query. |

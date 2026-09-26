@@ -65,7 +65,7 @@ def read_tokens() -> tuple[dict, dict]:
 
 
 def over(foreground: tuple[int, int, int, int], background: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
-    """Source-over composite. Everything in MIZAN is drawn on something."""
+    """Source-over composite. Everything in Wakeel is drawn on something."""
     fr, fg, fb, fa = foreground
     br, bg, bb, ba = background
     alpha = fa / 255.0
