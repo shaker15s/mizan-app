@@ -5,6 +5,8 @@ import app.mizan.domain.authority.AuthorityMode
 import app.mizan.domain.authority.AuthorityOutcome
 import app.mizan.domain.authority.ExecuteCommand
 import app.mizan.domain.authority.ExecutionAuthority
+import app.mizan.domain.authority.ReceiptEvidence
+import app.mizan.domain.receipt.ReceiptTrust
 import app.mizan.domain.error.AppError
 import app.mizan.domain.error.DispatchState
 import app.mizan.domain.execution.ExecutionEvent
@@ -75,24 +77,91 @@ class RemoteExecutionAuthority(
         persist(proposal, command, ExecutionPhase.EXECUTING, DispatchState.SENT, null)
         val client = MizanApiClient(base, deps.token)
         val outcome = withContext(Dispatchers.IO) {
-            client.execute(proposal, command.approver.id.value)
+            // The approval the caller obtained, and the device proof that
+            // answers for it, travel with the write. The service recomputes
+            // the fingerprint and refuses a claim it cannot verify, so this is
+            // a claim and not a permission.
+            client.execute(proposal, command.approver.id.value, command.approval)
         }
-        when (outcome) {
-            is AuthorityOutcome.Verified -> persist(proposal, command, ExecutionPhase.VERIFIED, DispatchState.SENT, null, outcome.erpRecordId, outcome.erpModel)
-            is AuthorityOutcome.AcceptedUnverified -> persist(proposal, command, ExecutionPhase.ERP_ACCEPTED, DispatchState.SENT, outcome.messageCode)
+        val checked = withContext(Dispatchers.IO) { verifyReceipt(base, outcome, proposal) }
+        when (checked) {
+            is AuthorityOutcome.Verified -> persist(
+                proposal,
+                command,
+                ExecutionPhase.VERIFIED,
+                DispatchState.SENT,
+                checked.receipt?.let { "${it.reasonCode}:${it.receiptId}" },
+                checked.erpRecordId,
+                checked.erpModel,
+            )
+            is AuthorityOutcome.AcceptedUnverified -> persist(
+                proposal,
+                command,
+                ExecutionPhase.ERP_ACCEPTED,
+                DispatchState.SENT,
+                checked.messageCode,
+            )
             is AuthorityOutcome.Uncertain -> {
-                openCase(proposal, outcome.candidateRecordIds, outcome.messageCode)
-                persist(proposal, command, ExecutionPhase.RECONCILIATION_REQUIRED, DispatchState.SENT, outcome.messageCode)
+                openCase(proposal, checked.candidateRecordIds, checked.messageCode)
+                persist(
+                    proposal,
+                    command,
+                    ExecutionPhase.RECONCILIATION_REQUIRED,
+                    DispatchState.SENT,
+                    checked.messageCode,
+                )
             }
             is AuthorityOutcome.Refused -> persist(
                 proposal,
                 command,
                 ExecutionPhase.ERP_FAILURE,
                 DispatchState.SENT,
-                outcome.error.code,
+                checked.error.code,
             )
         }
-        return outcome
+        return checked
+    }
+
+    /**
+     * Asks the authority for the receipt of a verified write and checks it here.
+     *
+     * The device is the last link of the chain that starts in the ERP, and this
+     * is the only link it can check for itself. When this build pinned no key
+     * the verdict is that it did not check, which is a different statement from
+     * "the receipt is good" and is rendered as one.
+     */
+    private suspend fun verifyReceipt(
+        base: String,
+        outcome: AuthorityOutcome,
+        proposal: Proposal,
+    ): AuthorityOutcome {
+        val verified = outcome as? AuthorityOutcome.Verified ?: return outcome
+        val receiptId = verified.receipt?.receiptId ?: return outcome
+        val keys = PinnedReceiptKeys.of()
+        if (keys.isEmpty()) return outcome
+        val client = app.mizan.integration.api.GovernanceApiClient(base, deps.token)
+        val inspection = client.verifyReceipt(
+            receiptId = receiptId,
+            pinnedKeys = keys,
+            expected = app.mizan.domain.receipt.ReceiptExpectation(
+                tenantId = proposal.tenantId.value,
+                executionId = proposal.executionId.value,
+                // The proposal's own fingerprint, computed on the device from
+                // the same fields the service hashes. If the receipt is about
+                // a different proposal, that is not a verification.
+                proposalFingerprint = proposal.fingerprint,
+                erpRecordId = verified.erpRecordId,
+            ),
+        )
+        val evidence = when (inspection) {
+            is app.mizan.integration.api.RemoteResult.Refused ->
+                // The receipt could not be fetched: the device has not checked
+                // it, which is not the same as checking it and finding it bad.
+                ReceiptEvidence(receiptId, ReceiptTrust.NOT_CHECKED, inspection.code)
+            is app.mizan.integration.api.RemoteResult.Ok ->
+                ReceiptEvidence(receiptId, inspection.value.trust, inspection.value.reasonCode)
+        }
+        return verified.copy(receipt = evidence)
     }
 
     private suspend fun priorOutcome(proposal: Proposal): AuthorityOutcome? {

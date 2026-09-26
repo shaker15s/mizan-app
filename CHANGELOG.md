@@ -4,6 +4,58 @@ All notable changes. The format follows [Keep a Changelog](https://keepachangelo
 This project is not publicly released yet, so versions here are build
 identifiers, not promises.
 
+## [Unreleased] — service lane, 2026-09-26
+
+### The production backend
+
+- The service no longer keeps its truth in memory. `service/store/DurableLog.kt`
+  is an append-only, CRC-framed log with fsync-on-append, torn-tail recovery
+  and atomic compaction, and every durable store — the execution journal, the
+  idempotency index, sessions, receipts, devices, challenges, reconciliation
+  cases, the audit chain, approvals and the outbox — is a small class over it.
+  A half-written frame is dropped and only it; a restart returns the same
+  journal, the same receipt and the same key.
+- **PostgreSQL is a deployment, not a promise.** `RecordLog` is the seam every
+  store is written against, `FileLogProvider` is the default, and
+  `store/sql/PostgresRecordLog.kt` stores the same streams as rows of one
+  narrow table (`seq BIGSERIAL`, `stream`, `payload`, `written_at`) with an
+  idempotent schema, `ORDER BY seq` reads, and compaction in one transaction.
+  `ServiceConfig.database` selects it; `ServiceConfig.logProvider` lets a
+  deployment bring its own durability; naming two homes for the same state is
+  refused before anything is opened. The schema, the statements, the ordering,
+  the rollback and two services sharing one database are tested. PostgreSQL
+  itself is not: there is no server in this environment.
+- **The service drains its own retry queue.** A read the ERP could not answer
+  is an outbox entry in the same durable store, carrying the person, the key
+  and the arguments; `ServiceOutboxWorker` re-enters the authority under them,
+  so a retry crosses policy, the journal and the read back like any other
+  request. Exponential backoff to a fifteen-minute ceiling, five attempts and
+  a person is asked, startup recovery of anything left in flight, and a write
+  is never re-dispatched. `/v1/health` reports what the queue holds.
+- **Fixed: the durable journal kept the pre-dispatch copy.** The idempotency
+  bookkeeping saved the `AUTHORIZED` journal after the pipeline had already
+  saved the executed one, so the last write erased the read-back record, the
+  record id and the final stage while the HTTP response still reported them.
+  Found by a test that builds a second service over the same directory and
+  asks it what happened.
+
+### Execution engine
+
+- The journal stage machine, canonical input hash, policy version and hash,
+  approval identity, proposal fingerprint, device-bound proof, signed receipt
+  and reconciliation case are all in the pipeline and all under test,
+  including the refusals: no dispatch before authorisation, `VERIFIED`
+  unreachable without a read-back, an uncertain write only moves forward.
+- The authority was split into the part that decides and the part that writes:
+  `authority/ServiceAuthority.kt` (decides), `ExecutionPipeline.kt` (the only
+  code that talks to an ERP), `IdempotencyView.kt`, `JournalBook.kt` (the only
+  journal writer), `Outcomes.kt`, `Arguments.kt` and `ReferenceDeployment.kt`.
+  No test changed, and the behaviour did not move with the files.
+- Odoo 19 over JSON-2 is implemented as the primary transport with a scripted
+  transport proving the request shape and, more importantly, the difference
+  between "the ERP refused" and "I do not know what the ERP did".
+- Tests: **393, passing: 393** (the JVM suite this environment can run).
+
 ## [Unreleased] — 2026-09-26
 
 ### Identity
@@ -33,7 +85,8 @@ identifiers, not promises.
 - `:integration` compiles and its tests run for the first time. Its OkHttp
   dependency cannot be downloaded here, so `tools/jvm_stubs/` stands in the
   slice of it the module uses. Nothing in the stub performs I/O.
-- Tests: 163, passing: 163 (was 74).
+- Tests were 163, passing: 163 (was 74) at that point in the work; the
+  JVM suite now stands at 393 and is listed in `docs/TESTING.md`.
 
 ### Fixed
 

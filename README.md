@@ -75,9 +75,17 @@ breaks, and the CI runs it on every push:
 ## Status
 
 The three JVM modules are compiled and tested here, with a real Kotlin compiler
-and a real JVM: **163 tests, all passing** (`python3 tools/jvm_check.py`). They
+and a real JVM: **393 tests, all passing** (`python3 tools/jvm_check.py`). They
 cover the policy engine, the interpreter, the audit chain, the AI client, the
-HTTP contract, and the reference service end to end. `tools/syntax_check.py`
+HTTP contract, and the reference service end to end -- including the governed
+pipeline: the execution journal and its state machine, durable stores that
+survive a torn write and a restart, a retry outbox that the service drains
+itself, device-bound proofs over real signatures, signed receipts,
+reconciliation, the PostgreSQL record-log deployment, and the ERP boundary
+where a lost answer must never become a retry.
+
+`python3 tools/bootstrap_toolchain.py` provisions that JDK and Kotlin compiler
+on a machine that has neither, so the check above runs anywhere. `tools/syntax_check.py`
 parses every Kotlin file, and `tools/check_contrast.py` re-derives the palettes
 and checks WCAG AA.
 

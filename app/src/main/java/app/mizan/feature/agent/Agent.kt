@@ -281,17 +281,28 @@ class AgentViewModel(private val graph: AppGraph) : ViewModel() {
             busy = false
             pending = null
             when (outcome) {
-                is AuthorityOutcome.Verified -> add(
-                    AgentLine.Result(
-                        newId(),
-                        if (outcome.verification == app.mizan.domain.model.VerificationKind.READ_BACK) {
-                            "ERP_CHECKED"
-                        } else {
-                            "SIM_CHECKED"
-                        },
-                        outcome.erpRecordId,
-                    ),
-                )
+                is AuthorityOutcome.Verified -> {
+                    // A receipt this device could check is a stronger claim
+                    // than a read-back it was told about, so the two are
+                    // different sentences. Neither is shown as the other.
+                    val receipt = outcome.receipt
+                    val code = when {
+                        receipt == null -> "ERP_CHECKED"
+                        receipt.proven -> "RECEIPT_VERIFIED"
+                        else -> "RECEIPT_UNVERIFIED"
+                    }
+                    add(
+                        AgentLine.Result(
+                            newId(),
+                            if (outcome.verification == app.mizan.domain.model.VerificationKind.SIMULATED_READ_BACK) {
+                                "SIM_CHECKED"
+                            } else {
+                                code
+                            },
+                            receipt?.let { "${outcome.erpRecordId} · ${it.reasonCode}" } ?: outcome.erpRecordId,
+                        ),
+                    )
+                }
                 is AuthorityOutcome.AcceptedUnverified -> add(AgentLine.Result(newId(), "ACCEPTED", outcome.messageCode))
                 is AuthorityOutcome.Uncertain -> add(AgentLine.Result(newId(), "UNCERTAIN", outcome.messageCode))
                 is AuthorityOutcome.Refused -> add(AgentLine.Result(newId(), outcome.error.code, null))
@@ -828,6 +839,10 @@ private fun ResultBlock(line: AgentLine.Result) {
     val (label, tone) = when (line.code) {
         "SIM_CHECKED" -> "Verified in Simulation" to StatusTone.Warning
         "ERP_CHECKED" -> "Verified in ERP" to StatusTone.Success
+        "RECEIPT_VERIFIED" -> "Receipt verified on this device" to StatusTone.Success
+        // The write was read back and the receipt could not be checked here.
+        // Saying so is the point: it is not a failure, and it is not a tick.
+        "RECEIPT_UNVERIFIED" -> "Applied — receipt not verifiable here" to StatusTone.Warning
         "ACCEPTED" -> "ERP Accepted" to StatusTone.Info
         "UNCERTAIN" -> "Outcome Uncertain" to StatusTone.Warning
         "READ_LOCAL" -> "Retrieved from Cache" to StatusTone.Info

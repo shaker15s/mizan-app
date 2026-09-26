@@ -22,6 +22,9 @@ class InMemoryErp {
     private val customers = LinkedHashMap<String, CustomerRow>()
     private val stock = LinkedHashMap<String, StockRow>()
 
+    private val tenantIds = LinkedHashSet<String>()
+    private val customerTenants = LinkedHashMap<String, String>()
+
     private var orderSequence = 1000L
     private var invoiceSequence = 5000L
     private var paymentSequence = 7000L
@@ -32,6 +35,10 @@ class InMemoryErp {
         customers["nile industrial"] = CustomerRow("CUS-3", "Nile Industrial", 900_000L, 880_000L, "EGP", "blocked")
         stock["SKU-DESK-01"] = StockRow("SKU-DESK-01", "Standing desk", 42, 4, 125_000L, "USD", "WH-1")
         stock["SKU-CHAIR-99"] = StockRow("SKU-CHAIR-99", "Task chair", 17, 2, 45_000L, "USD", "WH-1")
+        // The reference dataset belongs to the labeled demo tenant.
+        registerTenant("sim-alamal", "CUS-1")
+        registerTenant("sim-alamal", "CUS-2")
+        registerTenant("sim-alamal", "CUS-3")
     }
 
     @Synchronized
@@ -99,6 +106,13 @@ class InMemoryErp {
             recordId = row.sku,
             summary = "available=${row.availableQty - row.reservedQty} reserved=${row.reservedQty}",
             tenantId = tenantId,
+            fields = mapOf(
+                "available" to (row.availableQty - row.reservedQty).toString(),
+                "reserved" to row.reservedQty.toString(),
+                "onHand" to row.availableQty.toString(),
+                "priceMinor" to row.priceMinor.toString(),
+                "currency" to row.currency,
+            ),
         )
     }
 
@@ -111,6 +125,7 @@ class InMemoryErp {
             recordId = hits.firstOrNull()?.id ?: "none",
             summary = "matches=${hits.size}",
             tenantId = tenantId,
+            fields = mapOf("matches" to hits.size.toString()),
         )
     }
 
@@ -133,17 +148,48 @@ class InMemoryErp {
         MizanContract.ErpModel.SALE_ORDER -> {
             val row = orders[recordId] ?: return null
             if (row.tenantId != tenantId) return null
-            ErpRead(model, row.id, "state=${row.state} amountMinor=${row.amountMinor} ${row.currency}", tenantId)
+            ErpRead(
+                model = model,
+                recordId = row.id,
+                summary = "state=${row.state} amountMinor=${row.amountMinor} currency=${row.currency}",
+                tenantId = tenantId,
+                fields = mapOf(
+                    "state" to row.state,
+                    "amountMinor" to row.amountMinor.toString(),
+                    "currency" to row.currency,
+                    "customerName" to row.customerName,
+                ),
+            )
         }
         MizanContract.ErpModel.INVOICE -> {
             val row = invoices[recordId] ?: return null
             if (row.tenantId != tenantId) return null
-            ErpRead(model, row.id, "orderId=${row.orderId} amountMinor=${row.amountMinor} ${row.currency}", tenantId)
+            ErpRead(
+                model = model,
+                recordId = row.id,
+                summary = "orderId=${row.orderId} amountMinor=${row.amountMinor} currency=${row.currency}",
+                tenantId = tenantId,
+                fields = mapOf(
+                    "orderId" to row.orderId,
+                    "amountMinor" to row.amountMinor.toString(),
+                    "currency" to row.currency,
+                ),
+            )
         }
         MizanContract.ErpModel.PAYMENT -> {
             val row = payments[recordId] ?: return null
             if (row.tenantId != tenantId) return null
-            ErpRead(model, row.id, "invoiceId=${row.invoiceId} amountMinor=${row.amountMinor} ${row.currency}", tenantId)
+            ErpRead(
+                model = model,
+                recordId = row.id,
+                summary = "invoiceId=${row.invoiceId} amountMinor=${row.amountMinor} currency=${row.currency}",
+                tenantId = tenantId,
+                fields = mapOf(
+                    "invoiceId" to row.invoiceId,
+                    "amountMinor" to row.amountMinor.toString(),
+                    "currency" to row.currency,
+                ),
+            )
         }
         else -> null
     }
@@ -169,6 +215,35 @@ class InMemoryErp {
     @Synchronized
     fun customerState(customerName: String): CustomerRow? = customers[customerName.trim().lowercase()]
 
+    /**
+     * Every customer whose name contains the query, scoped by tenant.
+     * Entity resolution needs the list, not the first row: choosing the first
+     * match is how the wrong customer ends up on an order.
+     */
+    @Synchronized
+    fun customerMatches(tenantId: String, query: String): List<CustomerRow> {
+        val needle = query.trim().lowercase()
+        if (needle.isEmpty()) return emptyList()
+        return customers.values.filter { row ->
+            row.name.lowercase().contains(needle) && tenantOf(row.id) == tenantId
+        }
+    }
+
+    @Synchronized
+    fun stockRow(sku: String): StockRow? = stock[sku.trim().uppercase()]
+
+    /** Registered tenant ids of the reference dataset. */
+    @Synchronized
+    fun tenants(): List<String> = tenantIds.toList()
+
+    @Synchronized
+    fun registerTenant(tenantId: String, customerId: String) {
+        tenantIds.add(tenantId)
+        customerTenants[customerId] = tenantId
+    }
+
+    private fun tenantOf(customerId: String): String? = customerTenants[customerId]
+
     @Synchronized
     fun snapshot(tenantId: String): ErpSnapshot = ErpSnapshot(
         orders = orders.values.filter { it.tenantId == tenantId }.map { it.id to it.state },
@@ -183,6 +258,15 @@ class InMemoryErp {
         val recordId: String,
         val summary: String,
         val tenantId: String,
+        /**
+         * The same information as [summary], as named fields.
+         *
+         * Verification compares fields, so a read-back that only speaks prose
+         * cannot be verified. [summary] exists for a person to read; these
+         * exist for the comparison, and they are what a real adapter maps out
+         * of an Odoo `read`.
+         */
+        val fields: Map<String, String> = emptyMap(),
     )
 
     data class ErpSnapshot(

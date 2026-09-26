@@ -2,6 +2,7 @@ package app.mizan.integration
 
 import app.mizan.domain.authority.AuthorityOutcome
 import app.mizan.domain.model.ExecutionId
+import app.mizan.domain.receipt.ReceiptTrust
 import app.mizan.integration.api.MizanApiClient
 import app.mizan.integration.http.CallKind
 import app.mizan.integration.http.Redactor
@@ -12,6 +13,8 @@ import app.mizan.integration.odoo.legacy.XmlRpcParser
 import app.mizan.integration.odoo.legacy.XmlRpcSerializer
 import app.mizan.domain.model.CanonicalValue
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -86,5 +89,30 @@ class IntegrationTest {
         assertTrue(verified is AuthorityOutcome.Verified)
         val empty = client.map(200, """{"ok":true}""", ExecutionId("EXE-1"))
         assertTrue(empty is AuthorityOutcome.Refused)
+    }
+
+    @Test
+    fun aReceiptIdInTheVerifiedAnswerIsAnInvitationToCheckAndNotACheck() {
+        val client = MizanApiClient("https://api.example", { "token" })
+        val withReceipt = client.map(
+            200,
+            """{"status":"verified","executionId":"EXE-1","erpRecordId":"SO-9",""" +
+                """"erpModel":"sale.order","receiptId":"RCT-9"}""",
+            ExecutionId("EXE-1"),
+        ) as AuthorityOutcome.Verified
+        val receipt = withReceipt.receipt
+        assertNotNull(receipt)
+        // Untouched: the device has the id and has not looked at the signature.
+        assertEquals("RCT-9", receipt?.receiptId)
+        assertEquals(ReceiptTrust.NOT_CHECKED, receipt?.trust)
+        assertEquals("RECEIPT_NOT_CHECKED", receipt?.reasonCode)
+        assertFalse(receipt?.proven == true)
+        // A deployment with no receipt configured is not accused of anything.
+        val withoutReceipt = client.map(
+            200,
+            """{"status":"verified","executionId":"EXE-1","erpRecordId":"SO-9","erpModel":"sale.order"}""",
+            ExecutionId("EXE-1"),
+        ) as AuthorityOutcome.Verified
+        assertNull(withoutReceipt.receipt)
     }
 }
