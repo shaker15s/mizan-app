@@ -5,7 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitPointerEventScope
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -187,29 +187,26 @@ fun MizanGlassSurface(
 
     val pointerModifier = if (interactive && !reduced) {
         Modifier.pointerInput(Unit) {
-            awaitEachGesture {
-                do {
+            awaitPointerEventScope {
+                while (true) {
                     val event = awaitPointerEvent()
-                    val change = event.changes.firstOrNull()
-                    when (event.type) {
-                        PointerEventType.Press,
-                        PointerEventType.Move,
-                        -> {
-                            if (change != null) {
-                                val width = size.width.coerceAtLeast(1)
-                                val height = size.height.coerceAtLeast(1)
-                                focusX = (change.position.x / width).coerceIn(-0.4f, 1.4f)
-                                focusY = (change.position.y / height).coerceIn(-0.4f, 1.4f)
-                            }
-                            touched = 1f
+                    val change = event.changes.firstOrNull { it.pressed }
+                    val type = event.type
+                    if (type == PointerEventType.Press || type == PointerEventType.Move) {
+                        if (change != null) {
+                            val width = size.width.coerceAtLeast(1)
+                            val height = size.height.coerceAtLeast(1)
+                            focusX = (change.position.x / width).coerceIn(-0.4f, 1.4f)
+                            focusY = (change.position.y / height).coerceIn(-0.4f, 1.4f)
                         }
-                        PointerEventType.Release -> {
-                            focusX = 0.18f
-                            focusY = 0f
-                            touched = 0f
-                        }
+                        touched = 1f
+                    } else if (type == PointerEventType.Release) {
+                        // The light drifts back to the top-left corner.
+                        focusX = 0.18f
+                        focusY = 0f
+                        touched = 0f
                     }
-                } while (event.changes.any { it.pressed })
+                }
             }
         }
     } else {

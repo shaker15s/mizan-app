@@ -72,11 +72,14 @@ def sd_triangle(x, y, ax, ay, bx, by, cx, cy):
         seg(x, y, bx, by, cx, cy),
         seg(x, y, cx, cy, ax, ay),
     )
-    inside = (
-        (bx - ax) * (y - ay) - (by - ay) * (x - ax) >= 0
-        and (cx - bx) * (y - by) - (cy - by) * (x - bx) >= 0
-        and (ax - cx) * (y - cy) - (ay - cy) * (x - cx) >= 0
-    )
+    # Winding agnostic. The first version required all three cross products to
+    # be non-negative, which is only true for one winding order: with the other
+    # order the triangle was never "inside", so it rasterised as a hairline
+    # outline of itself. The fulcrum shipped hollow because of this.
+    c1 = (bx - ax) * (y - ay) - (by - ay) * (x - ax)
+    c2 = (cx - bx) * (y - by) - (cy - by) * (x - bx)
+    c3 = (ax - cx) * (y - cy) - (ay - cy) * (x - cx)
+    inside = (c1 >= 0 and c2 >= 0 and c3 >= 0) or (c1 <= 0 and c2 <= 0 and c3 <= 0)
     return -d if inside else d
 
 
@@ -192,6 +195,21 @@ def ring(cx, cy, r, thickness, fill, alpha=1.0):
     )
 
 
+def bowl(cx, cy, r, thickness, fill, alpha=1.0):
+    """The lower half of a ring: a pan, not a block.
+
+    Expressed as a crescent -- the outer half disc minus the inner one -- which
+    is exactly what the vector drawable emits too, so the two cannot drift.
+    """
+    inner = r - thickness
+    return Shape(
+        lambda x, y: max(sd_half_disc(x, y, cx, cy, r), -sd_half_disc(x, y, cx, cy, inner)),
+        fill,
+        alpha,
+        (cx - r, cy, cx + r, cy + r),
+    )
+
+
 def triangle(ax, ay, bx, by, cx, cy, fill, alpha=1.0):
     xs = (ax, bx, cx)
     ys = (ay, by, cy)
@@ -225,8 +243,41 @@ BG_MID = "#062A2C"
 BG_DEEP = "#0A1226"
 
 
-def mark_shapes(offset_x=0.0, offset_y=0.0, scale=1.0, space=64.0):
-    """The MIZAN balance mark, in a 64 unit square.
+# The mark, described once.
+#
+# Every entry is (kind, geometry, gradient, alpha) in the 64 unit square. Both
+# the PNG mipmaps and the vector drawables are built from this list, so the
+# raster and the vector can never disagree about where a stroke is.
+#
+# Refined from the first version: the beam is thinner, the pans are crescents
+# with rims instead of filled blocks, and the fulcrum is slimmer. An instrument
+# reads as an instrument when its strokes are lighter than its silhouette.
+MARK_PARTS = [
+    # seal: a soft band and a crisp hairline inside it
+    ("ring", (32.0, 32.0, 29.2, 3.0), "a", 0.40),
+    ("ring", (32.0, 32.0, 29.2, 1.1), "b", None),
+    # beam and its end caps
+    ("rect", (32.0, 21.4, 33.0, 2.8, 1.4), "b", None),
+    ("circle", (15.5, 21.4, 2.3), "b", None),
+    ("circle", (48.5, 21.4, 2.3), "b", None),
+    # cables from the caps down to the rims
+    ("rect", (15.5, 26.5, 1.4, 6.2, 0.7), "b", 0.90),
+    ("rect", (48.5, 26.5, 1.4, 6.2, 0.7), "b", 0.90),
+    # pans: crescents with a rim, so they read as bowls
+    ("bowl", (15.5, 30.4, 6.8, 1.6), "b", None),
+    ("bowl", (48.5, 30.4, 6.8, 1.6), "b", None),
+    ("rect", (15.5, 30.4, 13.6, 1.3, 0.65), "b", 0.95),
+    ("rect", (48.5, 30.4, 13.6, 1.3, 0.65), "b", 0.95),
+    # fulcrum, pillar, base, plinth
+    ("triangle", (32.0, 20.9, 26.8, 30.2, 37.2, 30.2), "a", None),
+    ("rect", (32.0, 38.4, 3.0, 15.2, 1.5), "b", None),
+    ("rect", (32.0, 47.6, 22.0, 3.8, 1.9), "b", None),
+    ("rect", (32.0, 52.4, 13.0, 2.4, 1.2), "a", 0.60),
+]
+
+
+def mark_shapes(offset_x=0.0, offset_y=0.0, scale=1.0):
+    """The MIZAN balance mark, built from MARK_PARTS.
 
     A beam on a fulcrum, two pans, and a plinth, held inside a seal. The
     silhouette is symmetric: this is an instrument at rest, not a robot.
@@ -244,27 +295,32 @@ def mark_shapes(offset_x=0.0, offset_y=0.0, scale=1.0, space=64.0):
                                 [(0.0, A_START), (0.45, A_MID), (1.0, A_END)])
     gradient_b = LinearGradient(tx(32), ty(14), tx(32), ty(58),
                                 [(0.0, B_START), (0.5, B_MID), (1.0, B_END)])
+    fills = {"a": gradient_a, "b": gradient_b}
 
-    return [
-        # seal: a soft outer band and a crisp inner hairline
-        ring(tx(32), ty(32), 29.2 * s, 3.2 * s, gradient_a, alpha=0.42),
-        ring(tx(32), ty(32), 29.2 * s, 1.3 * s, gradient_b),
-        # beam and its end caps
-        rounded_rect(tx(32), ty(22), 39.6 * s, 3.8 * s, 1.9 * s, gradient_b),
-        circle(tx(13), ty(22), 2.9 * s, gradient_b),
-        circle(tx(51), ty(22), 2.9 * s, gradient_b),
-        # cables
-        rounded_rect(tx(13), ty(28.4), 1.7 * s, 7.6 * s, 0.85 * s, gradient_b, alpha=0.9),
-        rounded_rect(tx(51), ty(28.4), 1.7 * s, 7.6 * s, 0.85 * s, gradient_b, alpha=0.9),
-        # pans
-        half_disc(tx(13), ty(32.4), 6.5 * s, gradient_b),
-        half_disc(tx(51), ty(32.4), 6.5 * s, gradient_b),
-        # fulcrum, pillar, base, plinth
-        triangle(tx(32), ty(21.6), tx(25.4), ty(31.2), tx(38.6), ty(31.2), gradient_a),
-        rounded_rect(tx(32), ty(37.9), 3.8 * s, 14.6 * s, 1.9 * s, gradient_b),
-        rounded_rect(tx(32), ty(47.4), 24.0 * s, 4.4 * s, 2.2 * s, gradient_b),
-        rounded_rect(tx(32), ty(52.7), 14.0 * s, 2.6 * s, 1.3 * s, gradient_a, alpha=0.6),
-    ]
+    shapes = []
+    for kind, geometry, gradient, alpha in MARK_PARTS:
+        fill = fills[gradient]
+        if kind == "ring":
+            cx, cy, r, thickness = geometry
+            shapes.append(ring(tx(cx), ty(cy), r * s, thickness * s, fill,
+                               alpha if alpha is not None else 1.0))
+        elif kind == "rect":
+            cx, cy, w, h, r = geometry
+            shapes.append(rounded_rect(tx(cx), ty(cy), w * s, h * s, r * s, fill,
+                                       alpha if alpha is not None else 1.0))
+        elif kind == "circle":
+            cx, cy, r = geometry
+            shapes.append(circle(tx(cx), ty(cy), r * s, fill,
+                                 alpha if alpha is not None else 1.0))
+        elif kind == "bowl":
+            cx, cy, r, thickness = geometry
+            shapes.append(bowl(tx(cx), ty(cy), r * s, thickness * s, fill,
+                               alpha if alpha is not None else 1.0))
+        elif kind == "triangle":
+            ax, ay, bx, by, cx, cy = geometry
+            shapes.append(triangle(tx(ax), ty(ay), tx(bx), ty(by), tx(cx), ty(cy), fill,
+                                   alpha if alpha is not None else 1.0))
+    return shapes
 
 
 def launcher_shapes(space=108.0):
@@ -441,8 +497,12 @@ def gradient_xml(name, x0, y0, x1, y1, stops, radial=False, cx=0.0, cy=0.0, r=0.
         </aapt:attr>"""
 
 
-def mark_vector(viewport, offset=0.0, scale=1.0, indent="    "):
-    """The mark as Android vector body: two rings and the balance."""
+def mark_vector(viewport, offset=0.0, scale=1.0, indent="    ", monochrome=False):
+    """The mark as Android vector body, built from the same MARK_PARTS.
+
+    `monochrome` emits a flat white silhouette for Android 13 themed icons:
+    the system tints it, so it must carry shape and alpha, never colour.
+    """
     s = scale
     ox = oy = offset
 
@@ -452,42 +512,54 @@ def mark_vector(viewport, offset=0.0, scale=1.0, indent="    "):
     def ty(y):
         return oy + y * s
 
-    grad_a = gradient_xml(
-        "android:fillColor", tx(12), ty(14), tx(52), ty(54),
-        [(0.0, A_START, None), (0.45, A_MID, None), (1.0, A_END, None)],
-    )
-    grad_b = gradient_xml(
-        "android:fillColor", tx(32), ty(14), tx(32), ty(58),
-        [(0.0, B_START, None), (0.5, B_MID, None), (1.0, B_END, None)],
-    )
-
-    def path(data, gradient, alpha=None, fill_type=None):
+    def path(data, gradient_name, alpha=None, fill_type=None):
         alpha_attr = f'\n{indent}    android:fillAlpha="{alpha}"' if alpha else ""
         # Two nested contours in the same direction only read as a ring with
         # the even-odd rule; the default non-zero rule would fill the hole.
         type_attr = f'\n{indent}    android:fillType="{fill_type}"' if fill_type else ""
+        if monochrome:
+            colour = f'\n{indent}    android:fillColor="#FFFFFF"'
+            if alpha:
+                colour += f'\n{indent}    android:fillAlpha="{alpha}"'
+            return f"""{indent}<path
+{indent}    android:pathData="{data}"{type_attr}{colour} />"""
+        gradient = (
+            gradient_xml("android:fillColor", tx(12), ty(14), tx(52), ty(54),
+                         [(0.0, A_START, None), (0.45, A_MID, None), (1.0, A_END, None)])
+            if gradient_name == "a"
+            else gradient_xml("android:fillColor", tx(32), ty(14), tx(32), ty(58),
+                              [(0.0, B_START, None), (0.5, B_MID, None), (1.0, B_END, None)])
+        )
         return f"""{indent}<path
 {indent}    android:pathData="{data}"{type_attr}{alpha_attr}>
 {gradient}
 {indent}</path>"""
 
-    parts = [
-        path(circle_path(tx(32), ty(32), 29.2 * s) + " " + circle_path(tx(32), ty(32), 27.9 * s),
-             grad_a, "0.42", "evenOdd"),
-        path(circle_path(tx(32), ty(32), 29.2 * s) + " " + circle_path(tx(32), ty(32), 28.5 * s),
-             grad_b, None, "evenOdd"),
-        path(rounded_rect_path(tx(12.2), ty(20.1), 39.6 * s, 3.8 * s, 1.9 * s), grad_b),
-        path(circle_path(tx(13), ty(22), 2.9 * s), grad_b),
-        path(circle_path(tx(51), ty(22), 2.9 * s), grad_b),
-        path(rounded_rect_path(tx(12.15), ty(24.6), 1.7 * s, 7.6 * s, 0.85 * s), grad_b, "0.9"),
-        path(rounded_rect_path(tx(50.15), ty(24.6), 1.7 * s, 7.6 * s, 0.85 * s), grad_b, "0.9"),
-        path(half_disc_path(tx(13), ty(32.4), 6.5 * s), grad_b),
-        path(half_disc_path(tx(51), ty(32.4), 6.5 * s), grad_b),
-        path(triangle_path(tx(32), ty(21.6), tx(25.4), ty(31.2), tx(38.6), ty(31.2)), grad_a),
-        path(rounded_rect_path(tx(30.1), ty(30.6), 3.8 * s, 14.6 * s, 1.9 * s), grad_b),
-        path(rounded_rect_path(tx(20), ty(45.2), 24.0 * s, 4.4 * s, 2.2 * s), grad_b),
-        path(rounded_rect_path(tx(25), ty(51.4), 14.0 * s, 2.6 * s, 1.3 * s), grad_a, "0.6"),
-    ]
+    parts = []
+    for kind, geometry, gradient, alpha in MARK_PARTS:
+        alpha_attr = f"{alpha}" if alpha is not None else None
+        if kind == "ring":
+            cx, cy, r, thickness = geometry
+            data = circle_path(tx(cx), ty(cy), r * s) + " " + \
+                circle_path(tx(cx), ty(cy), (r - thickness) * s)
+            parts.append(path(data, gradient, alpha_attr, "evenOdd"))
+        elif kind == "rect":
+            cx, cy, w, h, r = geometry
+            data = rounded_rect_path(tx(cx) - w * s / 2.0, ty(cy) - h * s / 2.0,
+                                     w * s, h * s, r * s)
+            parts.append(path(data, gradient, alpha_attr))
+        elif kind == "circle":
+            cx, cy, r = geometry
+            parts.append(path(circle_path(tx(cx), ty(cy), r * s), gradient, alpha_attr))
+        elif kind == "bowl":
+            cx, cy, r, thickness = geometry
+            data = half_disc_path(tx(cx), ty(cy), r * s) + " " + \
+                half_disc_path(tx(cx), ty(cy), (r - thickness) * s)
+            parts.append(path(data, gradient, alpha_attr, "evenOdd"))
+        elif kind == "triangle":
+            ax, ay, bx, by, cx, cy = geometry
+            data = triangle_path(tx(ax), ty(ay), tx(bx), ty(by), tx(cx), ty(cy))
+            parts.append(path(data, gradient, alpha_attr))
     return "\n".join(parts)
 
 
@@ -557,11 +629,46 @@ def write_vectors():
 </vector>
 """
 
+    # Android 13 themed icons: a flat silhouette the system tints. Without it
+    # the launcher draws the full colour icon inside the themed shape.
+    monochrome = f"""<?xml version="1.0" encoding="utf-8"?>
+<!--
+  MIZAN monochrome launcher icon, for Android 13 themed icons.
+  Generated by tools/render_brand.py from the same geometry as everything else.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+{mark_vector(108, offset=(108 - 64 * 0.9375) / 2.0, scale=0.9375, monochrome=True)}
+</vector>
+"""
+
+    adaptive = """<?xml version="1.0" encoding="utf-8"?>
+<!--
+  MIZAN adaptive icon. Generated by tools/render_brand.py. Do not edit by hand.
+  The monochrome layer is what Android 13+ tints when the user asks for themed
+  icons; older versions simply ignore it.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+    <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
+</adaptive-icon>
+"""
+
+    anydpi = os.path.join(ROOT, "app", "src", "main", "res", "mipmap-anydpi-v26")
+    os.makedirs(anydpi, exist_ok=True)
+
     for path, content in (
         (os.path.join(app_res, "ic_launcher_background.xml"), background),
         (os.path.join(app_res, "ic_launcher_foreground.xml"), foreground),
+        (os.path.join(app_res, "ic_launcher_monochrome.xml"), monochrome),
         (os.path.join(app_res, "ic_mizan_mark.xml"), mark),
         (os.path.join(design_res, "ic_mizan_mark.xml"), mark),
+        (os.path.join(anydpi, "ic_launcher.xml"), adaptive),
+        (os.path.join(anydpi, "ic_launcher_round.xml"), adaptive),
     ):
         with open(path, "w", encoding="utf-8") as handle:
             handle.write(content)
