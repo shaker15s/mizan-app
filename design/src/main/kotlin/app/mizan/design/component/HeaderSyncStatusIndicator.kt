@@ -53,7 +53,7 @@ import app.mizan.design.theme.LocalMizanColors
 
 /**
  * Visual sync-status indicator in the header that displays 'Online' or 'Last synced: [Time]'
- * using local storage state to track MIZAN service connectivity.
+ * using local storage state to track Wakeel service connectivity.
  */
 @Composable
 fun HeaderSyncStatusIndicator(

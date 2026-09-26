@@ -1,7 +1,6 @@
 package app.mizan.design.component
 
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -23,18 +22,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
@@ -46,18 +41,19 @@ import app.mizan.design.theme.LocalReducedMotion
 import app.mizan.design.token.Space
 
 /**
- * The MIZAN mark: a balance at rest inside a seal.
+ * The Wakeel mark: the و of وكيل, wired to the two nodes of the ERP it acts on.
  *
  * It is drawn, not bitmapped, so it is crisp at 18 dp in a row and at 160 dp
  * on the sign-in screen. Geometry is a 64 unit square, the same square
  * `tools/render_brand.py` rasterises for the launcher icon, so the app icon
  * and the in-app mark are the same object.
  *
- * The only motion is the beam settling by one and a half degrees. It is a
- * metronome for "the system is weighing this", never a progress indicator.
+ * The only motion is the system node exhaling: a ring that leaves the node and
+ * fades. It says "the agent is talking to the systems", and it is not a
+ * progress indicator -- it does not stop when work finishes.
  */
 @Composable
-fun MizanMark(
+fun WakeelMark(
     modifier: Modifier = Modifier,
     size: Dp = 26.dp,
     gradient: Boolean = true,
@@ -66,17 +62,21 @@ fun MizanMark(
     val colors = LocalMizanColors.current
     val reduced = LocalReducedMotion.current
     val brush: Brush = if (gradient) colors.accentBrush() else SolidColor(colors.accent)
+    val nodeBrush: Brush = if (gradient) {
+        Brush.linearGradient(listOf(colors.info, colors.info.copy(alpha = 0.72f)))
+    } else {
+        SolidColor(colors.info)
+    }
 
-    val settle = if (animated && !reduced) {
-        val transition = rememberInfiniteTransition(label = "mizan_mark_settle")
+    val pulse = if (animated && !reduced) {
+        val transition = rememberInfiniteTransition(label = "wakeel_mark_pulse")
         val value by transition.animateFloat(
-            initialValue = -1f,
+            initialValue = 0f,
             targetValue = 1f,
             animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 3600, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse,
+                animation = tween(durationMillis = 2600, easing = FastOutSlowInEasing),
             ),
-            label = "mizan_mark_settle_value",
+            label = "wakeel_mark_pulse_value",
         )
         value
     } else {
@@ -86,15 +86,15 @@ fun MizanMark(
     Canvas(
         modifier = modifier
             .size(size)
-            .semantics { contentDescription = "MIZAN" },
+            .semantics { contentDescription = "Wakeel" },
     ) {
         val u = size.toPx() / 64f
-        drawMizanMark(brush = brush, unit = u, settle = settle)
+        drawWakeelMark(brush = brush, nodeBrush = nodeBrush, unit = u, pulse = pulse)
     }
 }
 
 /** The geometry, in one place, shared by the mark and the emblem. */
-private fun DrawScope.drawMizanMark(brush: Brush, unit: Float, settle: Float) {
+private fun DrawScope.drawWakeelMark(brush: Brush, nodeBrush: Brush, unit: Float, pulse: Float) {
     val ox = (size.width - 64f * unit) / 2f
     val oy = (size.height - 64f * unit) / 2f
 
@@ -104,96 +104,81 @@ private fun DrawScope.drawMizanMark(brush: Brush, unit: Float, settle: Float) {
     // seal: a wide soft band and a crisp hairline
     drawCircle(
         brush = brush,
-        radius = 29.2f * unit,
+        radius = 29f * unit,
         center = Offset(px(32f), py(32f)),
-        alpha = 0.34f,
-        style = Stroke(width = 3.2f * unit),
+        alpha = 0.32f,
+        style = Stroke(width = 2.8f * unit),
     )
     drawCircle(
         brush = brush,
-        radius = 29.2f * unit,
+        radius = 29f * unit,
         center = Offset(px(32f), py(32f)),
-        style = Stroke(width = 1.3f * unit),
+        style = Stroke(width = 0.95f * unit),
     )
 
-    // beam, caps and cables tilt together around the fulcrum
-    rotate(degrees = settle * 1.4f, pivot = Offset(px(32f), py(22f))) {
-        drawRoundRect(
-            brush = brush,
-            topLeft = Offset(px(12.2f), py(20.1f)),
-            size = Size(39.6f * unit, 3.8f * unit),
-            cornerRadius = CornerRadius(1.9f * unit, 1.9f * unit),
-        )
-        drawCircle(brush = brush, radius = 2.9f * unit, center = Offset(px(13f), py(22f)))
-        drawCircle(brush = brush, radius = 2.9f * unit, center = Offset(px(51f), py(22f)))
-        drawLine(
-            brush = brush,
-            start = Offset(px(13f), py(24.6f)),
-            end = Offset(px(13f), py(32.4f)),
-            strokeWidth = 1.7f * unit,
-            cap = StrokeCap.Round,
-            alpha = 0.9f,
-        )
-        drawLine(
-            brush = brush,
-            start = Offset(px(51f), py(24.6f)),
-            end = Offset(px(51f), py(32.4f)),
-            strokeWidth = 1.7f * unit,
-            cap = StrokeCap.Round,
-            alpha = 0.9f,
-        )
-    }
-
-    // pans hang level and trade places by a hair
-    val panRadius = 6.5f * unit
-    drawArc(
+    // the و: the loop, the tail that leaves its right side, the hook it ends on
+    drawCircle(
         brush = brush,
-        startAngle = 0f,
-        sweepAngle = 180f,
-        useCenter = true,
-        topLeft = Offset(px(13f) - panRadius, py(32.4f) - panRadius - settle * 0.9f * unit),
-        size = Size(panRadius * 2f, panRadius * 2f),
-        style = Fill,
+        radius = 7.6f * unit,
+        center = Offset(px(24.6f), py(24.6f)),
+        style = Stroke(width = 4.6f * unit),
+    )
+    drawLine(
+        brush = brush,
+        start = Offset(px(31.7f), py(27.2f)),
+        end = Offset(px(30.4f), py(40f)),
+        strokeWidth = 4.4f * unit,
+        cap = StrokeCap.Round,
     )
     drawArc(
         brush = brush,
-        startAngle = 0f,
-        sweepAngle = 180f,
-        useCenter = true,
-        topLeft = Offset(px(51f) - panRadius, py(32.4f) - panRadius + settle * 0.9f * unit),
-        size = Size(panRadius * 2f, panRadius * 2f),
-        style = Fill,
+        startAngle = 333.4f,
+        sweepAngle = 175f,
+        useCenter = false,
+        topLeft = Offset(px(27.2f) - 3.6f * unit, py(41.6f) - 3.6f * unit),
+        size = Size(7.2f * unit, 7.2f * unit),
+        style = Stroke(width = 2.1f * unit, cap = StrokeCap.Butt),
     )
 
-    // fulcrum
-    val fulcrum = Path().apply {
-        moveTo(px(32f), py(21.6f))
-        lineTo(px(25.4f), py(31.2f))
-        lineTo(px(38.6f), py(31.2f))
-        close()
+    // the systems: two nodes, each wired back to the agent. One system is a
+    // server; two is an ERP.
+    drawLine(
+        brush = brush,
+        start = Offset(px(30.8f), py(20.2f)),
+        end = Offset(px(45f), py(20.4f)),
+        strokeWidth = 1.6f * unit,
+        cap = StrokeCap.Round,
+        alpha = 0.55f,
+    )
+    drawLine(
+        brush = brush,
+        start = Offset(px(30.9f), py(40.6f)),
+        end = Offset(px(41.4f), py(37.8f)),
+        strokeWidth = 1.5f * unit,
+        cap = StrokeCap.Round,
+        alpha = 0.50f,
+    )
+    drawCircle(nodeBrush, radius = 3.3f * unit, center = Offset(px(45.2f), py(20.4f)))
+    drawCircle(nodeBrush, radius = 2.6f * unit, center = Offset(px(43.6f), py(37.4f)))
+
+    // the exhale: a ring leaving the first node and fading out
+    if (pulse > 0f) {
+        drawCircle(
+            brush = nodeBrush,
+            radius = (6.7f + 2.6f * pulse) * unit,
+            center = Offset(px(45.2f), py(20.4f)),
+            alpha = 0.45f * (1f - pulse),
+            style = Stroke(width = 1.4f * unit),
+        )
+    } else {
+        drawCircle(
+            brush = nodeBrush,
+            radius = 6.7f * unit,
+            center = Offset(px(45.2f), py(20.4f)),
+            alpha = 0.45f,
+            style = Stroke(width = 1.4f * unit),
+        )
     }
-    drawPath(path = fulcrum, brush = brush)
-
-    // pillar, base, plinth
-    drawRoundRect(
-        brush = brush,
-        topLeft = Offset(px(30.1f), py(30.6f)),
-        size = Size(3.8f * unit, 14.6f * unit),
-        cornerRadius = CornerRadius(1.9f * unit, 1.9f * unit),
-    )
-    drawRoundRect(
-        brush = brush,
-        topLeft = Offset(px(20f), py(45.2f)),
-        size = Size(24f * unit, 4.4f * unit),
-        cornerRadius = CornerRadius(2.2f * unit, 2.2f * unit),
-    )
-    drawRoundRect(
-        brush = brush,
-        topLeft = Offset(px(25f), py(51.4f)),
-        size = Size(14f * unit, 2.6f * unit),
-        cornerRadius = CornerRadius(1.3f * unit, 1.3f * unit),
-        alpha = 0.6f,
-    )
 }
 
 /**
@@ -201,7 +186,7 @@ private fun DrawScope.drawMizanMark(brush: Brush, unit: Float, settle: Float) {
  * Used on sign-in, the biometric gate, and any empty state that needs a face.
  */
 @Composable
-fun MizanHeroEmblem(
+fun WakeelEmblem(
     modifier: Modifier = Modifier,
     size: Dp = 80.dp,
 ) {
@@ -251,7 +236,7 @@ fun MizanHeroEmblem(
                 ),
             contentAlignment = Alignment.Center,
         ) {
-            MizanMark(size = size * 0.5f)
+            WakeelMark(size = size * 0.5f)
         }
     }
 }
@@ -262,10 +247,10 @@ fun MizanHeroEmblem(
  * and a fake logotype in the wrong weight looks worse than honest type.
  */
 @Composable
-fun MizanWordmark(
+fun WakeelWordmark(
     modifier: Modifier = Modifier,
     markSize: Dp = 26.dp,
-    label: String = "MIZAN",
+    label: String = "Wakeel",
     tint: Color = LocalMizanColors.current.textPrimary,
 ) {
     Row(
@@ -273,7 +258,7 @@ fun MizanWordmark(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Space.sm),
     ) {
-        MizanMark(size = markSize)
+        WakeelMark(size = markSize)
         Text(
             text = label,
             style = MaterialTheme.typography.titleMedium,

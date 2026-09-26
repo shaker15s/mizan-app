@@ -93,6 +93,7 @@ import app.mizan.design.component.ShapePill
 import app.mizan.design.component.StatusTone
 import app.mizan.design.theme.LocalMizanColors
 import app.mizan.design.token.Space
+import app.mizan.design.motion.mizanTap
 import app.mizan.domain.execution.ExecutionPhase
 import app.mizan.domain.model.HistoricalErpActionLog
 import app.mizan.ui.phaseLabel
@@ -127,7 +128,7 @@ enum class ActionLogDateRangeFilter(val label: String) {
 fun HistoricalErpActionLogsList(
     logs: List<HistoricalErpActionLog>,
     modifier: Modifier = Modifier,
-    workspaceName: String = "MIZAN Workspace",
+    workspaceName: String = "Wakeel Workspace",
     onInspectEvidence: (() -> Unit)? = null,
 ) {
     val colors = LocalMizanColors.current
@@ -764,7 +765,7 @@ private fun FilterChipPill(
             .clip(ShapePill)
             .background(bg)
             .border(BorderStroke(0.6.dp, border), ShapePill)
-            .clickable(role = Role.Button, onClick = onClick)
+            .mizanTap(onClick = onClick)
             .padding(horizontal = 9.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -805,7 +806,7 @@ private fun ExportOptionCard(
         modifier = Modifier
             .fillMaxWidth()
             .mizanGlassPane(ShapeCard)
-            .clickable(role = Role.Button, onClick = onClick)
+            .mizanTap(onClick = onClick)
             .padding(Space.md),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -918,7 +919,7 @@ private fun HistoricalErpActionLogCard(
             )
             .border(BorderStroke(if (isSelected) 1.5.dp else 0.8.dp, cardBorderColor), ShapeCard)
             .animateContentSize()
-            .clickable(role = Role.Button, onClick = onToggleExpand)
+            .mizanTap(onClick = onToggleExpand)
             .padding(Space.md),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -1225,7 +1226,7 @@ private fun HistoricalErpActionLogCard(
                         .clip(ShapePill)
                         .background(colors.accentMuted)
                         .border(BorderStroke(0.8.dp, colors.accent), ShapePill)
-                        .clickable(role = Role.Button, onClick = onInspectStatus)
+                        .mizanTap(onClick = onInspectStatus)
                         .padding(horizontal = Space.md, vertical = 8.dp)
                         .testTag("inspect_transaction_status_row_${log.commandId}"),
                     verticalAlignment = Alignment.CenterVertically,

@@ -69,7 +69,7 @@ import androidx.fragment.app.FragmentActivity
 import app.mizan.R
 import app.mizan.design.component.mizanGlassPane
 import app.mizan.design.component.MizanGhostButton
-import app.mizan.design.component.MizanMark
+import app.mizan.design.component.WakeelMark
 import app.mizan.design.component.MizanPrimaryButton
 import app.mizan.design.component.MizanStatusBadge
 import app.mizan.design.component.ShapeCard
@@ -81,6 +81,7 @@ import app.mizan.design.component.mizanBounceClick
 import app.mizan.design.theme.LocalMizanColors
 import app.mizan.design.theme.MizanMono
 import app.mizan.design.token.Space
+import app.mizan.design.motion.mizanTap
 import app.mizan.graph.AppGraph
 import app.mizan.session.WorkspaceSession
 import app.mizan.ui.roleLabel
@@ -171,7 +172,7 @@ fun BiometricGateScreen(
         )
 
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Authenticate to Access MIZAN ERP")
+            .setTitle("Authenticate to Access Wakeel ERP")
             .setSubtitle("Biometric touch verification required to decrypt ERP tenant state")
             .setDescription("Agent: ${session.actor.displayName} ($roleTitle)")
             .setAllowedAuthenticators(authenticators)
@@ -225,8 +226,8 @@ fun BiometricGateScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Space.md),
         ) {
-            // MIZAN Brand Shield & Mark
-            MizanMark()
+            // Wakeel Brand Shield & Mark
+            WakeelMark()
 
             Spacer(Modifier.height(Space.xs))
 
@@ -366,7 +367,7 @@ fun BiometricGateScreen(
             Row(
                 modifier = Modifier
                     .clip(ShapePill)
-                    .clickable(role = Role.Button, onClick = onSignOut)
+                    .mizanTap(onClick = onSignOut)
                     .padding(horizontal = Space.md, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),

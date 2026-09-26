@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.roborazzi)
 }
 
-val apiBaseUrl = (System.getenv("MIZAN_API_BASE_URL") ?: "")
+val apiBaseUrl = (System.getenv("WAKEEL_API_BASE_URL") ?: "")
     .replace("\\", "")
     .replace("\"", "")
 
@@ -29,7 +29,7 @@ android {
      * The channel decides whether the device is allowed to simulate.
      *
      * demo        local simulator only, no service URL, results labeled simulation
-     * staging     talks to the MIZAN service, refuses writes without an HTTPS URL
+     * staging     talks to the Wakeel service, refuses writes without an HTTPS URL
      * production  same as staging, no suffix, no simulator on the classpath
      *
      * The simulation classes live in `src/demo`, so a staging or production
@@ -42,20 +42,20 @@ android {
             dimension = "channel"
             applicationIdSuffix = ".demo"
             buildConfigField("boolean", "DEMO_MODE", "true")
-            buildConfigField("String", "MIZAN_ENV", "\"demo\"")
+            buildConfigField("String", "WAKEEL_ENV", "\"demo\"")
             buildConfigField("String", "API_BASE_URL", "\"\"")
         }
         create("staging") {
             dimension = "channel"
             applicationIdSuffix = ".staging"
             buildConfigField("boolean", "DEMO_MODE", "false")
-            buildConfigField("String", "MIZAN_ENV", "\"staging\"")
+            buildConfigField("String", "WAKEEL_ENV", "\"staging\"")
             buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
         }
         create("production") {
             dimension = "channel"
             buildConfigField("boolean", "DEMO_MODE", "false")
-            buildConfigField("String", "MIZAN_ENV", "\"production\"")
+            buildConfigField("String", "WAKEEL_ENV", "\"production\"")
             buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
         }
     }

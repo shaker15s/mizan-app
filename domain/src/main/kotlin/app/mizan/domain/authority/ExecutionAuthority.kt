@@ -8,7 +8,7 @@ import app.mizan.domain.model.VerificationKind
 import app.mizan.domain.security.AuthProof
 
 enum class AuthorityMode {
-    /** Decisions are made by the MIZAN service. The device previews only. */
+    /** Decisions are made by the Wakeel service. The device previews only. */
     REMOTE,
 
     /** Decisions are local and must be labeled simulation. */

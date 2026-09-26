@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Renders the MIZAN brand to PNG.
+"""Renders the Wakeel (وكيل) brand to PNG.
 
 The geometry lives here, once, in device-independent units, and the script
 rasterises it with 4x supersampling and a source-over composite. Nothing
@@ -81,6 +81,28 @@ def sd_triangle(x, y, ax, ay, bx, by, cx, cy):
     c3 = (ax - cx) * (y - cy) - (ay - cy) * (x - cx)
     inside = (c1 >= 0 and c2 >= 0 and c3 >= 0) or (c1 <= 0 and c2 <= 0 and c3 <= 0)
     return -d if inside else d
+
+
+def sd_arc(x, y, cx, cy, r, thickness, start_deg, sweep_deg):
+    """Distance to a stroked arc, expressed as a filled band.
+
+    The angle is clamped to the arc, so the ends are flat: exactly what a
+    `Stroke` with a butt cap draws in Compose, which keeps the raster, the
+    vector and the in-app canvas the same shape.
+    """
+    start = start_deg % 360.0
+    angle = math.degrees(math.atan2(y - cy, x - cx)) % 360.0
+    delta = (angle - start) % 360.0
+    if delta <= sweep_deg:
+        clamped = angle
+    else:
+        # Past the end: clamp to whichever end is nearer.
+        to_end = (start + sweep_deg - angle) % 360.0
+        clamped = start if delta < to_end else (start + sweep_deg) % 360.0
+    return math.hypot(
+        x - (cx + r * math.cos(math.radians(clamped))),
+        y - (cy + r * math.sin(math.radians(clamped))),
+    ) - thickness / 2.0
 
 
 def sd_half_disc(x, y, cx, cy, r):
@@ -221,6 +243,37 @@ def triangle(ax, ay, bx, by, cx, cy, fill, alpha=1.0):
     )
 
 
+def arc(cx, cy, r, thickness, start_deg, sweep_deg, fill, alpha=1.0):
+    pad = r + thickness
+    return Shape(
+        lambda x, y: sd_arc(x, y, cx, cy, r, thickness, start_deg, sweep_deg),
+        fill,
+        alpha,
+        (cx - pad, cy - pad, cx + pad, cy + pad),
+    )
+
+
+def bar(x0, y0, x1, y1, thickness, fill, alpha=1.0):
+    """A capsule from one point to another: a stroke with round caps.
+
+    Defined by its ends so the Compose version can be a single `drawLine`
+    with a round cap and the two cannot drift apart.
+    """
+    cx, cy = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+    length = math.hypot(x1 - x0, y1 - y0) + thickness
+    angle = math.degrees(math.atan2(y1 - y0, x1 - x0))
+    half = math.hypot(length, thickness) / 2.0
+
+    def distance(x, y):
+        a = math.radians(angle)
+        dx, dy = x - cx, y - cy
+        lx = dx * math.cos(a) + dy * math.sin(a)
+        ly = -dx * math.sin(a) + dy * math.cos(a)
+        return sd_rounded_rect(lx, ly, 0.0, 0.0, length, thickness, thickness / 2.0)
+
+    return Shape(distance, fill, alpha, (cx - half, cy - half, cx + half, cy + half))
+
+
 def half_disc(cx, cy, r, fill, alpha=1.0):
     return Shape(
         lambda x, y: sd_half_disc(x, y, cx, cy, r),
@@ -237,6 +290,11 @@ A_END = "#0E9F9F"
 B_START = "#A5F3EC"
 B_MID = "#2DD4BF"
 B_END = "#0E7490"
+# The node is the system, not the agent: it carries the only warm accent in
+# the mark, so the eye reads "agent here, system there" at a glance.
+C_START = "#C7D2FE"
+C_MID = "#818CF8"
+C_END = "#4338CA"
 
 BG_DARK = "#06121F"
 BG_MID = "#062A2C"
@@ -249,38 +307,34 @@ BG_DEEP = "#0A1226"
 # the PNG mipmaps and the vector drawables are built from this list, so the
 # raster and the vector can never disagree about where a stroke is.
 #
-# Refined from the first version: the beam is thinner, the pans are crescents
-# with rims instead of filled blocks, and the fulcrum is slimmer. An instrument
-# reads as an instrument when its strokes are lighter than its silhouette.
+# WAKEEL (وكيل) is an agent, not an instrument: the mark is the letter و -- a
+# loop with a tail -- wired to the node of the system it answers for, the whole
+# thing inside the seal that says the answer was authorised. Three ideas, one
+# silhouette, and nothing that disappears at 48 px.
 MARK_PARTS = [
     # seal: a soft band and a crisp hairline inside it
-    ("ring", (32.0, 32.0, 29.2, 3.0), "a", 0.40),
-    ("ring", (32.0, 32.0, 29.2, 1.1), "b", None),
-    # beam and its end caps
-    ("rect", (32.0, 21.4, 33.0, 2.8, 1.4), "b", None),
-    ("circle", (15.5, 21.4, 2.3), "b", None),
-    ("circle", (48.5, 21.4, 2.3), "b", None),
-    # cables from the caps down to the rims
-    ("rect", (15.5, 26.5, 1.4, 6.2, 0.7), "b", 0.90),
-    ("rect", (48.5, 26.5, 1.4, 6.2, 0.7), "b", 0.90),
-    # pans: crescents with a rim, so they read as bowls
-    ("bowl", (15.5, 30.4, 6.8, 1.6), "b", None),
-    ("bowl", (48.5, 30.4, 6.8, 1.6), "b", None),
-    ("rect", (15.5, 30.4, 13.6, 1.3, 0.65), "b", 0.95),
-    ("rect", (48.5, 30.4, 13.6, 1.3, 0.65), "b", 0.95),
-    # fulcrum, pillar, base, plinth
-    ("triangle", (32.0, 20.9, 26.8, 30.2, 37.2, 30.2), "a", None),
-    ("rect", (32.0, 38.4, 3.0, 15.2, 1.5), "b", None),
-    ("rect", (32.0, 47.6, 22.0, 3.8, 1.9), "b", None),
-    ("rect", (32.0, 52.4, 13.0, 2.4, 1.2), "a", 0.60),
+    ("ring", (32.0, 32.0, 29.0, 2.8), "a", 0.32),
+    ("ring", (32.0, 32.0, 29.0, 0.95), "b", None),
+    # the و: a loop, a tail that descends, a hook that curls back under it
+    ("ring", (24.6, 24.6, 7.6, 4.6), "b", None),
+    ("bar", (31.7, 27.2, 30.4, 40.0, 4.4), "b", None),
+    ("arc", (27.2, 41.6, 3.6, 2.1, 333.4, 175.0), "b", None),
+    # the systems it answers for: two nodes, both wired to the agent. One
+    # system would be a server. Two is an ERP.
+    ("bar", (30.8, 20.2, 45.0, 20.4, 1.6), "a", 0.55),
+    ("circle", (45.2, 20.4, 3.3), "c", None),
+    ("ring", (45.2, 20.4, 6.7, 1.4), "c", 0.45),
+    ("bar", (30.9, 40.6, 41.4, 37.8, 1.5), "a", 0.50),
+    ("circle", (43.6, 37.4, 2.6), "c", None),
 ]
 
 
 def mark_shapes(offset_x=0.0, offset_y=0.0, scale=1.0):
-    """The MIZAN balance mark, built from MARK_PARTS.
+    """The Wakeel mark, built from MARK_PARTS.
 
-    A beam on a fulcrum, two pans, and a plinth, held inside a seal. The
-    silhouette is symmetric: this is an instrument at rest, not a robot.
+    A و -- loop, tail, hook -- wired to the node of the ERP it acts on, held
+    inside a seal. Asymmetric on purpose: an agent in motion reads as alive,
+    where a balance at rest only read as fair.
     """
     s = scale
     ox, oy = offset_x, offset_y
@@ -295,7 +349,9 @@ def mark_shapes(offset_x=0.0, offset_y=0.0, scale=1.0):
                                 [(0.0, A_START), (0.45, A_MID), (1.0, A_END)])
     gradient_b = LinearGradient(tx(32), ty(14), tx(32), ty(58),
                                 [(0.0, B_START), (0.5, B_MID), (1.0, B_END)])
-    fills = {"a": gradient_a, "b": gradient_b}
+    gradient_c = LinearGradient(tx(38), ty(14), tx(52), ty(28),
+                                [(0.0, C_START), (0.5, C_MID), (1.0, C_END)])
+    fills = {"a": gradient_a, "b": gradient_b, "c": gradient_c}
 
     shapes = []
     for kind, geometry, gradient, alpha in MARK_PARTS:
@@ -320,6 +376,14 @@ def mark_shapes(offset_x=0.0, offset_y=0.0, scale=1.0):
             ax, ay, bx, by, cx, cy = geometry
             shapes.append(triangle(tx(ax), ty(ay), tx(bx), ty(by), tx(cx), ty(cy), fill,
                                    alpha if alpha is not None else 1.0))
+        elif kind == "arc":
+            cx, cy, r, thickness, start, sweep = geometry
+            shapes.append(arc(tx(cx), ty(cy), r * s, thickness * s, start, sweep, fill,
+                              alpha if alpha is not None else 1.0))
+        elif kind == "bar":
+            x0, y0, x1, y1, thickness = geometry
+            shapes.append(bar(tx(x0), ty(y0), tx(x1), ty(y1), thickness * s, fill,
+                              alpha if alpha is not None else 1.0))
     return shapes
 
 
@@ -497,6 +561,19 @@ def gradient_xml(name, x0, y0, x1, y1, stops, radial=False, cx=0.0, cy=0.0, r=0.
         </aapt:attr>"""
 
 
+def arc_path(cx, cy, r, start_deg, sweep_deg):
+    """Android vector path data for an open arc, drawn with a stroke."""
+    a0 = math.radians(start_deg)
+    a1 = math.radians(start_deg + sweep_deg)
+    x0, y0 = cx + r * math.cos(a0), cy + r * math.sin(a0)
+    x1, y1 = cx + r * math.cos(a1), cy + r * math.sin(a1)
+    large = 1 if sweep_deg > 180.0 else 0
+    return (
+        f"M{fmt(x0)},{fmt(y0)}"
+        f"A{fmt(r)},{fmt(r)} 0 {large} 1 {fmt(x1)},{fmt(y1)}"
+    )
+
+
 def mark_vector(viewport, offset=0.0, scale=1.0, indent="    ", monochrome=False):
     """The mark as Android vector body, built from the same MARK_PARTS.
 
@@ -512,6 +589,16 @@ def mark_vector(viewport, offset=0.0, scale=1.0, indent="    ", monochrome=False
     def ty(y):
         return oy + y * s
 
+    def gradient_of(name):
+        if name == "a":
+            return gradient_xml("android:fillColor", tx(12), ty(14), tx(52), ty(54),
+                                [(0.0, A_START, None), (0.45, A_MID, None), (1.0, A_END, None)])
+        if name == "c":
+            return gradient_xml("android:fillColor", tx(38), ty(14), tx(52), ty(28),
+                                [(0.0, C_START, None), (0.5, C_MID, None), (1.0, C_END, None)])
+        return gradient_xml("android:fillColor", tx(32), ty(14), tx(32), ty(58),
+                            [(0.0, B_START, None), (0.5, B_MID, None), (1.0, B_END, None)])
+
     def path(data, gradient_name, alpha=None, fill_type=None):
         alpha_attr = f'\n{indent}    android:fillAlpha="{alpha}"' if alpha else ""
         # Two nested contours in the same direction only read as a ring with
@@ -523,17 +610,36 @@ def mark_vector(viewport, offset=0.0, scale=1.0, indent="    ", monochrome=False
                 colour += f'\n{indent}    android:fillAlpha="{alpha}"'
             return f"""{indent}<path
 {indent}    android:pathData="{data}"{type_attr}{colour} />"""
-        gradient = (
-            gradient_xml("android:fillColor", tx(12), ty(14), tx(52), ty(54),
-                         [(0.0, A_START, None), (0.45, A_MID, None), (1.0, A_END, None)])
-            if gradient_name == "a"
-            else gradient_xml("android:fillColor", tx(32), ty(14), tx(32), ty(58),
-                              [(0.0, B_START, None), (0.5, B_MID, None), (1.0, B_END, None)])
-        )
         return f"""{indent}<path
 {indent}    android:pathData="{data}"{type_attr}{alpha_attr}>
+{gradient_of(gradient_name)}
+{indent}</path>"""
+
+    def stroked(data, gradient_name, width, alpha=None, cap="butt"):
+        """An arc band: filled in the rasteriser, stroked here, same shape."""
+        alpha_attr = f'\n{indent}    android:strokeAlpha="{alpha}"' if alpha else ""
+        if monochrome:
+            return f"""{indent}<path
+{indent}    android:pathData="{data}"
+{indent}    android:strokeColor="#FFFFFF"
+{indent}    android:strokeLineCap="{cap}"
+{indent}    android:strokeWidth="{fmt(width)}"{alpha_attr} />"""
+        gradient = gradient_of(gradient_name).replace(
+            'name="android:fillColor"', 'name="android:strokeColor"')
+        return f"""{indent}<path
+{indent}    android:pathData="{data}"
+{indent}    android:strokeLineCap="{cap}"
+{indent}    android:strokeWidth="{fmt(width)}"{alpha_attr}>
 {gradient}
 {indent}</path>"""
+
+    def rotated_group(cx, cy, angle, body):
+        return f"""{indent}<group
+{indent}    android:pivotX="{fmt(cx)}"
+{indent}    android:pivotY="{fmt(cy)}"
+{indent}    android:rotation="{fmt(angle)}">
+{body}
+{indent}</group>"""
 
     parts = []
     for kind, geometry, gradient, alpha in MARK_PARTS:
@@ -560,6 +666,18 @@ def mark_vector(viewport, offset=0.0, scale=1.0, indent="    ", monochrome=False
             ax, ay, bx, by, cx, cy = geometry
             data = triangle_path(tx(ax), ty(ay), tx(bx), ty(by), tx(cx), ty(cy))
             parts.append(path(data, gradient, alpha_attr))
+        elif kind == "arc":
+            cx, cy, r, thickness, start, sweep = geometry
+            data = arc_path(tx(cx), ty(cy), r * s, start, sweep)
+            parts.append(stroked(data, gradient, thickness * s, alpha_attr))
+        elif kind == "bar":
+            x0, y0, x1, y1, thickness = geometry
+            cx, cy = (tx(x0) + tx(x1)) / 2.0, (ty(y0) + ty(y1)) / 2.0
+            length = math.hypot(tx(x1) - tx(x0), ty(y1) - ty(y0)) + thickness * s
+            angle = math.degrees(math.atan2(ty(y1) - ty(y0), tx(x1) - tx(x0)))
+            data = rounded_rect_path(cx - length / 2.0, cy - thickness * s / 2.0,
+                                     length, thickness * s, thickness * s / 2.0)
+            parts.append(rotated_group(cx, cy, angle, path(data, gradient, alpha_attr)))
     return "\n".join(parts)
 
 
@@ -572,7 +690,7 @@ def write_vectors():
 
     background = f"""<?xml version="1.0" encoding="utf-8"?>
 <!--
-  MIZAN launcher background. Generated by tools/render_brand.py.
+  Wakeel launcher background. Generated by tools/render_brand.py.
   Deep ink field with a cyan aura behind the mark. Do not edit by hand.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -600,7 +718,7 @@ def write_vectors():
 
     foreground = f"""<?xml version="1.0" encoding="utf-8"?>
 <!--
-  MIZAN launcher foreground: a balance at rest inside a seal.
+  Wakeel launcher foreground: a و wired to the node of the system it answers for, inside a seal.
   Generated by tools/render_brand.py from the same geometry as the PNG mipmaps.
   Everything sits inside the 66dp safe circle of the adaptive icon.
 -->
@@ -616,7 +734,7 @@ def write_vectors():
 
     mark = f"""<?xml version="1.0" encoding="utf-8"?>
 <!--
-  The MIZAN mark. Generated by tools/render_brand.py. Do not edit by hand.
+  The Wakeel mark. Generated by tools/render_brand.py. Do not edit by hand.
   A single 64 unit square, so it is crisp at every size the UI asks for.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -633,7 +751,7 @@ def write_vectors():
     # the launcher draws the full colour icon inside the themed shape.
     monochrome = f"""<?xml version="1.0" encoding="utf-8"?>
 <!--
-  MIZAN monochrome launcher icon, for Android 13 themed icons.
+  Wakeel monochrome launcher icon, for Android 13 themed icons.
   Generated by tools/render_brand.py from the same geometry as everything else.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -647,7 +765,7 @@ def write_vectors():
 
     adaptive = """<?xml version="1.0" encoding="utf-8"?>
 <!--
-  MIZAN adaptive icon. Generated by tools/render_brand.py. Do not edit by hand.
+  Wakeel adaptive icon. Generated by tools/render_brand.py. Do not edit by hand.
   The monochrome layer is what Android 13+ tints when the user asks for themed
   icons; older versions simply ignore it.
 -->
@@ -665,8 +783,8 @@ def write_vectors():
         (os.path.join(app_res, "ic_launcher_background.xml"), background),
         (os.path.join(app_res, "ic_launcher_foreground.xml"), foreground),
         (os.path.join(app_res, "ic_launcher_monochrome.xml"), monochrome),
-        (os.path.join(app_res, "ic_mizan_mark.xml"), mark),
-        (os.path.join(design_res, "ic_mizan_mark.xml"), mark),
+        (os.path.join(app_res, "ic_wakeel_mark.xml"), mark),
+        (os.path.join(design_res, "ic_wakeel_mark.xml"), mark),
         (os.path.join(anydpi, "ic_launcher.xml"), adaptive),
         (os.path.join(anydpi, "ic_launcher_round.xml"), adaptive),
     ):
@@ -676,7 +794,7 @@ def write_vectors():
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Render the MIZAN brand icons.")
+    parser = argparse.ArgumentParser(description="Render the Wakeel brand icons.")
     parser.add_argument("--check", action="store_true", help="verify the files on disk")
     parser.add_argument("--vectors", action="store_true", help="only write the vector drawables")
     args = parser.parse_args()

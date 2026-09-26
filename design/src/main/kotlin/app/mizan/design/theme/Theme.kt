@@ -64,13 +64,13 @@ fun mizanTypography(arabic: Boolean): Typography {
 /**
  * Material You, when the device offers it and the user asked for it.
  *
- * The dynamic scheme is mapped onto MIZAN tokens rather than used raw, so a
+ * The dynamic scheme is mapped onto Wakeel tokens rather than used raw, so a
  * screen that reads `accentMuted` or `dangerContainer` still gets a colour
  * that belongs to the app's semantic set instead of whatever the wallpaper
  * happened to produce.
  */
 fun dynamicMizanColors(scheme: ColorScheme, isDark: Boolean): MizanColors {
-    val base = resolveThemeColors(ThemePresets.CYBER_MIZAN, isDark)
+    val base = resolveThemeColors(ThemePresets.CYBER_Wakeel, isDark)
     return base.copy(
         background = scheme.background,
         surface = scheme.surface,

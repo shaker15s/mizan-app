@@ -37,7 +37,7 @@ data class ServiceConfig(
 )
 
 /**
- * The reference MIZAN service.
+ * The reference Wakeel service.
  *
  * It listens on plain HTTP and is expected to sit behind a TLS terminator:
  * the Android client refuses to send a write to anything but an HTTPS URL,
@@ -259,7 +259,7 @@ class MizanService(
             exchange,
             200,
             Json.obj(
-                "service" to Json.str("mizan-reference"),
+                "service" to Json.str("wakeel-reference"),
                 "status" to Json.str("ok"),
                 "erp" to Json.str("in-memory-reference"),
                 "sessions" to Json.num(sessions.activeCount()),

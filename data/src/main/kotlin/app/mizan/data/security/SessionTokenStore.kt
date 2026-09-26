@@ -6,7 +6,7 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 
 /**
- * Holds a short-lived MIZAN session token, if the service issued one.
+ * Holds a short-lived Wakeel session token, if the service issued one.
  * ERP passwords and API keys are not accepted here.
  */
 class SessionTokenStore(context: Context) {

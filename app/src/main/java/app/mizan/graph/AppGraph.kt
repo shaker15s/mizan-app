@@ -44,7 +44,7 @@ class AppGraph(context: Context) {
     val health = DeviceHealth(context)
     val time = TimeSource.system
     val demoMode = BuildConfig.DEMO_MODE
-    val environment = BuildConfig.MIZAN_ENV
+    val environment = BuildConfig.WAKEEL_ENV
     val apiBaseUrl: String = BuildConfig.API_BASE_URL.ifBlank { preferences.serviceUrlOverride }
 
     val executions: ExecutionStore

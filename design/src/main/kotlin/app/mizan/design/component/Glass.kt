@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import app.mizan.design.theme.LocalMizanColors
 import app.mizan.design.theme.LocalReducedMotion
 import app.mizan.design.token.MizanColors
+import app.mizan.design.motion.mizanPressable
 import kotlin.math.abs
 
 /**
@@ -53,7 +54,7 @@ import kotlin.math.abs
  * Real backdrop blur needs the pixels behind the pane, and Compose does not
  * expose them. The honest equivalent is to draw the same backdrop *inside* the
  * pane and blur that copy. It is exact for a gradient -- and every backdrop
- * MIZAN ships is a gradient -- and it costs one extra draw pass per pane, not
+ * Wakeel ships is a gradient -- and it costs one extra draw pass per pane, not
  * a screenshot.
  *
  * Provide it once, at the root, and every glass surface under it frosts
@@ -149,6 +150,7 @@ fun MizanGlassSurface(
     tone: GlassTone = GlassTone.REGULAR,
     edge: Boolean = true,
     interactive: Boolean = false,
+    pressable: Boolean = false,
     contentAlignment: Alignment = Alignment.TopStart,
     content: @Composable BoxScope.() -> Unit,
 ) {
@@ -215,6 +217,7 @@ fun MizanGlassSurface(
 
     Box(
         modifier = modifier
+            .then(if (pressable) Modifier.mizanPressable(enabled = true) else Modifier)
             .clip(shape)
             .then(pointerModifier),
         contentAlignment = contentAlignment,

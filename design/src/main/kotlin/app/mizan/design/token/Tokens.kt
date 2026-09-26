@@ -6,7 +6,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * The whole visual language of MIZAN in one data object.
+ * The whole visual language of Wakeel in one data object.
  *
  * Screens never pick a colour: they read a token. A token is a *role*
  * (`accent`, `surface`, `dangerContainer`), never a hue, so a new preset is a

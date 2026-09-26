@@ -45,8 +45,6 @@ import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material.icons.outlined.VerifiedUser
-import app.mizan.design.component.MizanRobotScale
-import app.mizan.design.component.RobotScaleState
 import app.mizan.feature.agent.AiPromptCustomizerDialog
 import app.mizan.feature.home.DevProConsoleDialog
 import androidx.compose.material3.HorizontalDivider
@@ -430,7 +428,7 @@ fun AccountRoute(
             )
             SettingNavRow(
                 icon = Icons.Outlined.Terminal,
-                title = "MIZAN Pro Console & Stress Telemetry",
+                title = "Wakeel Pro Console & Stress Telemetry",
                 subtitle = "Ledger validation, stress transaction injector & diagnostics",
                 onClick = { showProConsole = true },
             )
