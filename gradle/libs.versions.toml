@@ -18,7 +18,7 @@ work = "2.10.0"
 biometric = "1.1.0"
 securityCrypto = "1.1.0-alpha06"
 robolectric = "4.14.1"
-roborazzi = "1.59.0"
+roborazzi = "1.75.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
