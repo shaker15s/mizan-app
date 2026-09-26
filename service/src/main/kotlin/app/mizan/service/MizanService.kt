@@ -3,26 +3,40 @@ package app.mizan.service
 import app.mizan.domain.model.ConnectorCapabilities
 import app.mizan.domain.policy.PolicyCatalog
 import app.mizan.domain.policy.PolicyEvaluator
+import app.mizan.domain.policy.VersionedPolicy
+import app.mizan.domain.receipt.ReceiptSigner
+import app.mizan.domain.security.DeviceBindingService
 import app.mizan.service.authority.ServiceAuthority
+import app.mizan.service.erp.ErpConnector
 import app.mizan.service.erp.InMemoryErp
+import app.mizan.service.erp.InMemoryErpConnector
+import app.mizan.service.http.GovernanceApi
+import app.mizan.service.http.Http
 import app.mizan.service.json.Json
-import app.mizan.service.json.JsonValue
-import app.mizan.service.json.asObject
 import app.mizan.service.json.text
 import app.mizan.service.ledger.AuditLedger
 import app.mizan.service.ledger.ExecutionLedger
 import app.mizan.service.protocol.ExecutionOutcome
 import app.mizan.service.protocol.ExecutionRequest
 import app.mizan.service.protocol.MizanContract
+import app.mizan.service.security.LimitSurface
+import app.mizan.service.security.LoginThrottle
+import app.mizan.service.security.RateLimiter
 import app.mizan.service.security.ServiceUser
 import app.mizan.service.security.SessionRegistry
 import app.mizan.service.security.UserDirectory
+import app.mizan.service.store.ServiceStores
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
+import java.nio.file.Path
 import java.util.UUID
 import java.util.concurrent.Executors
 
+/**
+ * Everything a deployment may configure. The defaults describe the reference
+ * service: in-memory, unsigned, with the labeled demo accounts.
+ */
 data class ServiceConfig(
     val host: String = "127.0.0.1",
     val port: Int = 8080,
@@ -34,23 +48,53 @@ data class ServiceConfig(
     /** When false the X-Mizan-Simulate header is ignored, as it must be outside tests. */
     val allowSimulationHeader: Boolean = true,
     val workerThreads: Int = 4,
+    /**
+     * When set, the journal, the idempotency index, sessions, receipts,
+     * devices, approvals and reconciliation cases are written to this
+     * directory and survive a restart.
+     */
+    val storeDirectory: Path? = null,
+    /** When set, a verified write is signed with this key ring's active key. */
+    val signingSecret: String? = null,
+    /** When true, a tool that demands a fresh proof refuses without a device signature. */
+    val requireDeviceProof: Boolean = false,
+    /** The versioned policy decisions are stamped with. */
+    val versionedPolicy: VersionedPolicy = VersionedPolicy.unversioned,
+    /** The connector the authority writes through. Defaults to the reference adapter. */
+    val connector: ErpConnector? = null,
+    val rateLimiting: Boolean = true,
+    /** Per-surface budgets. A test that must observe a refusal passes strict ones. */
+    val budgets: Map<app.mizan.service.security.LimitSurface, app.mizan.service.security.Budget> =
+        app.mizan.service.security.LimitSurface.defaultBudgets,
 )
 
 /**
  * The reference Wakeel service.
  *
- * It listens on plain HTTP and is expected to sit behind a TLS terminator:
- * the Android client refuses to send a write to anything but an HTTPS URL,
- * and that refusal is a security property, not a convenience.
+ * It listens on plain HTTP and is expected to sit behind a TLS terminator: the
+ * Android client refuses to send a write to anything but an HTTPS URL, and
+ * that refusal is a security property, not a convenience.
  *
  * Routes:
  *
  * ```text
- * POST /v1/sessions            issue a short-lived token
- * POST /v1/executions          decide and, when allowed, perform an ERP write
- * GET  /v1/health              liveness and counts
- * GET  /v1/audit?tenant=...    the service-side audit chain of one tenant
- * GET  /v1/erp?tenant=...      read-only view of the in-memory ERP state
+ * POST /v1/sessions                    issue a short-lived token
+ * DELETE /v1/sessions/current          revoke the caller's token
+ * POST /v1/executions                  decide and, when allowed, perform a governed write
+ * GET  /v1/executions/{id}             one execution's journal entry
+ * GET  /v1/journal?tenant=...          the journal of a tenant
+ * GET  /v1/health                      liveness and counters
+ * GET  /v1/audit?tenant=...            the service-side audit chain of one tenant
+ * GET  /v1/erp?tenant=...              read-only view of the configured ERP state
+ * GET  /v1/capabilities                what this deployment can do, for the client
+ * GET  /v1/tools                       the tool contracts, for capability-driven UI
+ * GET  /v1/policy                      the versioned policy a decision is stamped with
+ * GET  /v1/reconciliation?tenant=...   uncertain writes waiting for a person
+ * POST /v1/reconciliation/{id}/resolve link or close a case
+ * GET  /v1/receipts/{id}               a signed receipt and its verification
+ * POST /v1/devices                     enroll a device public key
+ * GET  /v1/devices?tenant=...          the tenant's enrolled devices
+ * POST /v1/devices/challenge           a challenge for a sensitive approval
  * ```
  */
 class MizanService(
@@ -58,28 +102,54 @@ class MizanService(
     private val clock: () -> Long = { System.currentTimeMillis() },
 ) {
 
-    val erp = InMemoryErp()
+    val erp: InMemoryErp = InMemoryErp()
+    val connector: ErpConnector = config.connector ?: InMemoryErpConnector(erp, clock)
     val audit = AuditLedger(clock)
     val executions = ExecutionLedger()
     val directory = UserDirectory(config.users ?: ServiceAuthority.demoUsers())
     val sessions = SessionRegistry(config.sessionTtlMillis, clock)
-    val policy = PolicyEvaluator(config.catalog)
+    val policy = PolicyEvaluator(config.catalog, config.versionedPolicy.version, config.versionedPolicy.rules, clock)
+    val rateLimiter = RateLimiter(clock, config.rateLimiting, config.budgets)
+    val loginThrottle = LoginThrottle(clock = clock)
+    val stores: ServiceStores? = config.storeDirectory?.let { ServiceStores(it, clock) }
+    val signer: ReceiptSigner? = config.signingSecret?.let { ReceiptSigner(listOf(ReceiptSigner.demoKey(it))) }
+    val devices: DeviceBindingService? = stores?.let {
+        DeviceBindingService(it.devices, it.challenges, clock)
+    }
+    val governance = GovernanceApi(
+        config = config,
+        connector = connector,
+        policy = policy,
+        versionedPolicy = config.versionedPolicy,
+        stores = stores,
+        signer = signer,
+        devices = devices,
+        directory = directory,
+        audit = audit,
+        clock = clock,
+    )
     val authority = ServiceAuthority(
-        erp = erp,
+        connector = connector,
         ledger = executions,
         audit = audit,
         directory = directory,
         capabilities = config.capabilities,
         policy = policy,
         clock = clock,
+        stores = stores,
+        signer = signer,
+        deviceBinding = devices,
+        requireDeviceProof = config.requireDeviceProof && devices != null,
+        versionedPolicy = config.versionedPolicy,
+        rateLimiter = rateLimiter,
     )
 
     private var server: HttpServer? = null
     private var pool = Executors.newFixedThreadPool(config.workerThreads)
 
     /**
-     * Starts the server and returns the port it is listening on.
-     * Port 0 asks the operating system for a free port, which tests use.
+     * Starts the server and returns the port it is listening on. Port 0 asks
+     * the operating system for a free port, which is what tests use.
      */
     @Synchronized
     fun start(port: Int = config.port, host: String = config.host): Int {
@@ -87,9 +157,16 @@ class MizanService(
         val http = HttpServer.create(InetSocketAddress(host, port), 0)
         http.createContext(MizanContract.PATH_SESSIONS, this::handleSessions)
         http.createContext(MizanContract.PATH_EXECUTIONS, this::handleExecutions)
+        http.createContext(MizanContract.PATH_JOURNAL, this::handleJournal)
         http.createContext(MizanContract.PATH_HEALTH, this::handleHealth)
         http.createContext(MizanContract.PATH_AUDIT, this::handleAudit)
         http.createContext(MizanContract.PATH_ERP, this::handleErp)
+        http.createContext(MizanContract.PATH_CAPABILITIES, governance::capabilities)
+        http.createContext(MizanContract.PATH_TOOLS, governance::tools)
+        http.createContext(MizanContract.PATH_POLICY, governance::policy)
+        http.createContext(MizanContract.PATH_RECONCILIATION, governance::reconciliation)
+        http.createContext(MizanContract.PATH_RECEIPTS, governance::receipts)
+        http.createContext(MizanContract.PATH_DEVICES, this::handleDevices)
         pool = Executors.newFixedThreadPool(config.workerThreads)
         http.executor = pool
         http.start()
@@ -102,32 +179,69 @@ class MizanService(
         server?.stop(0)
         server = null
         pool.shutdownNow()
+        stores?.close()
     }
 
     val isRunning: Boolean
         get() = server != null
 
-    private fun handleSessions(exchange: HttpExchange) = serve(exchange) {
-        if (exchange.requestMethod != "POST") {
-            respond(exchange, 405, Json.obj("messageCode" to Json.str("METHOD_NOT_ALLOWED")))
+    // ------------------------------------------------------------------ routes
+
+    private fun handleSessions(exchange: HttpExchange) = Http.serve(exchange) {
+        val path = exchange.requestURI.path.removePrefix(MizanContract.PATH_SESSIONS)
+        if (path.startsWith("/current")) {
+            revokeCurrent(exchange)
             return@serve
         }
-        val body = Json.parseOrNull(exchange.requestBody.readBytes().toString(Charsets.UTF_8))?.asObject()
+        if (exchange.requestMethod != "POST") {
+            Http.respond(exchange, 405, Json.obj("messageCode" to Json.str("METHOD_NOT_ALLOWED")))
+            return@serve
+        }
+        val body = Http.readJsonObject(exchange)
         val email = body?.text("email")
         val password = body?.text("password")
         if (email.isNullOrBlank() || password.isNullOrBlank()) {
-            respond(exchange, 400, Json.obj("messageCode" to Json.str("SIGN_IN_BODY")))
+            Http.respond(exchange, 400, Json.obj("messageCode" to Json.str("SIGN_IN_BODY")))
+            return@serve
+        }
+        val address = exchange.remoteAddress?.address?.hostAddress ?: "unknown"
+        // A correct password never costs budget: the limiter bounds *failures*,
+        // which is what credential stuffing is made of.
+        val decision = rateLimiter.peek(LimitSurface.SIGN_IN, email, address)
+        if (!decision.allowed) {
+            Http.respond(
+                exchange,
+                429,
+                Json.obj("messageCode" to Json.str(decision.reasonCode)),
+                mapOf("Retry-After" to decision.retryAfterSeconds.toString()),
+            )
+            return@serve
+        }
+        if (loginThrottle.isLocked(email)) {
+            // One answer for an unknown account, a wrong password and a lockout.
+            Http.respond(exchange, 401, Json.obj("messageCode" to Json.str("SESSION_DENIED")))
             return@serve
         }
         val user = directory.signIn(email, password)
         if (user == null) {
-            // One answer for an unknown account, a wrong password, and a lockout.
-            respond(exchange, 401, Json.obj("messageCode" to Json.str("SESSION_DENIED")))
+            loginThrottle.recordFailure(email)
+            rateLimiter.consume(LimitSurface.SIGN_IN, email, address)
+            Http.respond(exchange, 401, Json.obj("messageCode" to Json.str("SESSION_DENIED")))
             return@serve
         }
+        loginThrottle.recordSuccess(email)
         val issued = sessions.issue(user)
         val token = issued.first
         val session = issued.second
+        stores?.sessions?.save(
+            app.mizan.service.store.SessionStore.Record(
+                tokenFingerprint = session.tokenFingerprint,
+                actorId = user.actorId,
+                tenantId = user.tenantId,
+                issuedAtMillis = session.issuedAtEpochMillis,
+                expiresAtMillis = session.expiresAtEpochMillis,
+            ),
+        )
         audit.append(
             tenantId = user.tenantId,
             traceId = "session",
@@ -137,7 +251,7 @@ class MizanService(
             stateAfter = "AUTHENTICATED",
             details = "fingerprint=${session.tokenFingerprint}",
         )
-        respond(
+        Http.respond(
             exchange,
             200,
             Json.obj(
@@ -152,37 +266,72 @@ class MizanService(
         )
     }
 
-    private fun handleExecutions(exchange: HttpExchange) = serve(exchange) {
+    private fun revokeCurrent(exchange: HttpExchange) {
+        if (exchange.requestMethod != "DELETE" && exchange.requestMethod != "POST") {
+            Http.respond(exchange, 405, Json.obj("messageCode" to Json.str("METHOD_NOT_ALLOWED")))
+            return
+        }
+        val token = Http.bearer(exchange.requestHeaders.getFirst(MizanContract.HEADER_AUTHORIZATION))
+        val session = sessions.resolve(token)
+        if (session == null || token == null) {
+            Http.respond(exchange, 401, Json.obj("messageCode" to Json.str("SESSION_EXPIRED")))
+            return
+        }
+        sessions.revoke(token)
+        stores?.sessions?.revoke(session.tokenFingerprint, clock())
+        audit.append(
+            tenantId = session.user.tenantId,
+            traceId = "session",
+            actorId = session.user.actorId,
+            action = "SESSION_REVOKED",
+            stateBefore = "AUTHENTICATED",
+            stateAfter = "ANONYMOUS",
+            details = "fingerprint=${session.tokenFingerprint}",
+        )
+        Http.respond(exchange, 200, Json.obj("messageCode" to Json.str("SESSION_REVOKED")))
+    }
+
+    private fun handleExecutions(exchange: HttpExchange) = Http.serve(exchange) {
+        val session = authenticate(exchange) ?: return@serve
+        val path = exchange.requestURI.path.removePrefix(MizanContract.PATH_EXECUTIONS).trim('/')
+        if (path.isNotEmpty() && exchange.requestMethod == "GET") {
+            val journal = stores?.journals?.get(path)
+            if (journal == null) {
+                Http.respond(exchange, 404, Json.obj("messageCode" to Json.str("EXECUTION_NOT_FOUND")))
+                return@serve
+            }
+            if (journal.tenantId.value != session.user.tenantId) {
+                Http.respond(exchange, 403, Json.obj("messageCode" to Json.str("TENANT_MISMATCH")))
+                return@serve
+            }
+            Http.respond(exchange, 200, governance.journalJson(journal))
+            return@serve
+        }
         if (exchange.requestMethod != "POST") {
-            respond(exchange, 405, Json.obj("messageCode" to Json.str("METHOD_NOT_ALLOWED")))
+            Http.respond(exchange, 405, Json.obj("messageCode" to Json.str("METHOD_NOT_ALLOWED")))
             return@serve
         }
         val headers = exchange.requestHeaders
-        val token = bearer(headers.getFirst(MizanContract.HEADER_AUTHORIZATION))
-        val session = sessions.resolve(token)
-        if (session == null) {
-            respond(
+        val body = Http.readJsonObject(exchange)
+        if (body == null) {
+            Http.respond(
                 exchange,
-                401,
+                400,
                 Json.obj(
                     "status" to Json.str(MizanContract.Status.REJECTED),
-                    "messageCode" to Json.str("SESSION_EXPIRED"),
+                    "messageCode" to Json.str("REQUEST_BODY"),
                 ),
             )
             return@serve
         }
-        val traceId = headers.getFirst(MizanContract.HEADER_TRACE_ID)
-        val body = Json.parseOrNull(exchange.requestBody.readBytes().toString(Charsets.UTF_8))?.asObject()
-        val request = body?.let {
-            ExecutionRequest.parse(
-                body = it,
-                fallbackExecutionId = "EXE-" + UUID.randomUUID().toString().take(8).uppercase(),
-                traceHeader = traceId,
-                idempotencyHeader = headers.getFirst(MizanContract.HEADER_IDEMPOTENCY_KEY),
-            )
-        }
+        val request = ExecutionRequest.parse(
+            body = body,
+            fallbackExecutionId = "EXE-" + UUID.randomUUID().toString().take(8).uppercase(),
+            traceHeader = headers.getFirst(MizanContract.HEADER_TRACE_ID),
+            idempotencyHeader = headers.getFirst(MizanContract.HEADER_IDEMPOTENCY_KEY),
+        )
         if (request == null) {
-            respond(
+            Http.respond(
                 exchange,
                 400,
                 Json.obj(
@@ -199,7 +348,7 @@ class MizanService(
 
     private fun respondOutcome(exchange: HttpExchange, outcome: ExecutionOutcome) {
         when (outcome) {
-            is ExecutionOutcome.Verified -> respond(
+            is ExecutionOutcome.Verified -> Http.respond(
                 exchange,
                 200,
                 Json.obj(
@@ -208,10 +357,14 @@ class MizanService(
                     "erpRecordId" to Json.str(outcome.erpRecordId),
                     "erpModel" to Json.str(outcome.erpModel),
                     "verification" to Json.str("READ_BACK"),
+                    "verifiedFields" to Json.arr(outcome.verifiedFields.map { Json.str(it) }),
+                    "receiptId" to Json.str(outcome.receiptId),
+                    "receiptSignature" to Json.str(outcome.receiptSignature),
+                    "receiptKeyId" to Json.str(outcome.receiptKeyId),
                     "summary" to Json.str(outcome.summary),
                 ),
             )
-            is ExecutionOutcome.Accepted -> respond(
+            is ExecutionOutcome.Accepted -> Http.respond(
                 exchange,
                 200,
                 Json.obj(
@@ -223,17 +376,20 @@ class MizanService(
                     "summary" to Json.str(outcome.summary),
                 ),
             )
-            is ExecutionOutcome.Ambiguous -> respond(
+            is ExecutionOutcome.Ambiguous -> Http.respond(
                 exchange,
                 200,
                 Json.obj(
                     "status" to Json.str(MizanContract.Status.AMBIGUOUS),
                     "executionId" to Json.str(outcome.executionId),
-                    "messageCode" to Json.str("SERVICE_AMBIGUOUS"),
+                    "messageCode" to Json.str(outcome.reasonCode ?: "SERVICE_AMBIGUOUS"),
+                    "reconciliationId" to Json.str(outcome.executionId.replace("EXE-", "REC-")),
+                    "possibleRecordId" to Json.str(outcome.possibleRecordId),
+                    "possibleModel" to Json.str(outcome.possibleModel),
                     "candidates" to Json.str(outcome.candidateRecordIds.joinToString(",")),
                 ),
             )
-            is ExecutionOutcome.Rejected -> respond(
+            is ExecutionOutcome.Rejected -> Http.respond(
                 exchange,
                 outcome.httpStatus,
                 Json.obj(
@@ -241,8 +397,13 @@ class MizanService(
                     "executionId" to Json.str(outcome.executionId),
                     "messageCode" to Json.str(outcome.messageCode),
                 ),
+                if (outcome.retryAfterSeconds > 0L) {
+                    mapOf("Retry-After" to outcome.retryAfterSeconds.toString())
+                } else {
+                    emptyMap()
+                },
             )
-            is ExecutionOutcome.Failed -> respond(
+            is ExecutionOutcome.Failed -> Http.respond(
                 exchange,
                 200,
                 Json.obj(
@@ -254,45 +415,55 @@ class MizanService(
         }
     }
 
-    private fun handleHealth(exchange: HttpExchange) = serve(exchange) {
-        respond(
+    private fun handleJournal(exchange: HttpExchange) = Http.serve(exchange) {
+        val session = authenticate(exchange) ?: return@serve
+        val store = stores?.journals
+        if (store == null) {
+            Http.respond(exchange, 200, Json.obj("durable" to Json.bool(false), "entries" to Json.arr(emptyList())))
+            return@serve
+        }
+        val requested = Http.query(exchange, "tenant") ?: session.user.tenantId
+        if (requested != session.user.tenantId) {
+            Http.respond(exchange, 403, Json.obj("messageCode" to Json.str("TENANT_MISMATCH")))
+            return@serve
+        }
+        val limit = Http.query(exchange, "limit")?.toIntOrNull()?.coerceIn(1, 200) ?: 50
+        val entries = store.forTenant(requested, limit).map { governance.journalJson(it) }
+        Http.respond(exchange, 200, Json.obj("durable" to Json.bool(true), "entries" to Json.arr(entries)))
+    }
+
+    private fun handleHealth(exchange: HttpExchange) = Http.serve(exchange) {
+        Http.respond(
             exchange,
             200,
             Json.obj(
                 "service" to Json.str("wakeel-reference"),
                 "status" to Json.str("ok"),
-                "erp" to Json.str("in-memory-reference"),
-                "sessions" to Json.num(sessions.activeCount()),
+                "erp" to Json.str(connector.id),
+                "durable" to Json.bool(stores != null),
+                "signed" to Json.bool(signer != null),
+                "policyVersion" to Json.str(config.versionedPolicy.version.id),
+                "tools" to Json.num(app.mizan.domain.tool.ToolCatalog.definitions.size),
                 "executions" to Json.num(executions.size()),
+                "journalEntries" to Json.num(stores?.journals?.count() ?: 0),
                 "tenants" to Json.num(audit.tenants().size),
+                "rateLimited" to Json.num(rateLimiter.refusalCount()),
                 "nowEpochMillis" to Json.num(clock()),
             ),
         )
     }
 
-    private fun handleAudit(exchange: HttpExchange) = serve(exchange) {
-        val session = sessions.resolve(bearer(exchange.requestHeaders.getFirst(MizanContract.HEADER_AUTHORIZATION)))
-        if (session == null) {
-            respond(exchange, 401, Json.obj("messageCode" to Json.str("SESSION_EXPIRED")))
-            return@serve
-        }
-        val tenant = query(exchange, "tenant") ?: session.user.tenantId
+    private fun handleAudit(exchange: HttpExchange) = Http.serve(exchange) {
+        val session = authenticate(exchange) ?: return@serve
+        val tenant = Http.query(exchange, "tenant") ?: session.user.tenantId
         if (tenant != session.user.tenantId) {
-            respond(exchange, 403, Json.obj("messageCode" to Json.str("TENANT_MISMATCH")))
+            Http.respond(exchange, 403, Json.obj("messageCode" to Json.str("TENANT_MISMATCH")))
             return@serve
         }
-        val report = audit.verify(tenant)
-        val events = audit.events(tenant).map { event ->
-            Json.obj(
-                "chainIndex" to Json.num(event.chainIndex),
-                "action" to Json.str(event.action),
-                "actorId" to Json.str(event.actorId),
-                "details" to Json.str(event.details),
-                "integrityClass" to Json.str(event.integrityClass.name),
-                "timestampMillis" to Json.num(event.timestampMillis),
-            )
-        }
-        respond(
+        val durableEvents = stores?.audit?.forTenant(tenant)
+        val events = if (durableEvents.isNullOrEmpty()) audit.events(tenant) else durableEvents
+        val report = app.mizan.domain.audit.ChainVerifier().verify(events)
+        Http.respond(
             exchange,
             200,
             Json.obj(
@@ -300,29 +471,37 @@ class MizanService(
                 "chainIntact" to Json.bool(report.intact),
                 "messageCode" to Json.str(report.messageCode),
                 "records" to Json.num(report.records),
-                "events" to Json.arr(events),
+                "integrityClass" to Json.str(app.mizan.domain.audit.IntegrityClass.SERVER_AUTHORED.name),
+                "events" to Json.arr(
+                    events.map { event ->
+                        Json.obj(
+                            "chainIndex" to Json.num(event.chainIndex),
+                            "action" to Json.str(event.action),
+                            "actorId" to Json.str(event.actorId),
+                            "details" to Json.str(event.details),
+                            "integrityClass" to Json.str(event.integrityClass.name),
+                            "timestampMillis" to Json.num(event.timestampMillis),
+                        )
+                    },
+                ),
             ),
         )
     }
 
-    private fun handleErp(exchange: HttpExchange) = serve(exchange) {
-        val session = sessions.resolve(bearer(exchange.requestHeaders.getFirst(MizanContract.HEADER_AUTHORIZATION)))
-        if (session == null) {
-            respond(exchange, 401, Json.obj("messageCode" to Json.str("SESSION_EXPIRED")))
-            return@serve
-        }
-        val tenant = query(exchange, "tenant") ?: session.user.tenantId
+    private fun handleErp(exchange: HttpExchange) = Http.serve(exchange) {
+        val session = authenticate(exchange) ?: return@serve
+        val tenant = Http.query(exchange, "tenant") ?: session.user.tenantId
         if (tenant != session.user.tenantId) {
-            respond(exchange, 403, Json.obj("messageCode" to Json.str("TENANT_MISMATCH")))
+            Http.respond(exchange, 403, Json.obj("messageCode" to Json.str("TENANT_MISMATCH")))
             return@serve
         }
         val snapshot = erp.snapshot(tenant)
-        respond(
+        Http.respond(
             exchange,
             200,
             Json.obj(
                 "tenant" to Json.str(tenant),
-                "erp" to Json.str("in-memory-reference"),
+                "erp" to Json.str(connector.id),
                 "orders" to Json.arr(
                     snapshot.orders.map { (id, state) ->
                         Json.obj("id" to Json.str(id), "state" to Json.str(state))
@@ -342,51 +521,42 @@ class MizanService(
         )
     }
 
-    private fun bearer(header: String?): String? {
-        if (header.isNullOrBlank()) return null
-        val trimmed = header.trim()
-        if (!trimmed.startsWith("Bearer ", ignoreCase = true)) return null
-        return trimmed.substring(7).trim().takeIf { it.isNotEmpty() }
-    }
-
-    private fun query(exchange: HttpExchange, name: String): String? {
-        val raw = exchange.requestURI.query ?: return null
-        return raw.split('&').mapNotNull { part ->
-            val pieces = part.split('=', limit = 2)
-            if (pieces.size == 2) pieces[0] to pieces[1] else null
-        }.firstOrNull { (key, _) -> key == name }?.second
-    }
-
-    private fun respond(exchange: HttpExchange, status: Int, body: JsonValue) {
-        val bytes = Json.write(body).toByteArray(Charsets.UTF_8)
-        exchange.responseHeaders.add("Content-Type", "application/json; charset=utf-8")
-        exchange.responseHeaders.add("X-Content-Type-Options", "nosniff")
-        exchange.sendResponseHeaders(status, bytes.size.toLong())
-        exchange.responseBody.write(bytes)
-        exchange.responseBody.flush()
-        exchange.close()
-    }
-
-    /**
-     * Inline so handlers can return early. A handler that throws is answered
-     * with a 500 rather than being left hanging.
-     */
-    private inline fun serve(exchange: HttpExchange, block: () -> Unit) {
-        try {
-            block()
-        } catch (_: Throwable) {
-            try {
-                respond(
-                    exchange,
-                    500,
-                    Json.obj(
-                        "status" to Json.str(MizanContract.Status.FAILED),
-                        "messageCode" to Json.str("SERVICE_ERROR"),
-                    ),
-                )
-            } catch (_: Throwable) {
-                exchange.close()
-            }
+    private fun handleDevices(exchange: HttpExchange) = Http.serve(exchange) {
+        val session = authenticate(exchange) ?: return@serve
+        val binding = devices
+        if (binding == null) {
+            Http.respond(exchange, 503, Json.obj("messageCode" to Json.str("DEVICE_STORE_UNAVAILABLE")))
+            return@serve
         }
+        governance.devices(exchange, session.user.actorId, session.user.tenantId)
+    }
+
+    // --------------------------------------------------------------- utilities
+
+    private fun authenticate(exchange: HttpExchange): app.mizan.service.security.ServiceSession? {
+        val token = Http.bearer(exchange.requestHeaders.getFirst(MizanContract.HEADER_AUTHORIZATION))
+        val session = sessions.resolve(token)
+        if (session != null) return session
+        // A restart must not log everybody out: the durable session record is
+        // consulted before the request is refused.
+        val durable = token?.let { stores?.sessions?.find(app.mizan.domain.model.Digests.sha256(it).take(16)) }
+        if (durable != null && durable.active(clock())) {
+            val user = directory.find(durable.tenantId, durable.actorId) ?: return null
+            return app.mizan.service.security.ServiceSession(
+                tokenFingerprint = durable.tokenFingerprint,
+                user = user,
+                issuedAtEpochMillis = durable.issuedAtMillis,
+                expiresAtEpochMillis = durable.expiresAtMillis,
+            )
+        }
+        Http.respond(
+            exchange,
+            401,
+            Json.obj(
+                "status" to Json.str(MizanContract.Status.REJECTED),
+                "messageCode" to Json.str("SESSION_EXPIRED"),
+            ),
+        )
+        return null
     }
 }

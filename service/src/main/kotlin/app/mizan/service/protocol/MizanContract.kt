@@ -15,6 +15,13 @@ object MizanContract {
     const val PATH_HEALTH = "/v1/health"
     const val PATH_AUDIT = "/v1/audit"
     const val PATH_ERP = "/v1/erp"
+    const val PATH_JOURNAL = "/v1/journal"
+    const val PATH_CAPABILITIES = "/v1/capabilities"
+    const val PATH_TOOLS = "/v1/tools"
+    const val PATH_POLICY = "/v1/policy"
+    const val PATH_RECONCILIATION = "/v1/reconciliation"
+    const val PATH_RECEIPTS = "/v1/receipts"
+    const val PATH_DEVICES = "/v1/devices"
 
     const val HEADER_AUTHORIZATION = "Authorization"
     const val HEADER_TRACE_ID = "X-Trace-Id"
@@ -48,6 +55,17 @@ object MizanContract {
         const val ARGUMENTS = "arguments"
         const val APPROVER_ID = "approverId"
         const val IDEMPOTENCY_KEY = "idempotencyKey"
+
+        /** The approval object the request claims, and the proposal it binds to. */
+        const val APPROVAL_ID = "approvalId"
+        const val PROPOSAL_FINGERPRINT = "proposalFingerprint"
+
+        /** Device-bound authorisation: a server challenge and its signature. */
+        const val DEVICE_CHALLENGE_ID = "deviceChallengeId"
+        const val DEVICE_SIGNATURE = "deviceSignature"
+
+        /** Opaque reference to the proof of presence kept in the journal. */
+        const val PROOF_REFERENCE = "proofReference"
     }
 
     /** Canonical argument keys produced by the client's `ToolArgs.canonical()`. */
