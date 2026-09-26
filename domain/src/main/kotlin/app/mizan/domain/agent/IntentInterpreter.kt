@@ -120,18 +120,25 @@ class IntentInterpreter(
                     listOf("period=$period"),
                 )
             }
-            ToolName.CREATE_DRAFT_ORDER, null -> draft(trimmed, vague)
+            ToolName.CREATE_DRAFT_ORDER -> draft(trimmed, vague)
+            null -> draft(trimmed, vague, toolKnown = false)
             ToolName.UNKNOWN -> Interpretation.Rejected("TOOL_NOT_SUPPORTED")
         }
     }
 
     private fun detectTool(lower: String): ToolName? = when {
-        lower.contains("cancel") || lower.contains("إلغاء") || lower.contains("الغاء") ->
-            ToolName.CANCEL_ORDER
+        // "الغي الأوردر" and "cancel the order": the colloquial forms are
+        // written the way people type them, not the way a dictionary spells
+        // them.
+        CANCEL_WORDS.any { lower.contains(it) } -> ToolName.CANCEL_ORDER
+        // A summary is a read, and it is tried before the order words: "مبيعات"
+        // contains "بيع", and "sales report" must not become a draft order.
+        (lower.contains("summary") || lower.contains("ملخص") || lower.contains("تقرير") ||
+            SUMMARY_WORDS.any { lower.contains(it) }) && !ORDER_VERBS.any { lower.contains(it) } ->
+            ToolName.SALES_SUMMARY
         // "Is SKU-DESK-01 available?" names no tool keyword, but it does name
         // a SKU, and that is what the person wants looked up.
-        lower.contains("stock") || lower.contains("مخزون") || lower.contains("بضاعة") ||
-            lower.contains("available") || lower.contains("متاح") ||
+        STOCK_WORDS.any { lower.contains(it) } ||
             (SKU.containsMatchIn(lower) && !ORDER_WORDS.any { lower.contains(it) }) ->
             ToolName.STOCK_AVAILABILITY
         // "سجل سداد ... على الفاتورة" mentions the invoice and is still a
@@ -140,9 +147,11 @@ class IntentInterpreter(
             lower.contains("سدد") || lower.contains("ادفع") || lower.contains("pay") ->
             ToolName.REGISTER_PAYMENT
         lower.contains("invoice") || lower.contains("فاتورة") -> ToolName.CREATE_INVOICE
-        lower.contains("customer") || lower.contains("عميل") && !lower.contains("أمر") && !lower.contains("طلب") ->
-            ToolName.CUSTOMER_SEARCH
-        lower.contains("summary") || lower.contains("ملخص") -> ToolName.SALES_SUMMARY
+        // A sentence that asks about order paperwork and happens to contain
+        // the word "customer" is about the order, not about the customer file.
+        (lower.contains("customer") || lower.contains("عميل")) &&
+            !ORDER_VERBS.any { lower.contains(it) } &&
+            !lower.contains("أمر") && !lower.contains("طلب") -> ToolName.CUSTOMER_SEARCH
         lower.contains("order") || lower.contains("draft") || lower.contains("أمر") ||
             lower.contains("طلب") || lower.contains("بيع") -> ToolName.CREATE_DRAFT_ORDER
         else -> null
@@ -220,13 +229,13 @@ class IntentInterpreter(
         )
     }
 
-    private fun draft(text: String, vague: Boolean): Interpretation {
+    private fun draft(text: String, vague: Boolean, toolKnown: Boolean = true): Interpretation {
         val customer = extractCustomer(text)
         val money = extractMoney(text)
         val items = extractAfter(
             text,
             listOf("items", "for items", "بنود", "أصناف", "اصناف", "منتجات", "قطع", "وحدات", "عبارة عن"),
-        )
+        ) ?: extractItemsAfterMoney(text)
         val missing = mutableListOf<MissingField>()
         if (customer == null) missing += MissingField.CUSTOMER
         if (money == null) {
@@ -235,6 +244,12 @@ class IntentInterpreter(
         }
         if (items == null) missing += MissingField.ITEMS
         if (missing.isNotEmpty() || vague) {
+            // An utterance with no tool and no extractable field is not an
+            // order with three missing things, it is a sentence that has not
+            // said what it wants yet.
+            if (!toolKnown && customer == null && money == null && items == null) {
+                return clarify(null, listOf(MissingField.QUERY))
+            }
             return clarify(ToolName.CREATE_DRAFT_ORDER, missing)
         }
         return Interpretation.Ready(
@@ -308,6 +323,36 @@ class IntentInterpreter(
             .takeIf { it.length >= 2 }
     }
 
+    /**
+     * The items are what follows the amount: "2,500 USD, 10 laptops" or
+     * "بـ ٣٠٠٠ دولار لعشرة حواسيب".
+     *
+     * The amount is the anchor because the money is the one thing every order
+     * sentence contains, and the noun phrase after it is the only place an
+     * item list can be without a marker word. A tail that is only punctuation,
+     * or only a number, is not an item list.
+     */
+    private fun extractItemsAfterMoney(text: String): String? {
+        val currency = CURRENCY.find(text) ?: return null
+        val tail = text.substring(currency.range.last + 1)
+            .trim()
+            .trimStart(',', '،', '.', ':', '-', '—')
+            .trim()
+        if (tail.length < 3) return null
+        // The amount may be written after the currency ("USD 2500 for 10
+        // keyboards"), so the first number in the tail belongs to the amount.
+        val withoutLeadingNumber = NUMBER.replaceFirst(tail, "").trim()
+        val candidate = when {
+            NUMBER.containsMatchIn(tail) && withoutLeadingNumber.length >= 3 -> withoutLeadingNumber
+            ArabicQuantities.parseQuantity(tail) != null -> tail
+            else -> return null
+        }.trim()
+        if (candidate.length < 3) return null
+        // A tail that is another amount is another amount, not an item list.
+        if (CURRENCY.containsMatchIn(candidate)) return null
+        return candidate.take(120)
+    }
+
     private fun extractAfter(text: String, markers: List<String>): String? {
         val lower = text.lowercase()
         val index = markers.map { it.lowercase() to lower.indexOf(it.lowercase()) }
@@ -321,14 +366,24 @@ class IntentInterpreter(
     }
 
     private companion object {
+        val CANCEL_WORDS = listOf("cancel", "إلغاء", "الغاء", "الغي", "ألغي", "الغى", "ملغي")
+        val SUMMARY_WORDS = listOf("summary", "ملخص", "مبيعات", "sales", "تقرير")
+        val STOCK_WORDS = listOf(
+            "stock", "available", "مخزون", "مخزن", "المخزن", "بضاعة", "متاح", "متوفر", "مستودع", "المستودع",
+        )
+        /** Verbs that mean "write something", used to break tool ties. */
+        val ORDER_VERBS = listOf("order", "draft", "create", "invoice", "مسودة", "أوردر", "اوردر", "أنشئ", "انشئ", "اعمل")
         val VAGUE = listOf("some", "maybe", "approx", "approximately", "بعض", "تقريبا", "تقريبًا", "حوالي", "أي كمية")
         val SKU = Regex("""SKU-[A-Z0-9-]+""", RegexOption.IGNORE_CASE)
         val ORDER_ID = Regex("""(?:SO|SAL-ORD|ORDER)-[A-Z0-9-]+""", RegexOption.IGNORE_CASE)
         val INVOICE_ID = Regex("""INV-[A-Z0-9-]+""", RegexOption.IGNORE_CASE)
         val NUMBER = Regex("""\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?""")
         val CURRENCY = Regex("""USD|EGP|EUR|GBP|SAR|AED|\$|€|£|ج\.م|جنيه|دولار|ر\.س|د\.إ""", RegexOption.IGNORE_CASE)
+        // "لشركة النور" is how an Egyptian office writes "for the company
+        // Al-Nour", and a customer extractor that only knows the word
+        // "عميل" cannot read most of the sentences people actually type.
         val CUSTOMER = Regex(
-            """(?:for|customer|عميل|للعميل)\s+([^,\n]{2,80})""",
+            """(?:for|customer|عميل|للعميل|لشركة|لعميل)\s+([^,\n]{2,80})""",
             RegexOption.IGNORE_CASE,
         )
         val ORDER_WORDS = listOf("order", "draft", "أمر", "طلب", "بيع", "فاتورة")

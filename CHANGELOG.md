@@ -54,7 +54,7 @@ identifiers, not promises.
 - Odoo 19 over JSON-2 is implemented as the primary transport with a scripted
   transport proving the request shape and, more importantly, the difference
   between "the ERP refused" and "I do not know what the ERP did".
-- Tests: **393, passing: 393** (the JVM suite this environment can run).
+- Tests: **414, passing: 414** (the JVM suite this environment can run).
 
 ## [Unreleased] — 2026-09-26
 
@@ -86,7 +86,7 @@ identifiers, not promises.
   dependency cannot be downloaded here, so `tools/jvm_stubs/` stands in the
   slice of it the module uses. Nothing in the stub performs I/O.
 - Tests were 163, passing: 163 (was 74) at that point in the work; the
-  JVM suite now stands at 393 and is listed in `docs/TESTING.md`.
+  JVM suite now stands at 414 and is listed in `docs/TESTING.md`.
 
 ### Fixed
 

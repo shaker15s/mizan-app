@@ -5,7 +5,7 @@ Tests exist, and the three JVM modules now run them:
 ```bash
 python3 tools/bootstrap_toolchain.py   # provisions a JDK and a Kotlin compiler
 JAVA_HOME=<toolchain>/jdk/jdk4py/java-runtime KOTLINC_HOME=<toolchain>/kotlinc \
-  python3 tools/jvm_check.py           # 393 tests, all passing
+  python3 tools/jvm_check.py           # 414 tests, all passing
 ```
 
 The Android modules still have not been assembled: no Android SDK and no

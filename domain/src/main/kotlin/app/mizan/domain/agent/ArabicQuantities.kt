@@ -160,12 +160,15 @@ object ArabicQuantities {
         var wordValue: Long? = null
         var multiplier: Long? = null
         for (word in words) {
-            val number = WORD_NUMBERS[word]
+            // "لعشرة حواسيب" is "for ten laptops": the preposition is glued to
+            // the number in Arabic, so the number has to be read through it.
+            val bare = word.removePrefix("ل")
+            val number = WORD_NUMBERS[word] ?: WORD_NUMBERS[bare]
             if (number != null && wordValue == null) {
                 wordValue = number
                 continue
             }
-            val scale = MULTIPLIERS[word]
+            val scale = MULTIPLIERS[word] ?: MULTIPLIERS[bare]
             if (scale != null) {
                 multiplier = scale
                 break

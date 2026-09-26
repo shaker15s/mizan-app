@@ -25,7 +25,7 @@ words, and this file is written to survive that standard.
 | Modules that compile and run here | `:domain`, `:service`, `:integration` |
 | Modules that cannot be built here | `:app`, `:design`, `:data` — they need the Android SDK, AGP and Compose, and Maven Central and Google Maven are unreachable from this sandbox |
 | Test command | `JAVA_HOME=... KOTLINC_HOME=... python3 tools/jvm_check.py` |
-| Tests | 393, all passing (domain contracts, service pipeline over a real HTTP listener, the outbox and its sweeper, the durable journal across a restart, the PostgreSQL record log against a database double, the ERP boundary with a scripted transport) |
+| Tests | 414, all passing (domain contracts, service pipeline over a real HTTP listener, the outbox and its sweeper, the durable journal across a restart, the PostgreSQL record log against a database double, the ERP boundary with a scripted transport) |
 
 Anything marked **proven** below is proven by that command. Anything that needs
 an Android device, a Gradle build, a Postgres server or a real Odoo instance is
@@ -177,12 +177,38 @@ and nothing here can run it.
 **Not started** beyond the tokens that already existed.
 
 ### Phase 8 — AI 2.0
-**Partly written.** The deterministic half exists and is **proven**: Arabic
-text normalisation, quantity parsing, entity resolution that refuses to choose
-when two real entities match, and a tool catalogue whose writes all require
-approval and a fresh proof. The LLM never decides anything — it produces a
-normalised intent, and every field is validated before it becomes a proposal.
-The evaluation harness is **missing**.
+**Partly proven, harness included.** The deterministic half exists and is
+proven: Arabic text normalisation, quantity parsing, entity resolution that
+refuses to choose when two real entities match, and a tool catalogue whose
+writes all require approval and a fresh proof.
+
+The evaluation harness now exists as `domain/ai`:
+
+* `AiCorpus` is 36 hand-written cases across eleven categories — Egyptian
+  Arabic, MSA, English, mixed, typos, ambiguous, malicious, long form,
+  Arabic-Indic digits, currencies and ERP-content injection — each with the
+  outcome, tool, arguments, missing fields or refusal code a correct system
+  must produce. It is ground truth written from how people write, not from
+  what the interpreter happened to do.
+* `AiHarness` runs any number of providers over the corpus and reports
+  accuracy, p50/p95 latency and token cost per provider and per category, plus
+  a regression report (`fixed`, `broken`, cost and latency deltas) so a prompt
+  or model change is a decision with numbers behind it.
+* Providers: the deterministic interpreter, OpenAI, Anthropic and Gemini
+  adapters (behind a `Transport` seam, so their envelopes are tested against
+  scripted bytes), and a scripted double for the harness's own tests.
+* Running it against the deterministic interpreter scored **21/36 (0.583)**,
+  and the failures were real: no item extraction from "2,500 USD, 10 laptops",
+  no Egyptian "المخزن"/"مبيعات"/"الغي", no "لشركة النور", Arabic word numbers
+  behind a preposition, and a long sentence whose noun "customer" beat its verb
+  "create". Fixing those took it to **36/36 (1.000)**. The number is a
+  regression ratchet for this corpus, not an accuracy claim about any vendor's
+  model.
+
+The red line holds and is tested: a model that answers exactly what an attacker
+asked for still goes through the guard, validation, policy and the ladder, and
+the injection guard runs before the model is called as well as after it
+answers.
 
 ### Phase 9 — device intelligence
 **Not started.** Widgets, shortcuts, app links, notifications and share

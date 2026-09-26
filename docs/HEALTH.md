@@ -14,11 +14,11 @@ that the app compiles or that a write reached an ERP.
 | :app | 39 | 0 | 11744 |
 | :data | 8 | 0 | 1173 |
 | :design | 10 | 0 | 4267 |
-| :domain | 34 | 9 | 7486 |
-| :integration | 10 | 6 | 2571 |
+| :domain | 36 | 10 | 8616 |
+| :integration | 13 | 7 | 3385 |
 | :service | 36 | 13 | 13514 |
 
-Test functions declared: 393.
+Test functions declared: 414.
 Room indexes declared: 20; CREATE INDEX statements in the migration: 20.
 
 ## Findings
