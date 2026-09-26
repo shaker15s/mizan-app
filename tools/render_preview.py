@@ -50,24 +50,37 @@ def main():
         print("no palettes parsed; check the Tokens.kt structure", file=sys.stderr)
         return 1
 
-    names = ["cyber", "emerald", "indigo", "gold", "crimson", "obsidian"]
-    labels = {
-        "cyber": "Cyber Mizan",
-        "emerald": "Emerald Gov",
-        "indigo": "Royal Indigo",
-        "gold": "Sovereign Gold",
-        "crimson": "Crimson Ledger",
-        "obsidian": "Obsidian Dark",
+    # Read the order out of Tokens.kt so a new preset appears here without
+    # anyone remembering to edit this file.
+    source = open(TOKENS, encoding="utf-8").read()
+    preset_ids = re.findall(r'const val (\w+) = "(\w+)"', source)
+    id_to_palette = {
+        "cyber_mizan": "cyber",
+        "emerald_gov": "emerald",
+        "royal_indigo": "indigo",
+        "sovereign_gold": "gold",
+        "crimson_ledger": "crimson",
+        "obsidian_dark": "obsidian",
+        "aurora_glass": "aurora",
+        "arctic_prism": "arctic",
+        "basalt_neutral": "basalt",
+        "sandstone_amber": "sandstone",
     }
+    names, labels = [], {}
+    for constant, preset_id in preset_ids:
+        palette = id_to_palette.get(preset_id)
+        if palette and palette in palettes:
+            names.append(palette)
+            labels[palette] = constant.replace("_", " ").title()
 
     card_w, card_h = 210, 150
     gap = 16
     margin = 32
     header = 190
     columns = 3
-    rows = 4  # two palettes per card (light and dark) -> 6 presets / 3 columns = 2 rows of cards
+    rows = (len(names) + columns - 1) // columns
     width = margin * 2 + columns * card_w + (columns - 1) * gap
-    height = header + 2 * card_h + gap + margin
+    height = header + rows * card_h + (rows - 1) * gap + margin
 
     font = ImageFont.load_default()
     sheet = Image.new("RGBA", (width, height), (11, 15, 22, 255))

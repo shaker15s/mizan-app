@@ -33,6 +33,10 @@ jobs:
           python-version: "3.12"
       - name: Repository health check
         run: python3 tools/repo_check.py --no-write
+      - name: Every preset meets WCAG AA
+        run: python3 tools/check_contrast.py
+      - name: Launcher icons are present and correctly sized
+        run: python3 tools/render_brand.py --check
       - name: Gradle wrapper is a real wrapper
         run: |
           test -f gradle/wrapper/gradle-wrapper.jar
@@ -93,12 +97,17 @@ What it does on every push and pull request:
 
 | job | what it runs |
 | --- | --- |
-| `static` | `python3 tools/repo_check.py --no-write` and a check that the committed wrapper is a real wrapper |
+| `static` | `tools/repo_check.py --no-write`, `tools/check_contrast.py`, `tools/render_brand.py --check`, and a check that the committed wrapper is a real wrapper |
 | `jvm` | `:domain:test :integration:test :service:test`, then the service HTTP suite, and uploads the reports |
 | `android` | `:app:assembleDemoDebug :app:assembleStagingDebug :app:assembleProductionRelease` and lint on `:app`, `:data`, `:design` |
 
 The Android job needs `android-actions/setup-android` for the SDK. The release
 build is unsigned unless `KEYSTORE_PATH`, `STORE_PASSWORD`, `KEY_ALIAS`, and
 `KEY_PASSWORD` are set in the environment, which the build treats as optional.
+
+Without Gradle, `python3 tools/jvm_check.py` compiles `:domain` and `:service`
+and runs their 74 tests with a JDK and kotlinc alone, and
+`python3 tools/syntax_check.py` parses every Kotlin file with the real parser.
+They cover the invariants and the syntax; they cannot cover the UI.
 
 Until a machine with a JDK runs this, CI is a plan, not a green check.

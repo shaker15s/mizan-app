@@ -74,6 +74,37 @@ Gradients are tokens, not decoration: `accentBrush()` (three stops, diagonal)
 and `heroBrush()` (a vertical accent wash). The primary button uses
 `accentBrush()`, the hero emblem uses a radial aura. Nothing else gradients.
 
+## Glass
+
+Glass is four things at once, and `design/.../component/Glass.kt` implements
+all four. A pane that is only translucent reads as a grey rectangle; the other
+three are what the eye reads as glass.
+
+| layer | what it does |
+| --- | --- |
+| refraction | the pane redraws the page wash inside itself and blurs that copy with a render effect, on Android 12 and later |
+| tint | vertical, lighter at the top, because light comes from above |
+| sheen | a specular highlight that leans toward the finger while the pane is touched |
+| edge | a hairline that is bright at the top-left and nearly gone at the bottom-right |
+
+Two entry points:
+
+- `MizanGlassSurface` / `MizanGlassDock` / `MizanGlassOverlay` — a pane that
+  refracts. Used for the navigation dock, dialogs, sheets and feature cards:
+  a handful per screen.
+- `Modifier.mizanGlassPane` — the same tint, sheen and edge **without** the
+  blur, for the dozens of card surfaces that already existed. One render
+  effect per card is a cost a mid-range phone pays in dropped frames; at card
+  size the tint and the edge carry most of the look for free.
+
+Below Android 12 there is no render effect, so the blur is dropped and the tint
+is raised. The pane stays legible instead of becoming a flat wash.
+
+The refraction is honest about one thing: Compose does not expose the pixels
+behind a composable, so the pane redraws the backdrop itself. There is no
+public API on Android for a true backdrop blur at the view level either. Every
+backdrop MIZAN ships is a gradient, and for a gradient the copy is exact.
+
 ## Type
 
 Plus Jakarta Sans for English, Cairo for Arabic, JetBrains Mono for ids and
@@ -92,7 +123,7 @@ needs it, and it switches the whole family, not just the strings.
 | --- | --- |
 | `mizanTap` | spring scale (0.97), a ripple, one haptic tick. Every tappable surface |
 | `mizanPressable` | the same spring for a container that hosts its own controls |
-| `mizanReveal(index)` | staggered fade + 18 px rise + 1.5% settle, 26 ms per item |
+| `mizanReveal(index)` | staggered fade + 18 px rise + 1.5% settle, 26 ms per item, capped at 240 ms |
 | `mizanShimmer` | a sheen across a placeholder, not a spinner for unasked content |
 | `mizanPulse` | a slow breath on something waiting for a person |
 | `mizanGlow` | one radial gradient behind a hero element; no blur, no shadow node |
@@ -108,6 +139,10 @@ under reduced motion. Springs are `MizanPressSpring` (bouncy, for touch) and
 Screen transitions combine slide, fade and a 2% scale, entering in 320 ms and
 leaving in 160 ms: a back press is answered faster than a forward one.
 
+Lists stagger in: the three metric cards and the attention rows on Home, the
+evidence receipts, the operations records and the reconciliation cases. A list
+that appears all at once gives the eye nothing to follow.
+
 ## Components
 
 `MizanSurface`, `MizanGlassCard`, `MizanSectionHeader`, `MizanStatusBadge` (its
@@ -118,9 +153,10 @@ error and loading states (the loading state shows the *shape* of what is
 coming), list rows, command field, icon button with a content description,
 `LtrText` for technical strings, key-value rows, and the glass dock.
 
-Glass is the dock and the bottom bar. It is not the default page surface. There
-is no blur: on a low-end device a blur is a dropped frame, and this app is
-meant to be used while standing in a warehouse.
+Every card surface in the app is one of the two glass entry points, so a card
+looks the same wherever it is. The page behind them is a gradient wash
+(`MizanBackdrop` plus two soft lights), provided once at the shell through
+`ProvideMizanBackdrop`, which is what gives the panes something to refract.
 
 ## Layout
 
@@ -133,15 +169,37 @@ list-detail split. `Space` is 4/8/12/16/20/24/32/48.
 Buttons meet 48 dp. Icons that navigate have content descriptions. Status is a
 word plus a mark, never colour alone. Reduced motion is a preference and is
 honoured by every animation in the motion package. Contrast is a property of
-the palette derivation, not of a per-screen decision.
+the palette derivation, not of a per-screen decision, and it is checked:
+`tools/check_contrast.py` reads the palettes out of `Tokens.kt`, reproduces
+what `materialize()` derives, composites every translucent role over the
+surface it is drawn on, and computes the WCAG ratio for the 17 pairs the UI
+draws. It fails when a preset drops below AA.
 
 This is not a completed TalkBack audit; no device pass was run.
 
 ## What is deliberately absent
 
-- No blur, no glass on content surfaces, no parallax.
+- No blur on the dozens of ordinary cards: only the panes that are few per
+  screen refract. No parallax.
 - No animation on a value the user is meant to trust. A number that counts up
   is decoration; an amount either is verified or it is not, and the UI says
   which.
 - No synthesized font weights, no fake logotype.
 - No decorative gradient on anything but the primary action and the hero.
+
+## How any of this is verified
+
+Nothing here was measured on a device. What was checked, and by what:
+
+| check | what it proves |
+| --- | --- |
+| `python3 tools/jvm_check.py` | `:domain` and `:service` -- main and test sources -- compile with a real Kotlin compiler and their 74 tests pass on a real JVM |
+| `python3 tools/syntax_check.py` | every one of the 104 Kotlin files parses with the real Kotlin parser. It carries a `--self-test` that feeds it a file with a missing brace and fails if the checker does not report it |
+| `python3 tools/check_contrast.py` | every preset meets WCAG AA for the 17 pairs the UI draws |
+| `python3 tools/repo_check.py` | hygiene, secrets, ambiguous imports, and the documented commands |
+| `python3 tools/render_brand.py --check` | every launcher icon exists at the right density |
+
+Not verified, because this environment has no Android SDK, no Google Maven and
+no Gradle distribution: no APK was assembled, no Compose preview was rendered,
+no frame was timed, and no TalkBack pass was run. The glass, the motion and
+the palettes are derived and reviewable, not measured.

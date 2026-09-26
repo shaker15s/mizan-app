@@ -49,11 +49,99 @@ identifiers, not promises.
 - `tools/repo_check.py` now fails on ambiguous imports — two imports with the
   same simple name — which is a compile error that a static check can catch.
 
+### Glass
+
+- `design/.../component/Glass.kt`: one glass system. A pane is four things at
+  once -- it refracts the page wash with a render effect on Android 12+, it is
+  tinted vertically, it carries a specular sheen that leans toward the finger
+  while it is touched, and it has a hairline edge that is brighter at the
+  top-left than at the bottom-right. Below Android 12 the blur is dropped and
+  the tint is raised.
+- Two entry points. `MizanGlassSurface` (and `Dock`, `Overlay`, `TopBar`,
+  `Chip`) refract, and are used where there are a few per screen.
+  `Modifier.mizanGlassPane` gives the same tint, sheen and edge without the
+  blur, because a render effect per card is a dropped frame on a mid-range
+  phone.
+- The shell owns the wash the panes refract: `ProvideMizanBackdrop`,
+  `MizanBackdrop` and `MizanBackdropLights` at the root, and the scaffold is
+  transparent so the wash shows through.
+- Thirty-seven hand-rolled translucent rectangles across seven screens now call
+  one of the two.
+
+### Themes
+
+- Four presets join the seven: Aurora Glass, Arctic Prism, Basalt Neutral and
+  Sandstone Amber. Eleven real choices, each with its own light and dark
+  palette.
+- `tools/check_contrast.py` reads the palettes out of `Tokens.kt`, reproduces
+  what `materialize()` derives, composites every translucent role over the
+  surface it is drawn on, and computes the WCAG ratio for the 17 pairs the UI
+  draws. It found the meta text under 4.5:1 in nine presets; those tertiary
+  colours moved along their own hue until every pair cleared AA. Worst pair is
+  now 4.32:1, on a decorative accent wash.
+
+### Motion
+
+- Lists stagger in: Home's metric cards and attention rows, the evidence
+  receipts, the operations records and the reconciliation cases. `mizanReveal`
+  existed and nothing used it.
+
+### Fixed
+
+- `sd_triangle` in `tools/render_brand.py` decided "inside" by requiring three
+  cross products to be non-negative, which holds for only one winding order.
+  The fulcrum was drawn with the other order, so it was never inside: every
+  icon shipped so far had a hollow, hairline fulcrum. The test is now winding
+  agnostic.
+- `mark_shapes()` and `mark_vector()` listed the same balance twice in two
+  notations, so the PNGs and the vector drawables could drift. Both now read
+  one `MARK_PARTS` list.
+- `:service` could not compile. `ServiceAuthority` imported `RiskInput` from
+  `app.mizan.domain.model`; it lives in `app.mizan.domain.risk`.
+  `ExecutionMessages` called `JsonValue.Obj.field` without importing the
+  extension. `ServiceUnitTest` built a stored password form with an unescaped
+  `$`, which Kotlin reads as string interpolation.
+- The client canonicalises numbers as strings (`"amountMinor":"250000"`); the
+  service only accepted a JSON number, so every write was refused with
+  `MISSING_AMOUNT`. The service now reads both shapes and refuses anything
+  else.
+
+### Tooling
+
+- `tools/jvm_check.py` compiles `:domain` and `:service`, main and test
+  sources, with a real Kotlin compiler and runs the JUnit suites on a real
+  JVM. It needs a JDK and kotlinc and nothing else.
+- `tools/syntax_check.py` parses every Kotlin file with the real parser and
+  classifies what comes back: parse errors fail, unresolved references are
+  counted and explained. `--self-test` feeds it a file with a missing brace
+  and fails if the checker does not notice, because a checker that cannot
+  fail is decoration.
+- `tools/check_contrast.py` as described above.
+- Android 13 themed icons: `ic_launcher_monochrome.xml` and adaptive icons
+  under `mipmap-anydpi-v26` that reference background, foreground and
+  monochrome. Before this the adaptive icon existed only as five densities of
+  PNG.
+
+### Verified
+
+- `tools/jvm_check.py`: 74 tests, 74 passing, 0 failing, on a real JVM with a
+  real Kotlin compiler. Four of the fixes above came out of that run.
+- `tools/syntax_check.py`: 104 Kotlin files, 0 parse errors.
+- `tools/check_contrast.py`: 10 presets, 360 pairs, all at or above AA.
+- `tools/repo_check.py`: 88/100, 0 errors, 4 warnings (four UI files over 800
+  lines).
+- `tools/render_brand.py --check`: every launcher icon present and correctly
+  sized.
+
 ### Unverified
 
-Nothing in this entry was rendered on a device or compiled. No screenshots,
-no frame timings, no TalkBack pass. The palettes and the icon are
-mathematically derived and reviewable, not measured.
+No APK was assembled, no Compose preview was rendered, no frame was timed, and
+no TalkBack pass was run. This environment has no Android SDK, no Google Maven
+(`dl.google.com`), no Maven Central and no Gradle distribution: all four are
+blocked here, and the GitHub token available to it may not push files under
+`.github/workflows/`, so CI could not be enabled either. `docs/CI.md` carries
+the workflow for a machine that can. The glass, the motion and the palettes
+are derived and reviewable, not measured.
 
 ## [2.1.0] — 2026-09-25
 
