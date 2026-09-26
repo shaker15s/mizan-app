@@ -2,6 +2,7 @@ package app.mizan.service.ledger
 
 import app.mizan.domain.audit.AuditEvent
 import app.mizan.domain.audit.AuditHasher
+import app.mizan.domain.audit.AuditSealer
 import app.mizan.domain.audit.ChainReport
 import app.mizan.domain.audit.ChainVerifier
 import app.mizan.domain.audit.IntegrityClass
@@ -14,10 +15,19 @@ import app.mizan.domain.model.Digests
  * they are [IntegrityClass.SERVER_AUTHORED]. The chain proves the service's
  * own history is internally consistent. It is not an external witness.
  */
-class AuditLedger(private val clock: () -> Long = { System.currentTimeMillis() }) {
+class AuditLedger(
+    private val clock: () -> Long = { System.currentTimeMillis() },
+    /**
+     * When set, every row is sealed with the authority's key as it is written.
+     * A row that is added without a seal -- by another process, or by hand --
+     * makes the chain fail verification for that tenant rather than being
+     * quietly indistinguishable from the rest.
+     */
+    private val sealer: AuditSealer? = null,
+) {
 
     private val chains = LinkedHashMap<String, MutableList<AuditEvent>>()
-    private val verifier = ChainVerifier()
+    private val verifier = ChainVerifier(sealer)
 
     @Synchronized
     fun append(
@@ -45,7 +55,8 @@ class AuditLedger(private val clock: () -> Long = { System.currentTimeMillis() }
             currentHash = "",
             integrityClass = IntegrityClass.SERVER_AUTHORED,
         )
-        val event = shell.copy(currentHash = AuditHasher.hash(shell, previous))
+        val hashed = shell.copy(currentHash = AuditHasher.hash(shell, previous))
+        val event = sealer?.sealed(hashed) ?: hashed
         rows.add(event)
         return event
     }

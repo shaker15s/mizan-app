@@ -315,6 +315,13 @@ data class AuthorityPublicKey(
     val retired: Boolean = false,
 )
 
+/** A signature over a digest, with what it takes to check it. */
+data class DetachedSignature(
+    val keyId: String,
+    val algorithm: String,
+    val signature: String,
+)
+
 enum class SignatureAlgorithm(val wire: String, val jcaName: String) {
     HMAC_SHA256("HMAC-SHA256", "HmacSHA256"),
     ED25519("Ed25519", "Ed25519"),
@@ -342,6 +349,57 @@ class ReceiptSigner(
 
     private fun activeKey(): ReceiptKey =
         keys.filter { it.active }.maxByOrNull { it.activeFrom } ?: keys.maxByOrNull { it.activeFrom }!!
+
+    /**
+     * Signs a digest rather than a set of claims.
+     *
+     * Receipts are not the only thing an authority has to stand behind: the
+     * audit chain is a claim about its own history, and it is sealed with the
+     * same key ring so there is one place to rotate and one place to guard.
+     */
+    fun sealDigest(digest: String): DetachedSignature {
+        val key = activeKey()
+        val body = digest.toByteArray(Charsets.UTF_8)
+        val signature = when (key) {
+            is SigningKey -> {
+                val mac = mac(key)
+                mac.update(body)
+                encoder.encodeToString(mac.doFinal())
+            }
+            is AuthorityKeyPair -> {
+                val signer = Signature.getInstance(SignatureAlgorithm.ED25519.jcaName)
+                signer.initSign(key.privateKey)
+                signer.update(body)
+                encoder.encodeToString(signer.sign())
+            }
+        }
+        return DetachedSignature(keyId = key.keyId, algorithm = key.algorithm.wire, signature = signature)
+    }
+
+    /** Verifies a digest signature. False for anything it cannot check. */
+    fun verifyDigest(digest: String, seal: DetachedSignature): Boolean {
+        val key = keys.firstOrNull { it.keyId == seal.keyId } ?: return false
+        if (key.algorithm.wire != seal.algorithm) return false
+        return try {
+            val body = digest.toByteArray(Charsets.UTF_8)
+            when (key) {
+                is SigningKey -> {
+                    val mac = mac(key)
+                    mac.update(body)
+                    val expected = encoder.encodeToString(mac.doFinal())
+                    MessageDigest.isEqual(decoder.decode(seal.signature), decoder.decode(expected))
+                }
+                is AuthorityKeyPair -> {
+                    val verifier = Signature.getInstance(SignatureAlgorithm.ED25519.jcaName)
+                    verifier.initVerify(parseAuthorityPublicKey(key.publicKeyBase64))
+                    verifier.update(body)
+                    verifier.verify(decoder.decode(seal.signature))
+                }
+            }
+        } catch (error: Exception) {
+            false
+        }
+    }
 
     /** The public halves a device may pin. Never includes a secret. */
     fun publicKeys(): List<AuthorityPublicKey> = keys.mapNotNull {

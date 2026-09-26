@@ -4,6 +4,7 @@ import app.mizan.domain.model.ConnectorCapabilities
 import app.mizan.domain.policy.PolicyCatalog
 import app.mizan.domain.policy.PolicyEvaluator
 import app.mizan.domain.policy.VersionedPolicy
+import app.mizan.domain.audit.AuditSealer
 import app.mizan.domain.receipt.ReceiptSigner
 import app.mizan.domain.security.DeviceBindingService
 import app.mizan.service.authority.ReferenceDeployment
@@ -149,7 +150,7 @@ class MizanService(
 
     val erp: InMemoryErp = InMemoryErp()
     val connector: ErpConnector = config.connector ?: InMemoryErpConnector(erp, clock)
-    val audit = AuditLedger(clock)
+    val audit = AuditLedger(clock, AuditSealer.of(config.receiptKeyPair))
     val executions = ExecutionLedger()
     val directory = UserDirectory(config.users ?: ReferenceDeployment.demoUsers())
     val sessions = SessionRegistry(config.sessionTtlMillis, clock)
@@ -615,7 +616,10 @@ class MizanService(
         }
         val durableEvents = stores?.audit?.forTenant(tenant)
         val events = if (durableEvents.isNullOrEmpty()) audit.events(tenant) else durableEvents
-        val report = app.mizan.domain.audit.ChainVerifier().verify(events)
+        // The verifier is built with the deployment's sealer, so a row someone
+        // added by hand is reported as unsealed instead of passing because the
+        // checker never looked.
+        val report = app.mizan.domain.audit.ChainVerifier(AuditSealer.of(config.receiptKeyPair)).verify(events)
         Http.respond(
             exchange,
             200,
@@ -624,6 +628,10 @@ class MizanService(
                 "chainIntact" to Json.bool(report.intact),
                 "messageCode" to Json.str(report.messageCode),
                 "records" to Json.num(report.records),
+                "sealed" to Json.bool(report.fullySealed),
+                "sealedRecords" to Json.num(report.sealedRecords),
+                "verifiedSeals" to Json.num(report.verifiedSeals),
+                "sealKeyId" to Json.str(config.receiptKeyPair?.keyId),
                 "integrityClass" to Json.str(app.mizan.domain.audit.IntegrityClass.SERVER_AUTHORED.name),
                 "events" to Json.arr(
                     events.map { event ->
@@ -634,6 +642,8 @@ class MizanService(
                             "details" to Json.str(event.details),
                             "integrityClass" to Json.str(event.integrityClass.name),
                             "timestampMillis" to Json.num(event.timestampMillis),
+                            "sealKeyId" to Json.str(event.seal?.keyId),
+                            "sealAlgorithm" to Json.str(event.seal?.algorithm),
                         )
                     },
                 ),

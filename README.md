@@ -75,7 +75,7 @@ breaks, and the CI runs it on every push:
 ## Status
 
 The three JVM modules are compiled and tested here, with a real Kotlin compiler
-and a real JVM: **414 tests, all passing** (`python3 tools/jvm_check.py`). They
+and a real JVM: **421 tests, all passing** (`python3 tools/jvm_check.py`). They
 cover the policy engine, the interpreter, the audit chain, the AI client, the
 HTTP contract, and the reference service end to end -- including the governed
 pipeline: the execution journal and its state machine, durable stores that

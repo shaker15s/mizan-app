@@ -75,7 +75,7 @@ class ServiceUnitTest {
 
     @Test
     fun auditChainLinksEachEventToThePreviousOne() {
-        val ledger = AuditLedger { 1_700_000_000_000L }
+        val ledger = AuditLedger(clock = { 1_700_000_000_000L })
         assertEquals("CHAIN_EMPTY", ledger.verify("sim-alamal").messageCode)
 
         val first = ledger.append("sim-alamal", "TRC-1", "USR-1", "A", "before", "after", "one")

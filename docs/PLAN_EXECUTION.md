@@ -25,7 +25,7 @@ words, and this file is written to survive that standard.
 | Modules that compile and run here | `:domain`, `:service`, `:integration` |
 | Modules that cannot be built here | `:app`, `:design`, `:data` — they need the Android SDK, AGP and Compose, and Maven Central and Google Maven are unreachable from this sandbox |
 | Test command | `JAVA_HOME=... KOTLINC_HOME=... python3 tools/jvm_check.py` |
-| Tests | 414, all passing (domain contracts, service pipeline over a real HTTP listener, the outbox and its sweeper, the durable journal across a restart, the PostgreSQL record log against a database double, the ERP boundary with a scripted transport) |
+| Tests | 421, all passing (domain contracts, service pipeline over a real HTTP listener, the outbox and its sweeper, the durable journal across a restart, the PostgreSQL record log against a database double, the ERP boundary with a scripted transport) |
 
 Anything marked **proven** below is proven by that command. Anything that needs
 an Android device, a Gradle build, a Postgres server or a real Odoo instance is
@@ -225,8 +225,16 @@ a journal query for another tenant is refused), rate limiting per surface with
 body, and an audit chain that is hash-linked and verified on read.
 
 What is **missing**: MASVS review, Keystore-backed token protection, Play
-Integrity attestation, network security configuration, and signing the audit
-chain itself.
+Integrity attestation and network security configuration (all Android-side).
+
+The audit chain is now **sealed**: with `receiptKeyPair` configured, every row
+is signed with the authority's Ed25519 key (`AuditSealer`), `GET /v1/audit`
+reports `sealed`, `sealedRecords`, `verifiedSeals` and the `sealKeyId`, and the
+verifier with a sealer refuses a chain of unsigned rows (`CHAIN_NOT_SEALED`)
+instead of accepting them. The test that matters rewrites a row *and* every
+hash after it: the rewritten chain verifies perfectly as a chain, and fails as
+a sealed one (`CHAIN_SEAL_MISMATCH`). A hash chain is an internal-consistency
+check; a seal is what says who wrote the rows.
 
 ### Phase 12 — enterprise platform
 **Not started.** The service exposes the read-only surfaces an admin console
