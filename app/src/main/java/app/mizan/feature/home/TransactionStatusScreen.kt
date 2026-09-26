@@ -77,6 +77,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.mizan.design.component.mizanGlassPane
 import app.mizan.design.component.MizanGhostButton
 import app.mizan.design.component.MizanKeyValue
 import app.mizan.design.component.MizanPrimaryButton
@@ -262,9 +263,7 @@ fun TransactionStatusContent(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(ShapeCard)
-                    .background(colors.surface)
-                    .border(BorderStroke(1.dp, colors.border), ShapeCard)
+                    .mizanGlassPane(ShapeCard)
                     .padding(Space.lg),
                 verticalArrangement = Arrangement.spacedBy(Space.md),
             ) {
@@ -401,9 +400,7 @@ fun TransactionStatusContent(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(ShapeCard)
-                    .background(colors.surface)
-                    .border(BorderStroke(1.dp, colors.border), ShapeCard)
+                    .mizanGlassPane(ShapeCard)
                     .padding(Space.lg),
                 verticalArrangement = Arrangement.spacedBy(Space.sm),
             ) {

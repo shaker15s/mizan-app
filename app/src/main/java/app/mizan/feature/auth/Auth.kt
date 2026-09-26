@@ -66,6 +66,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.mizan.R
+import app.mizan.design.component.mizanGlassPane
 import app.mizan.design.component.CraftFeatureCard
 import app.mizan.design.component.CraftPageIndicator
 import app.mizan.design.component.CraftSelectableCard
@@ -318,9 +319,7 @@ private fun OnboardingStep2Workspace(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.6.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -429,9 +428,7 @@ private fun OnboardingStep3Biometrics(
         // Hardware Attestation Note
         Row(
             modifier = Modifier
-                .clip(ShapePill)
-                .background(colors.surfaceElevated)
-                .border(BorderStroke(0.6.dp, colors.borderStrong), ShapePill)
+                .mizanGlassPane(ShapePill)
                 .padding(horizontal = Space.md, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -497,9 +494,7 @@ fun SignInRoute(graph: AppGraph, onSignedIn: () -> Unit) {
             // Mode Selector Pill Segment
             Row(
                 modifier = Modifier
-                    .clip(ShapePill)
-                    .background(colors.surfaceElevated)
-                    .border(BorderStroke(0.8.dp, colors.glassBorder), ShapePill)
+                    .mizanGlassPane(ShapePill)
                     .padding(4.dp),
             ) {
                 Box(
@@ -551,9 +546,7 @@ private fun DemoSignInCard(graph: AppGraph, onSignedIn: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(ShapeCard)
-            .background(colors.glass)
-            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+            .mizanGlassPane(ShapeCard)
             .padding(Space.xl),
         verticalArrangement = Arrangement.spacedBy(Space.md),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -615,9 +608,7 @@ private fun RemoteSignInCard(graph: AppGraph, onSignedIn: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(ShapeCard)
-            .background(colors.glass)
-            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+            .mizanGlassPane(ShapeCard)
             .padding(Space.xl),
         verticalArrangement = Arrangement.spacedBy(Space.md),
     ) {

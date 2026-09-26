@@ -413,6 +413,36 @@ private fun DrawScope.grainPoints(width: Float, height: Float): List<Offset> {
 }
 
 /**
+ * Glass as a modifier, for the surfaces that already exist and only need to
+ * look like glass.
+ *
+ * No blur, deliberately: these panes are everywhere, and a render effect per
+ * card is a cost a mid-range phone pays in dropped frames. Tint, sheen and
+ * edge are free and carry most of the effect at this size.
+ */
+@Composable
+fun Modifier.mizanGlassPane(
+    shape: Shape = ShapeCard,
+    tone: GlassTone = GlassTone.THIN,
+    edge: Boolean = true,
+): Modifier {
+    val colors = LocalMizanColors.current
+    val recipe = recipeFor(tone, colors)
+    return this
+        .clip(shape)
+        .background(colors.glassTintBrush(recipe.tintAlpha))
+        .mizanGlassSheen(
+            shape = shape,
+            colors = colors,
+            recipe = recipe,
+            focusX = 0.18f,
+            focusY = 0f,
+            touch = 0f,
+        )
+        .then(if (edge) Modifier.border(0.8.dp, colors.glassEdgeBrush(recipe.edge), shape) else Modifier)
+}
+
+/**
  * The highlight that makes a solid surface look lit.
  *
  * Gradients on their own read as flat colour. A bright top edge and a sheen

@@ -84,6 +84,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.mizan.design.component.mizanGlassPane
 import app.mizan.design.component.MizanGhostButton
 import app.mizan.design.component.MizanKeyValue
 import app.mizan.design.component.ShapeCard
@@ -264,9 +265,7 @@ fun HistoricalErpActionLogsList(
             // Read-Only Security Lock Pill
             Row(
                 modifier = Modifier
-                    .clip(ShapePill)
-                    .background(colors.surfaceElevated)
-                    .border(BorderStroke(0.6.dp, colors.borderStrong), ShapePill)
+                    .mizanGlassPane(ShapePill)
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -313,9 +312,7 @@ fun HistoricalErpActionLogsList(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.md),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
@@ -544,9 +541,7 @@ fun HistoricalErpActionLogsList(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(ShapeCard)
-                    .background(colors.glass)
-                    .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                    .mizanGlassPane(ShapeCard)
                     .padding(Space.lg),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
@@ -809,9 +804,7 @@ private fun ExportOptionCard(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(ShapeCard)
-            .background(colors.glass)
-            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+            .mizanGlassPane(ShapeCard)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(Space.md),
         verticalAlignment = Alignment.CenterVertically,
@@ -1117,9 +1110,7 @@ private fun HistoricalErpActionLogCard(
             // Quick Copy Verification Hash Button
             Row(
                 modifier = Modifier
-                    .clip(ShapePill)
-                    .background(colors.surfaceElevated)
-                    .border(BorderStroke(0.6.dp, colors.borderStrong), ShapePill)
+                    .mizanGlassPane(ShapePill)
                     .clickable(
                         role = Role.Button,
                         onClick = {

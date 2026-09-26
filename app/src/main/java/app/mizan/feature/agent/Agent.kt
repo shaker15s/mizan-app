@@ -65,6 +65,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.mizan.R
+import app.mizan.design.component.mizanGlassPane
 import app.mizan.design.component.MizanDangerButton
 import app.mizan.design.component.MizanRobotScale
 import app.mizan.design.component.RobotScaleState
@@ -566,9 +567,7 @@ private fun PromptChip(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(ShapeCard)
-            .background(colors.glass)
-            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+            .mizanGlassPane(ShapeCard)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = Space.md, vertical = Space.sm),
         verticalAlignment = Alignment.CenterVertically,
@@ -664,9 +663,7 @@ private fun ClarifyBlock(fields: List<MissingField>) {
         Spacer(Modifier.width(Space.sm))
         Column(
             modifier = Modifier
-                .clip(ShapeBubbleAgent)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeBubbleAgent)
+                .mizanGlassPane(ShapeBubbleAgent)
                 .padding(Space.md),
             verticalArrangement = Arrangement.spacedBy(Space.xs),
         ) {
@@ -714,9 +711,7 @@ private fun ProposalBlock(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.md),
             verticalArrangement = Arrangement.spacedBy(Space.sm),
         ) {
@@ -843,9 +838,7 @@ private fun ResultBlock(line: AgentLine.Result) {
         Spacer(Modifier.width(Space.sm))
         Column(
             modifier = Modifier
-                .clip(ShapeBubbleAgent)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeBubbleAgent)
+                .mizanGlassPane(ShapeBubbleAgent)
                 .padding(horizontal = Space.md, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {

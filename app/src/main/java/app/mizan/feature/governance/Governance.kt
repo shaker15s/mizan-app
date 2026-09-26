@@ -51,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.mizan.R
+import app.mizan.design.component.mizanGlassPane
 import app.mizan.design.component.MizanSectionHeader
 import app.mizan.design.component.MizanStatusBadge
 import app.mizan.design.component.ShapeCard
@@ -75,9 +76,7 @@ fun GovernanceRoute(graph: AppGraph) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {

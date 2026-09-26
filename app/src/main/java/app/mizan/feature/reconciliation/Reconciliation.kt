@@ -49,7 +49,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.mizan.R
+import app.mizan.design.component.mizanGlassPane
 import app.mizan.design.component.CraftSelectableCard
+import app.mizan.design.motion.mizanReveal
 import app.mizan.design.component.MizanEmptyState
 import app.mizan.design.component.MizanGhostButton
 import app.mizan.design.component.MizanKeyValue
@@ -159,9 +161,7 @@ fun ReconciliationRoute(graph: AppGraph, expanded: Boolean) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -200,11 +200,12 @@ fun ReconciliationRoute(graph: AppGraph, expanded: Boolean) {
         if (open.isNotEmpty()) {
             MizanSectionHeader("Cases Awaiting Decision")
             Column(verticalArrangement = Arrangement.spacedBy(Space.sm)) {
-                open.forEach { case ->
+                open.forEachIndexed { index, case ->
                     val isSelected = case.id == selectedId
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .mizanReveal(index)
                             .clip(ShapeCard)
                             .background(if (isSelected) colors.accentMuted.copy(alpha = 0.2f) else colors.glass)
                             .border(

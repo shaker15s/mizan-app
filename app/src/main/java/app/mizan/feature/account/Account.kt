@@ -78,6 +78,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mizan.R
+import app.mizan.design.component.mizanGlassPane
 import app.mizan.design.component.CraftSelectableCard
 import app.mizan.design.component.GlassSegmentedControl
 import app.mizan.design.component.MizanGhostButton
@@ -301,9 +302,7 @@ fun AccountRoute(
                     spotColor = Color(0x0F0F172A),
                     ambientColor = Color(0x050F172A),
                 )
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(vertical = Space.xs),
         ) {
             SettingNavRow(
@@ -415,9 +414,7 @@ fun AccountRoute(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(vertical = Space.xs),
         ) {
             SettingNavRow(
@@ -444,9 +441,7 @@ fun AccountRoute(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.md),
             verticalArrangement = Arrangement.spacedBy(Space.sm),
         ) {
@@ -511,9 +506,7 @@ fun AccountRoute(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.md),
         ) {
             var motion by remember { mutableStateOf(graph.preferences.reducedMotion) }
@@ -573,9 +566,7 @@ fun AccountRoute(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(ShapeCard)
-                    .background(colors.glass)
-                    .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                    .mizanGlassPane(ShapeCard)
                     .padding(Space.md),
             ) {
                 var ambiguous by remember { mutableStateOf(graph.preferences.simulateNextAmbiguous) }
@@ -614,9 +605,7 @@ fun AccountRoute(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.md),
             verticalArrangement = Arrangement.spacedBy(Space.sm),
         ) {
@@ -710,9 +699,7 @@ private fun TrustGridTile(
 
     Column(
         modifier = modifier
-            .clip(ShapeCard)
-            .background(colors.glass)
-            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+            .mizanGlassPane(ShapeCard)
             .padding(Space.md),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -808,9 +795,7 @@ fun ConnectionRoute(graph: AppGraph, onBack: () -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -842,9 +827,7 @@ fun ConnectionRoute(graph: AppGraph, onBack: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.lg),
             verticalArrangement = Arrangement.spacedBy(Space.sm),
         ) {
@@ -885,9 +868,7 @@ fun SecurityRoute(graph: AppGraph, onBack: () -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -920,9 +901,7 @@ fun SecurityRoute(graph: AppGraph, onBack: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.lg),
             verticalArrangement = Arrangement.spacedBy(Space.sm),
         ) {

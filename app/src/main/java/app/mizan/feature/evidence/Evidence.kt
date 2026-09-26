@@ -60,6 +60,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.mizan.R
 import app.mizan.design.component.AuditTrailReceiptCard
+import app.mizan.design.motion.mizanReveal
 import app.mizan.design.component.GlassSegmentedControl
 import app.mizan.design.component.MizanEmptyState
 import app.mizan.design.component.MizanGhostButton
@@ -461,8 +462,9 @@ private fun EvidenceReceiptsList(
         )
     } else {
         Column(verticalArrangement = Arrangement.spacedBy(Space.sm)) {
-            receipts.forEach { receipt ->
+            receipts.forEachIndexed { index, receipt ->
                 AuditTrailReceiptCard(
+                    modifier = Modifier.mizanReveal(index),
                     toolName = toolLabel(receipt.tool),
                     intent = "ERP Receipt · ${toolLabel(receipt.tool)}",
                     phaseLabel = receipt.verification.name,

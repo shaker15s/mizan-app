@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import app.mizan.R
+import app.mizan.design.component.mizanGlassPane
 import app.mizan.design.component.MizanGhostButton
 import app.mizan.design.component.MizanMark
 import app.mizan.design.component.MizanPrimaryButton
@@ -290,9 +291,7 @@ fun BiometricGateScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(ShapeCard)
-                    .background(colors.glass)
-                    .border(BorderStroke(0.6.dp, colors.glassBorder), ShapeCard)
+                    .mizanGlassPane(ShapeCard)
                     .padding(horizontal = Space.md, vertical = Space.sm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
