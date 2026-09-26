@@ -109,7 +109,8 @@ class JournalStore(private val log: DurableLog) {
     private val byExecution = LinkedHashMap<String, ExecutionJournal>()
     private val byKey = LinkedHashMap<String, String>()
     private val byTenant = LinkedHashMap<String, MutableList<String>>()
-    private var revision = 0L
+    /** How many records this store has written. Not the journal's revision. */
+    private var appends = 0L
 
     init {
         for (record in log.records()) {
@@ -119,13 +120,24 @@ class JournalStore(private val log: DurableLog) {
         }
     }
 
+    /**
+     * Persists the entry exactly as the authority produced it.
+     *
+     * The revision belongs to the journal, not to this store: an approval
+     * binds to the revision it was granted for, so a store that renumbered
+     * entries as it wrote them would break the very binding it exists to keep.
+     */
     @Synchronized
     fun save(journal: ExecutionJournal): ExecutionJournal {
-        val stored = journal.copy(revision = ++revision)
-        log.append(write(stored))
-        index(stored)
-        return stored
+        log.append(write(journal))
+        index(journal)
+        appends++
+        return journal
     }
+
+    /** How many records have been appended since this store was opened. */
+    @Synchronized
+    fun appends(): Long = appends
 
     @Synchronized
     fun get(executionId: String): ExecutionJournal? = byExecution[executionId]
@@ -162,7 +174,6 @@ class JournalStore(private val log: DurableLog) {
         byKey["${journal.tenantId.value}::${journal.idempotencyKey.value}"] = id
         val list = byTenant.getOrPut(journal.tenantId.value) { ArrayList() }
         if (!list.contains(id)) list.add(id)
-        if (journal.revision > revision) revision = journal.revision
     }
 
     private fun write(journal: ExecutionJournal): String = Json.write(

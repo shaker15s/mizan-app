@@ -298,7 +298,7 @@ class OdooJson2Connector(
         amount: Money,
         itemsSummary: String,
     ): ErpResult<ErpRecord> = guard {
-        val binding = bindingOf(tenantId)
+        val binding = writableBinding(tenantId)
         val partner = resolvePartner(binding, customerName)
         val partnerId = partner.recordId.toLongOrNull()
             ?: abort(ErpResult.Malformed("ODOO_PARTNER_ID_NOT_NUMERIC", partner.recordId))
@@ -331,7 +331,7 @@ class OdooJson2Connector(
     }
 
     override fun cancelOrder(tenantId: String, orderId: String, reason: String): ErpResult<ErpRecord> = guard {
-        val binding = bindingOf(tenantId)
+        val binding = writableBinding(tenantId)
         val id = numericId(orderId, "orderId")
         call(
             binding,
@@ -348,7 +348,7 @@ class OdooJson2Connector(
     }
 
     override fun createInvoice(tenantId: String, orderId: String): ErpResult<ErpRecord> = guard {
-        val binding = bindingOf(tenantId)
+        val binding = writableBinding(tenantId)
         val id = numericId(orderId, "orderId")
         val created = call(
             binding,
@@ -362,7 +362,7 @@ class OdooJson2Connector(
     }
 
     override fun registerPayment(tenantId: String, invoiceId: String, amount: Money): ErpResult<ErpRecord> = guard {
-        val binding = bindingOf(tenantId)
+        val binding = writableBinding(tenantId)
         val id = numericId(invoiceId, "invoiceId")
         val created = call(
             binding,
@@ -466,6 +466,20 @@ class OdooJson2Connector(
     private fun bindingOf(tenantId: String): ErpBinding =
         registry.binding(tenantId) ?: abort(ErpResult.Refused("ERP_BINDING_MISSING", "tenant $tenantId"))
 
+    /**
+     * A mutating operation needs a binding that may write.
+     *
+     * The check happens here, before the operation reads anything: a read-only
+     * binding is a deliberate configuration, and spending an ERP round trip
+     * (and a rate-limit token) to discover what the configuration already said
+     * is waste, and it can mask the reason behind an unrelated read failure.
+     */
+    private fun writableBinding(tenantId: String): ErpBinding {
+        val binding = bindingOf(tenantId)
+        if (binding.readOnly) abort(ErpResult.Refused("ERP_BINDING_READ_ONLY", "tenant $tenantId"))
+        return binding
+    }
+
     private fun numericId(raw: String, what: String): Long =
         raw.trim().toLongOrNull() ?: abort(ErpResult.Refused("${what.uppercase()}_NOT_NUMERIC", raw))
 
@@ -548,7 +562,14 @@ class OdooJson2Connector(
         val id = OdooWire.numberOrNull(row.field("id"))?.toString() ?: return null
         val name = row.field("name")?.asString() ?: return null
         val active = row.field("active")
-        val flaggedActive = active == null || active.asString() != "false"
+        // Odoo sends this as a real boolean; a string "false" also appears in
+        // exported data. Both mean blocked, and neither may be read as active.
+        val flaggedActive = when (active) {
+            null -> true
+            is JsonValue.Bool -> active.value
+            is JsonValue.Str -> active.value.lowercase() != "false"
+            else -> true
+        }
         return ErpCustomer(
             recordId = id,
             name = name,
