@@ -86,8 +86,13 @@ class ServiceAuthority(
             }
         }
 
+        // Required arguments are checked before policy. A request that is
+        // simply missing its amount must answer MISSING_AMOUNT, not the
+        // refusal code of the approval ladder it happened to fall into.
+        requiredArgumentRefusal(tool, request)?.let { return it }
+
         val actor = Actor(ActorId(user.actorId), user.displayName, user.role, TenantId(user.tenantId))
-        val amount = moneyOf(request)
+        val amount = policyAmount(tool, request)
         val customerName = request.arguments.text(MizanContract.ArgumentField.CUSTOMER_NAME)
         val customer = customerName?.let { erp.customerState(it) }
         val blocked = customer?.status.equals("blocked", ignoreCase = true)
@@ -316,6 +321,52 @@ class ServiceAuthority(
             httpStatus = 422,
         )
         else -> ExecutionOutcome.Failed(entry.executionId, entry.messageCode)
+    }
+
+    /**
+     * The amount the ladder is judged against. It is the amount in the request
+     * when there is one; for an invoice raised from an order it is the amount
+     * of that order, read from the ERP. Judging an invoice by its request body
+     * alone would call every invoice amountless, and therefore low risk, no
+     * matter how large the order behind it is.
+     */
+    private fun policyAmount(tool: ToolName, request: ExecutionRequest): Money? {
+        moneyOf(request)?.let { return it }
+        if (tool == ToolName.CREATE_INVOICE) {
+            val orderId = request.arguments.text(MizanContract.ArgumentField.ORDER_ID) ?: return null
+            return erp.orderAmount(request.tenantId, orderId)
+        }
+        return null
+    }
+
+    /** The first thing wrong with the arguments, or null when they are usable. */
+    private fun requiredArgumentRefusal(tool: ToolName, request: ExecutionRequest): ExecutionOutcome? {
+        val args = request.arguments
+        val code = when (tool) {
+            ToolName.STOCK_AVAILABILITY -> if (args.text(MizanContract.ArgumentField.SKU) == null) "MISSING_SKU" else null
+            ToolName.CUSTOMER_SEARCH -> if (args.text(MizanContract.ArgumentField.QUERY) == null) "MISSING_QUERY" else null
+            ToolName.CREATE_DRAFT_ORDER -> when {
+                args.text(MizanContract.ArgumentField.CUSTOMER_NAME) == null -> "MISSING_CUSTOMER"
+                args.wholeOrNumericText(MizanContract.ArgumentField.AMOUNT_MINOR) == null -> "MISSING_AMOUNT"
+                args.text(MizanContract.ArgumentField.ITEMS_SUMMARY) == null -> "MISSING_ITEMS"
+                else -> null
+            }
+            ToolName.CREATE_INVOICE ->
+                if (args.text(MizanContract.ArgumentField.ORDER_ID) == null) "MISSING_ORDER_ID" else null
+            ToolName.CANCEL_ORDER -> when {
+                args.text(MizanContract.ArgumentField.ORDER_ID) == null -> "MISSING_ORDER_ID"
+                args.text(MizanContract.ArgumentField.REASON) == null -> "MISSING_REASON"
+                else -> null
+            }
+            ToolName.REGISTER_PAYMENT -> when {
+                args.text(MizanContract.ArgumentField.INVOICE_ID) == null -> "MISSING_INVOICE_ID"
+                moneyOf(request) == null -> "MISSING_AMOUNT"
+                else -> null
+            }
+            ToolName.SALES_SUMMARY -> null
+            ToolName.UNKNOWN -> "TOOL_UNKNOWN"
+        } ?: return null
+        return refuse(request, code, 422)
     }
 
     private fun moneyOf(request: ExecutionRequest): Money? {

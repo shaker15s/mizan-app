@@ -112,11 +112,14 @@ class IntentInterpreter(
             ToolName.CANCEL_ORDER -> cancel(trimmed, vague)
             ToolName.CREATE_INVOICE -> invoice(trimmed, vague)
             ToolName.REGISTER_PAYMENT -> payment(trimmed, vague)
-            ToolName.SALES_SUMMARY -> Interpretation.Ready(
-                ToolName.SALES_SUMMARY,
-                SalesSummaryArgs("current"),
-                listOf("period=current"),
-            )
+            ToolName.SALES_SUMMARY -> {
+                val period = extractPeriod(lower)
+                Interpretation.Ready(
+                    ToolName.SALES_SUMMARY,
+                    SalesSummaryArgs(period),
+                    listOf("period=$period"),
+                )
+            }
             ToolName.CREATE_DRAFT_ORDER, null -> draft(trimmed, vague)
             ToolName.UNKNOWN -> Interpretation.Rejected("TOOL_NOT_SUPPORTED")
         }
@@ -125,11 +128,18 @@ class IntentInterpreter(
     private fun detectTool(lower: String): ToolName? = when {
         lower.contains("cancel") || lower.contains("إلغاء") || lower.contains("الغاء") ->
             ToolName.CANCEL_ORDER
-        lower.contains("stock") || lower.contains("مخزون") || lower.contains("بضاعة") ->
+        // "Is SKU-DESK-01 available?" names no tool keyword, but it does name
+        // a SKU, and that is what the person wants looked up.
+        lower.contains("stock") || lower.contains("مخزون") || lower.contains("بضاعة") ||
+            lower.contains("available") || lower.contains("متاح") ||
+            (SKU.containsMatchIn(lower) && !ORDER_WORDS.any { lower.contains(it) }) ->
             ToolName.STOCK_AVAILABILITY
-        lower.contains("invoice") || lower.contains("فاتورة") -> ToolName.CREATE_INVOICE
-        lower.contains("payment") || lower.contains("سداد") || lower.contains("دفع") ->
+        // "سجل سداد ... على الفاتورة" mentions the invoice and is still a
+        // payment, so the payment words are tried before the invoice ones.
+        lower.contains("payment") || lower.contains("سداد") || lower.contains("دفع") ||
+            lower.contains("سدد") || lower.contains("ادفع") || lower.contains("pay") ->
             ToolName.REGISTER_PAYMENT
+        lower.contains("invoice") || lower.contains("فاتورة") -> ToolName.CREATE_INVOICE
         lower.contains("customer") || lower.contains("عميل") && !lower.contains("أمر") && !lower.contains("طلب") ->
             ToolName.CUSTOMER_SEARCH
         lower.contains("summary") || lower.contains("ملخص") -> ToolName.SALES_SUMMARY
@@ -138,14 +148,22 @@ class IntentInterpreter(
         else -> null
     }
 
+    /**
+     * A question the app can show. It is never empty: a vague request such as
+     * "order something for some customer" has no single missing field, and an
+     * empty list would render as a clarification that asks nothing.
+     */
+    private fun clarify(tool: ToolName?, missing: List<MissingField>): Interpretation =
+        Interpretation.NeedsClarification(
+            tool,
+            missing.distinct().ifEmpty { listOf(MissingField.QUERY) },
+            emptyList(),
+        )
+
     private fun stock(text: String, vague: Boolean): Interpretation {
         val sku = SKU.find(text)?.value
         if (sku == null || vague) {
-            return Interpretation.NeedsClarification(
-                ToolName.STOCK_AVAILABILITY,
-                listOf(MissingField.SKU),
-                emptyList(),
-            )
+            return clarify(ToolName.STOCK_AVAILABILITY, listOf(MissingField.SKU))
         }
         return Interpretation.Ready(ToolName.STOCK_AVAILABILITY, StockLookupArgs(sku), listOf("sku=$sku"))
     }
@@ -153,11 +171,7 @@ class IntentInterpreter(
     private fun customer(text: String, vague: Boolean): Interpretation {
         val query = extractAfter(text, listOf("customer", "عميل"))
         if (query == null || vague) {
-            return Interpretation.NeedsClarification(
-                ToolName.CUSTOMER_SEARCH,
-                listOf(MissingField.QUERY),
-                emptyList(),
-            )
+            return clarify(ToolName.CUSTOMER_SEARCH, listOf(MissingField.QUERY))
         }
         return Interpretation.Ready(ToolName.CUSTOMER_SEARCH, CustomerSearchArgs(query), listOf("query"))
     }
@@ -169,7 +183,7 @@ class IntentInterpreter(
         if (orderId == null) missing += MissingField.ORDER_ID
         if (reason == null) missing += MissingField.REASON
         if (missing.isNotEmpty() || vague) {
-            return Interpretation.NeedsClarification(ToolName.CANCEL_ORDER, missing.ifEmpty { listOf(MissingField.REASON) }, emptyList())
+            return clarify(ToolName.CANCEL_ORDER, missing)
         }
         return Interpretation.Ready(
             ToolName.CANCEL_ORDER,
@@ -181,7 +195,7 @@ class IntentInterpreter(
     private fun invoice(text: String, vague: Boolean): Interpretation {
         val orderId = ORDER_ID.find(text)?.value
         if (orderId == null || vague) {
-            return Interpretation.NeedsClarification(ToolName.CREATE_INVOICE, listOf(MissingField.ORDER_ID), emptyList())
+            return clarify(ToolName.CREATE_INVOICE, listOf(MissingField.ORDER_ID))
         }
         return Interpretation.Ready(ToolName.CREATE_INVOICE, CreateInvoiceArgs(orderId), listOf("orderId"))
     }
@@ -197,7 +211,7 @@ class IntentInterpreter(
             missing += MissingField.CURRENCY
         }
         if (missing.isNotEmpty() || vague) {
-            return Interpretation.NeedsClarification(ToolName.REGISTER_PAYMENT, missing.distinct(), emptyList())
+            return clarify(ToolName.REGISTER_PAYMENT, missing)
         }
         return Interpretation.Ready(
             ToolName.REGISTER_PAYMENT,
@@ -209,7 +223,10 @@ class IntentInterpreter(
     private fun draft(text: String, vague: Boolean): Interpretation {
         val customer = extractCustomer(text)
         val money = extractMoney(text)
-        val items = extractAfter(text, listOf("items", "for items", "بنود", "أصناف", "عبارة عن"))
+        val items = extractAfter(
+            text,
+            listOf("items", "for items", "بنود", "أصناف", "اصناف", "منتجات", "قطع", "وحدات", "عبارة عن"),
+        )
         val missing = mutableListOf<MissingField>()
         if (customer == null) missing += MissingField.CUSTOMER
         if (money == null) {
@@ -218,11 +235,7 @@ class IntentInterpreter(
         }
         if (items == null) missing += MissingField.ITEMS
         if (missing.isNotEmpty() || vague) {
-            return Interpretation.NeedsClarification(
-                ToolName.CREATE_DRAFT_ORDER,
-                missing.distinct(),
-                emptyList(),
-            )
+            return clarify(ToolName.CREATE_DRAFT_ORDER, missing)
         }
         return Interpretation.Ready(
             ToolName.CREATE_DRAFT_ORDER,
@@ -231,10 +244,44 @@ class IntentInterpreter(
         )
     }
 
+    /**
+     * The amount is the number written next to the currency.
+     *
+     * Taking the first number in the sentence instead reads the year out of
+     * the id: "سداد فاتورة INV-2026-9021 بمبلغ 850 دولار" would pay 2,026.
+     */
     private fun extractMoney(text: String): Money? {
-        val currency = CURRENCY.find(text)?.value?.let { symbolToCode(it) } ?: return null
-        val number = NUMBER.find(text)?.value ?: return null
+        val currencyMatch = CURRENCY.find(text) ?: return null
+        val currency = symbolToCode(currencyMatch.value)
+        val digits = normalizeDigits(text)
+        val before = digits.substring(0, currencyMatch.range.first)
+        val after = digits.substring(currencyMatch.range.last + 1)
+        val number = NUMBER.findAll(before).lastOrNull()?.value
+            ?: NUMBER.find(after)?.value
+            ?: return null
         return Money.parseMajor(number, currency)
+    }
+
+    /** ١٢٠٠٠ and 12000 are the same amount. Egypt types both. */
+    private fun normalizeDigits(text: String): String = buildString(text.length) {
+        text.forEach { char ->
+            when (char) {
+                in '٠'..'٩' -> append((char.code - '٠'.code).digitToChar())
+                '٫' -> append('.')
+                '٬' -> append(',')
+                else -> append(char)
+            }
+        }
+    }
+
+    /** The period the person actually asked about. */
+    private fun extractPeriod(lower: String): String = when {
+        lower.contains("اليوم") || lower.contains("today") -> "day"
+        lower.contains("اسبوع") || lower.contains("أسبوع") || lower.contains("week") -> "week"
+        lower.contains("ربع") || lower.contains("quarter") -> "quarter"
+        lower.contains("شهر") || lower.contains("month") || lower.contains("شهري") -> "month"
+        lower.contains("سنة") || lower.contains("سنه") || lower.contains("year") -> "year"
+        else -> "current"
     }
 
     private fun symbolToCode(token: String): String = when (token.lowercase()) {
@@ -253,7 +300,12 @@ class IntentInterpreter(
         val lower = name.lowercase()
         val cut = CUSTOMER_STOP.map { lower.indexOf(it) }.filter { it >= 0 }.minOrNull()
         if (cut != null) name = name.substring(0, cut)
-        return name.trim().trimEnd('.', '،', ',').takeIf { it.length >= 2 }
+        // "for Acme Corp 1,250.50 USD": the regex stops at the comma and
+        // leaves the head of the amount inside the name.
+        val trimmed = name.trim().trimEnd('.', '،', ',')
+        val withoutTrailingNumber = TRAILING_NUMBER.replace(trimmed, "").trim().trimEnd('.', '،', ',')
+        return (if (withoutTrailingNumber.length >= 2) withoutTrailingNumber else trimmed)
+            .takeIf { it.length >= 2 }
     }
 
     private fun extractAfter(text: String, markers: List<String>): String? {
@@ -279,7 +331,12 @@ class IntentInterpreter(
             """(?:for|customer|عميل|للعميل)\s+([^,\n]{2,80})""",
             RegexOption.IGNORE_CASE,
         )
+        val ORDER_WORDS = listOf("order", "draft", "أمر", "طلب", "بيع", "فاتورة")
+        /** The head of an amount left behind when the name regex stops at a comma. */
+        val TRAILING_NUMBER = Regex("""[\s,.]*[\d][\s,.]*[\d,.]*$""")
         val CUSTOMER_STOP = listOf(
+            " with ",
+            " بقيمة",
             " بمبلغ",
             " مبلغ",
             " amount",

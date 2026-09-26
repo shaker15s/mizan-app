@@ -63,6 +63,14 @@ class InMemoryErp {
         return ErpWrite(orderId, MizanContract.ErpModel.SALE_ORDER)
     }
 
+    /** The amount an order would be invoiced for, or null if it is not this tenant's order. */
+    @Synchronized
+    fun orderAmount(tenantId: String, orderId: String): Money? {
+        val row = orders[orderId] ?: return null
+        if (row.tenantId != tenantId) return null
+        return runCatching { Money(row.amountMinor, row.currency) }.getOrNull()
+    }
+
     @Synchronized
     fun createInvoice(tenantId: String, orderId: String): ErpWrite? {
         val order = orders[orderId] ?: return null

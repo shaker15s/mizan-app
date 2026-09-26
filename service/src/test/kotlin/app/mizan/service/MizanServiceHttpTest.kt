@@ -293,7 +293,11 @@ class MizanServiceHttpTest {
             MizanContract.PATH_EXECUTIONS,
             "POST",
             """{"tool":"invoice.create_from_order","toolVersion":"1.0.0","tenantId":"sim-alamal",""" +
-                """"approverId":"USR-REP","arguments":{"orderId":"$orderId"}}""",
+                // The invoice carries no amount of its own: the authority judges
+                // it by the amount of the order it bills. 2,500.00 USD is an L2
+                // write, so it needs a privileged approver who is not the
+                // initiator.
+                """"approverId":"USR-FIN","arguments":{"orderId":"$orderId"}}""",
             token = repToken,
         )
         assertTrue(invoice.isStatus(MizanContract.Status.VERIFIED))
@@ -330,7 +334,11 @@ class MizanServiceHttpTest {
             MizanContract.PATH_EXECUTIONS,
             "POST",
             """{"tool":"invoice.create_from_order","toolVersion":"1.0.0","tenantId":"sim-alamal",""" +
-                """"approverId":"USR-REP","arguments":{"orderId":"$orderId"}}""",
+                // The invoice carries no amount of its own: the authority judges
+                // it by the amount of the order it bills. 2,500.00 USD is an L2
+                // write, so it needs a privileged approver who is not the
+                // initiator.
+                """"approverId":"USR-FIN","arguments":{"orderId":"$orderId"}}""",
             token = repToken,
         )
         assertTrue(invoice.isStatus(MizanContract.Status.FAILED))
@@ -342,7 +350,7 @@ class MizanServiceHttpTest {
         val health = send(MizanContract.PATH_HEALTH, "GET")
         assertEquals(200, health.status)
         assertEquals("ok", health.field("status"))
-        assertEquals("mizan-reference", health.field("service"))
+        assertEquals("wakeel-reference", health.field("service"))
         assertNotEquals("0", health.field("executions"))
     }
 
