@@ -46,7 +46,13 @@ BUILD = ROOT / "build" / "jvm-check"
 MODULES = {
     "domain": ["domain/src/main/kotlin", "domain/src/test/kotlin"],
     "service": ["service/src/main/kotlin", "service/src/test/kotlin"],
+    "integration": ["integration/src/main/kotlin", "integration/src/test/kotlin"],
 }
+
+# :integration's only external dependency is OkHttp, and it uses a small slice
+# of it. The stand-ins let the module's tests run on a plain JVM here, where no
+# artifact can be downloaded. They are not part of any Gradle source set.
+STUBS = ROOT / "tools" / "jvm_stubs"
 
 # A minimal JUnit 4.  The repository does not vendor the jar, and the point
 # of this script is to run without a package manager.  Only the surface the
@@ -326,7 +332,7 @@ def main() -> int:
         print("jvm_check: needs a JDK and the Kotlin compiler.")
         print(f"  java    : {java or 'NOT FOUND (set JAVA_HOME)'}")
         print(f"  kotlinc : {kotlinc or 'NOT FOUND (set KOTLINC_HOME to the distribution root)'}")
-        print("  With Gradle installed, `./gradlew :domain:test :service:test` does the same thing.")
+        print("  With Gradle installed, `./gradlew :domain:test :integration:test :service:test` does the same thing.")
         return 2
 
     print(f"java    : {java}")
@@ -368,7 +374,7 @@ def main() -> int:
         return 1
     print("      ok")
 
-    print("\n[2/4] compiling :domain and :service (main + test)")
+    print("\n[2/4] compiling :domain, :service and :integration (main + test)")
     out = BUILD / "classes"
     shutil.rmtree(out, ignore_errors=True)
     sources: list[str] = []
@@ -376,6 +382,8 @@ def main() -> int:
         for root in roots:
             for path in sorted((ROOT / root).rglob("*.kt")):
                 sources.append(str(path))
+    for path in sorted(STUBS.rglob("*.kt")):
+        sources.append(str(path))
     print(f"      {len(sources)} source files")
     compile_main = [
         str(kotlinc),

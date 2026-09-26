@@ -17,7 +17,7 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 /**
- * Client of the MIZAN service. It does not talk to an ERP.
+ * Client of the Wakeel service. It does not talk to an ERP.
  * A missing base URL is a configuration error, not a local success.
  */
 class MizanApiClient(

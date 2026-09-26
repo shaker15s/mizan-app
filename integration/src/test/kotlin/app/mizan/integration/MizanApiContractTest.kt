@@ -88,7 +88,9 @@ class MizanApiContractTest {
         assertTrue(body.contains("\"tenantId\":\"sim-alamal\""))
         assertTrue(body.contains("\"approverId\":\"USR-MGR\""))
         assertTrue(body.contains("\"arguments\":{"))
-        assertTrue(body.contains("\"amountMinor\":\"250000\""))
+        // Canonical numbers travel as JSON numbers. The service reads both
+        // forms, so an older client that quotes them still works.
+        assertTrue(body.contains("\"amountMinor\":250000"))
         assertTrue(body.contains("\"currency\":\"USD\""))
         assertTrue(body.contains("\"customerName\":\"Acme Corp\""))
         assertTrue(body.contains("\"itemsSummary\":\"10 laptops\""))

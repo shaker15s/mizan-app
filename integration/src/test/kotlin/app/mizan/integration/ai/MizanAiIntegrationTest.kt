@@ -47,7 +47,7 @@ class MizanAiIntegrationTest {
         assertTrue("Prompt should be under 160 tokens (got $estimatedTokens)", estimatedTokens < 160)
         assertTrue("Prompt should be under 750 characters (got ${prompt.length})", prompt.length < 750)
 
-        // Must define all 7 required MIZAN ERP actions
+        // Must define all 7 required Wakeel ERP actions
         assertTrue(prompt.contains("stock.availability"))
         assertTrue(prompt.contains("customer.search"))
         assertTrue(prompt.contains("sales.order.create_draft"))

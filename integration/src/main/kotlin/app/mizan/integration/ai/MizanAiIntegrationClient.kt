@@ -20,7 +20,7 @@ import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
 /**
- * Production-ready AI integration client tailored specifically for MIZAN ERP actions.
+ * Production-ready AI integration client tailored specifically for Wakeel ERP actions.
  * Strips conversational fluff to minimize token usage and accelerate inference latency.
  */
 class MizanAiIntegrationClient(
@@ -200,10 +200,21 @@ class MizanAiIntegrationClient(
         return null
     }
 
+    /**
+     * The amount is the number written next to the currency, never the first
+     * number in the sentence: "سداد فاتورة INV-2026-9021 بمبلغ 850 دولار"
+     * pays 850, not 2,026.
+     */
     private fun extractMoney(text: String): Money? {
-        val numMatch = Regex("""\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?""").find(text)?.value ?: return null
-        val curMatch = Regex("""USD|EGP|EUR|GBP|SAR|AED|\$|€|£|ج\.م|جنيه|دولار|ر\.س|د\.إ""", RegexOption.IGNORE_CASE).find(text)?.value
-        val currency = when (curMatch?.lowercase()) {
+        val curMatch = Regex("""USD|EGP|EUR|GBP|SAR|AED|\$|€|£|ج\.م|جنيه|دولار|ر\.س|د\.إ""", RegexOption.IGNORE_CASE).find(text)
+            ?: return null
+        val before = text.substring(0, curMatch.range.first)
+        val after = text.substring(curMatch.range.last + 1)
+        // (?:,\d{3})+ and not *: with * the first branch matches "450" inside
+        // "4500" and leaves a stray "0" to be read as the amount.
+        val numbers = Regex("""\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?""")
+        val numMatch = numbers.findAll(before).lastOrNull()?.value ?: numbers.find(after)?.value ?: return null
+        val currency = when (curMatch.value.lowercase()) {
             "$", "usd", "دولار" -> "USD"
             "egp", "ج.م", "جنيه" -> "EGP"
             "eur", "€" -> "EUR"

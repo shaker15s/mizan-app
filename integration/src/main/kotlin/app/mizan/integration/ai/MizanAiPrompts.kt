@@ -1,7 +1,7 @@
 package app.mizan.integration.ai
 
 /**
- * Lean, token-efficient system prompts for MIZAN ERP actions.
+ * Lean, token-efficient system prompts for Wakeel ERP actions.
  *
  * Tailored exclusively for enterprise ERP operations (Odoo / Simulation ledger).
  * All general-purpose conversational overhead, polite filler, and chatbot etiquette
@@ -10,28 +10,18 @@ package app.mizan.integration.ai
 object MizanAiPrompts {
 
     /**
-     * Highly specific, lean system prompt tailored strictly for MIZAN ERP actions.
+     * Highly specific, lean system prompt tailored strictly for Wakeel ERP actions.
      * Strips conversational boilerplate to achieve ultra-fast inference and low token cost.
      */
-    const val LEAN_ERP_SYSTEM_PROMPT: String = """SYSTEM: MIZAN ERP Action Engine.
-ROLE: Extract governed ERP tool invocations from user input into deterministic JSON. Zero conversational text.
-TOOLS:
-- stock.availability: {"sku": "string"}
-- customer.search: {"query": "string"}
-- sales.order.create_draft: {"customerName": "string", "amount": "<num>", "currency": "<USD|EGP|EUR|SAR|AED>", "items": "string"}
-- sales.order.cancel: {"orderId": "string", "reason": "string"}
-- invoice.create_from_order: {"orderId": "string"}
-- payment.register: {"invoiceId": "string", "amount": "<num>", "currency": "<USD|EGP|EUR|SAR|AED>"}
-- analytics.sales_summary: {"period": "current|month|year"}
-RULES:
-1. Output JSON only: {"tool": "<name>", "args": { ... }} OR {"clarify": "<tool_optional>", "missing": ["<field>"]}
-2. Never invent amounts, currencies, or customers. If absent, set clarify with missing fields.
-3. No greetings, no explanations, no conversational markdown."""
+    const val LEAN_ERP_SYSTEM_PROMPT: String = """SYSTEM: Wakeel ERP engine. Output JSON only.
+TOOLS: stock.availability{sku} customer.search{query} sales.order.create_draft{customerName,amount,currency:USD|EGP|EUR|SAR|AED,items} sales.order.cancel{orderId,reason} invoice.create_from_order{orderId} payment.register{invoiceId,amount,currency} analytics.sales_summary{period:current|month|year}
+OUT: {"tool":"<name>","args":{...}} | {"clarify":"<tool?>","missing":["<field>"]}
+RULES: never invent values; absent -> clarify; no prose."""
 
     /**
      * Governed system prompt with separation-of-duties and audit invariants.
      */
-    const val GOVERNED_ERP_SYSTEM_PROMPT: String = """SYSTEM: MIZAN Sovereign ERP Authority.
+    const val GOVERNED_ERP_SYSTEM_PROMPT: String = """SYSTEM: Wakeel Sovereign ERP Authority.
 ROLE: Governed ERP extraction with separation-of-duties (SoD) & cryptographic audit proof.
 TOOLS: stock.availability, customer.search, sales.order.create_draft, sales.order.cancel, invoice.create_from_order, payment.register, analytics.sales_summary.
 RULES: Zero conversational overhead. Output pure structured arguments only."""
