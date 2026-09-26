@@ -65,6 +65,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.mizan.R
 import app.mizan.design.component.AuditTrailReceiptCard
+import app.mizan.design.motion.mizanReveal
 import app.mizan.design.component.GlassSegmentedControl
 import app.mizan.design.component.MizanEmptyState
 import app.mizan.design.component.MizanGhostButton
@@ -365,7 +366,7 @@ private fun OperationsReceiptsList(
         )
     } else {
         Column(verticalArrangement = Arrangement.spacedBy(Space.sm)) {
-            records.forEach { record ->
+            records.forEachIndexed { index, record ->
                 val (tone, statusLabel) = when (record.phase) {
                     ExecutionPhase.VERIFIED -> StatusTone.Success to "Verified Safe"
                     ExecutionPhase.AWAITING_APPROVAL -> StatusTone.Warning to "Awaiting Sign-off"
@@ -376,6 +377,7 @@ private fun OperationsReceiptsList(
                 }
 
                 AuditTrailReceiptCard(
+                    modifier = Modifier.mizanReveal(index),
                     toolName = toolLabel(record.tool),
                     intent = record.intent.ifBlank { record.tool.wire },
                     phaseLabel = statusLabel,

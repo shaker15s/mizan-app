@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">MIZAN</string>
+    <string name="app_name">Wakeel</string>
     <string name="simulation_banner">Simulation. Nothing here is an ERP record.</string>
     <string name="nav_home">Home</string>
     <string name="nav_agent">Agent</string>
@@ -11,7 +11,7 @@
     <string name="nav_governance">Rules</string>
     <string name="cd_search">Search on this device</string>
     <string name="cd_back">Back</string>
-    <string name="cd_mark">MIZAN</string>
+    <string name="cd_mark">Wakeel</string>
 
     <string name="home_kicker">What needs you</string>
     <string name="home_recent">Recent</string>
@@ -19,7 +19,7 @@
     <string name="home_empty_title">Nothing needs you right now</string>
     <string name="home_empty_body">Ask the agent to prepare a request, or open a workspace that is actually connected.</string>
     <string name="home_ask">Ask the agent</string>
-    <string name="home_changed">Since you last opened MIZAN, this device can only show what it has saved.</string>
+    <string name="home_changed">Since you last opened Wakeel, this device can only show what it has saved.</string>
 
     <string name="attention_approval">Needs approval</string>
     <string name="attention_reconciliation">Outcome uncertain</string>
@@ -28,9 +28,10 @@
     <string name="attention_sync">Saved data may be old</string>
     <string name="attention_backend">Workspace service not confirmed</string>
 
-    <string name="agent_placeholder">Ask Mizan or command ERP...</string>
+    <string name="agent_placeholder">Ask Wakeel or command ERP...</string>
+    <string name="agent_thinking">Reading that</string>
     <string name="agent_send">Send</string>
-    <string name="agent_intro">Command ERP operations, check stock, or draft orders.</string>
+    <string name="agent_intro">Your assistant for systems and ERP. Command operations, check stock, or draft an order.</string>
     <string name="agent_clarify">Missing details</string>
     <string name="agent_unsupported">Action unsupported.</string>
     <string name="agent_rejected">Request declined.</string>
@@ -50,7 +51,7 @@
     <string name="approve_title">Approve this request?</string>
     <string name="approve_execute">Approve and execute</string>
     <string name="approve_keep">Do not execute</string>
-    <string name="approve_destructive_title">This cannot be undone from MIZAN</string>
+    <string name="approve_destructive_title">This cannot be undone from Wakeel</string>
     <string name="approve_destructive_body">Cancelling may release reserved stock in the system of record. Confirm only if that is what you intend.</string>
     <string name="approve_cancel_order">Cancel the order</string>
     <string name="approve_sod_ok">Separation of duties is satisfied.</string>
@@ -66,7 +67,7 @@
     <string name="outcome_sim_checked">Checked inside the simulation. This is not an ERP record.</string>
     <string name="outcome_erp_checked">Checked against the ERP record.</string>
     <string name="outcome_accepted">The service accepted the request. The ERP record is not confirmed yet.</string>
-    <string name="outcome_uncertain">MIZAN could not confirm whether this was accepted. It was not retried, so a duplicate is not created by accident.</string>
+    <string name="outcome_uncertain">Wakeel could not confirm whether this was accepted. It was not retried, so a duplicate is not created by accident.</string>
     <string name="outcome_open_recon">Open reconciliation</string>
     <string name="outcome_refused">The request was not carried out.</string>
 
@@ -150,13 +151,13 @@
     <string name="connection_refresh">Check again</string>
 
     <string name="sign_in_title">Sign in</string>
-    <string name="sign_in_body">The password is sent only to the MIZAN service and is not saved here. ERP credentials are not entered on this screen.</string>
+    <string name="sign_in_body">The password is sent only to the Wakeel service and is not saved here. ERP credentials are not entered on this screen.</string>
     <string name="sign_in_email">Email</string>
     <string name="sign_in_password">Password</string>
     <string name="sign_in_continue">Continue</string>
     <string name="sign_in_url">Service URL</string>
     <string name="sign_in_url_invalid">The service address must start with https://</string>
-    <string name="sign_in_missing_service">This build has no MIZAN service address. The device will not invent a signed-in workspace.</string>
+    <string name="sign_in_missing_service">This build has no Wakeel service address. The device will not invent a signed-in workspace.</string>
     <string name="demo_title">Simulation workspace</string>
     <string name="demo_body">This build does not connect to an ERP. You can walk through approval, uncertainty, and evidence with labeled sample data.</string>
     <string name="demo_enter">Enter the simulation</string>
@@ -184,7 +185,7 @@
     <string name="onboarding_craft_ws_demo_title">ACME Simulation (Demo)</string>
     <string name="onboarding_craft_ws_demo_body">Pre-loaded ERP environment with sample customers, stock, and ledgers.</string>
     <string name="onboarding_craft_ws_remote_title">Enterprise Remote Authority</string>
-    <string name="onboarding_craft_ws_remote_body">Direct TLS connection to your corporate MIZAN ERP service.</string>
+    <string name="onboarding_craft_ws_remote_body">Direct TLS connection to your corporate Wakeel ERP service.</string>
     <string name="onboarding_craft_step3_title">Biometric Ready</string>
     <string name="onboarding_craft_step3_subtitle">Hardware-backed device authorization</string>
     <string name="onboarding_craft_bio_ready">Sensor Ready · AES-256 HSM</string>
@@ -199,7 +200,7 @@
 
     <string name="error_retry">Try again</string>
     <string name="error_not_configured_title">Service not configured</string>
-    <string name="error_not_configured_body">This device cannot authorize an ERP change by itself. Connect a MIZAN service before executing.</string>
+    <string name="error_not_configured_body">This device cannot authorize an ERP change by itself. Connect a Wakeel service before executing.</string>
     <string name="error_network_title">The service did not respond</string>
     <string name="error_network_body">Your saved copy is unchanged. If a change had already been sent, it would be listed under reconciliation — not marked failed.</string>
     <string name="loading">Loading</string>
@@ -238,7 +239,7 @@
     <string name="reason_INJECTION_BLOCKED">The text tried to override the rules. It was not prepared.</string>
     <string name="reason_TOOL_NOT_SUPPORTED">The connected system does not offer this action.</string>
     <string name="reason_CONFIRM_NO_AMOUNT">Please confirm this change.</string>
-    <string name="reason_API_NOT_CONFIGURED">No MIZAN service is configured.</string>
+    <string name="reason_API_NOT_CONFIGURED">No Wakeel service is configured.</string>
     <string name="reason_SESSION_MISSING">Sign in again.</string>
     <string name="reason_SESSION_EXPIRED">The session expired.</string>
     <string name="reason_FORBIDDEN">You are not allowed to do this.</string>
@@ -280,7 +281,7 @@
     <string name="health_UNAVAILABLE">Unavailable</string>
     <string name="health_UNKNOWN">Not checked</string>
     <string name="health_network">Network</string>
-    <string name="health_backend">MIZAN service</string>
+    <string name="health_backend">Wakeel service</string>
     <string name="health_erp">ERP</string>
     <string name="health_sync">Saved copy</string>
 

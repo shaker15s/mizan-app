@@ -9,6 +9,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,6 +39,10 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import app.mizan.design.component.MizanBackdrop
+import app.mizan.design.component.MizanBackdropLights
+import app.mizan.design.component.MizanGlassDock
+import app.mizan.design.component.ProvideMizanBackdrop
 import app.mizan.design.component.ShapeFloating
 import app.mizan.design.component.ShapePill
 import androidx.compose.material.icons.Icons
@@ -77,7 +83,7 @@ import androidx.navigation.compose.rememberNavController
 import app.mizan.R
 import app.mizan.design.component.HeaderSyncStatusIndicator
 import app.mizan.design.component.MizanBanner
-import app.mizan.design.component.MizanMark
+import app.mizan.design.component.WakeelMark
 import app.mizan.design.component.StatusTone
 import app.mizan.design.theme.LocalMizanColors
 import app.mizan.feature.account.AccountRoute
@@ -169,219 +175,230 @@ fun MizanShell(
         BoxWithConstraints(Modifier.fillMaxSize().background(colors.background)) {
             val expanded = maxWidth >= 840.dp
             val medium = maxWidth >= 600.dp
-            Row(Modifier.fillMaxSize()) {
-                if (showNav && (medium || expanded)) {
-                    NavigationRail(containerColor = colors.surface, modifier = Modifier.fillMaxHeight()) {
-                        Column(Modifier.padding(vertical = 12.dp)) {
-                            MizanMark()
-                        }
-                        destinations.filter { expanded || it.compact }.forEach { dest ->
-                            NavigationRailItem(
-                                selected = route == dest.route,
-                                onClick = { nav.navigateTab(dest.route) },
-                                icon = { Icon(dest.icon, contentDescription = stringResource(dest.label)) },
-                                label = { Text(stringResource(dest.label)) },
-                            )
+            // Every glass pane refracts a copy of the page wash, so the page
+            // has to own one. Without it a pane is a grey rectangle with
+            // rounded corners and no depth.
+            ProvideMizanBackdrop(backdrop = { MizanBackdrop() }) {
+                Box(Modifier.fillMaxSize().background(colors.backdropBrush())) {
+                    MizanBackdropLights()
+                Row(Modifier.fillMaxSize()) {
+                    if (showNav && (medium || expanded)) {
+                        NavigationRail(containerColor = colors.glass, modifier = Modifier.fillMaxHeight()) {
+                            Column(Modifier.padding(vertical = 12.dp)) {
+                                WakeelMark()
+                            }
+                            destinations.filter { expanded || it.compact }.forEach { dest ->
+                                NavigationRailItem(
+                                    selected = route == dest.route,
+                                    onClick = { nav.navigateTab(dest.route) },
+                                    icon = { Icon(dest.icon, contentDescription = stringResource(dest.label)) },
+                                    label = { Text(stringResource(dest.label)) },
+                                )
+                            }
                         }
                     }
-                }
-                Scaffold(
-                    modifier = Modifier.weight(1f),
-                    containerColor = colors.background,
-                    bottomBar = {
-                        if (showNav && !medium) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                                    .navigationBarsPadding(),
-                            ) {
-                                Row(
+                    Scaffold(
+                        modifier = Modifier.weight(1f),
+                        // Transparent: the wash behind the shell is the background.
+                        containerColor = Color.Transparent,
+                        bottomBar = {
+                            if (showNav && !medium) {
+                                Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                        .navigationBarsPadding()
                                         .shadow(
-                                            elevation = if (colors.isDark) 0.dp else 10.dp,
+                                            elevation = if (colors.isDark) 0.dp else 16.dp,
                                             shape = ShapeFloating,
                                             spotColor = Color(0x1A0F172A),
                                             ambientColor = Color(0x0F0F172A),
-                                        )
-                                        .clip(ShapeFloating)
-                                        .background(
-                                            if (colors.isDark) SolidColor(colors.surfaceElevated.copy(alpha = 0.94f)) else Brush.verticalGradient(
-                                                listOf(Color(0xF8FFFFFF), Color(0xEEFFFFFF)),
-                                            ),
-                                        )
-                                        .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeFloating)
-                                        .padding(horizontal = 8.dp, vertical = 6.dp),
-                                    horizontalArrangement = Arrangement.SpaceAround,
-                                    verticalAlignment = Alignment.CenterVertically,
+                                        ),
                                 ) {
-                                    val haptic = LocalHapticFeedback.current
-                                    destinations.filter { it.compact }.forEach { dest ->
-                                        val selected = route == dest.route
-                                        val interaction = remember { MutableInteractionSource() }
-                                        val isPressed by interaction.collectIsPressedAsState()
-                                        val scale by animateFloatAsState(
-                                            targetValue = if (isPressed) 0.92f else if (selected) 1.05f else 1f,
-                                            animationSpec = spring(
-                                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                                stiffness = Spring.StiffnessMedium,
-                                            ),
-                                            label = "nav_item_scale",
-                                        )
-                                        val bg by animateColorAsState(
-                                            targetValue = if (selected) colors.accentMuted else Color.Transparent,
-                                            animationSpec = tween(200),
-                                            label = "nav_item_bg",
-                                        )
-                                        Column(
+                                    MizanGlassDock {
+                                        Row(
                                             modifier = Modifier
-                                                .scale(scale)
-                                                .clip(ShapePill)
-                                                .background(bg)
-                                                .clickable(
-                                                    interactionSource = interaction,
-                                                    indication = null,
-                                                    onClick = {
-                                                        try {
-                                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                        } catch (_: Throwable) {}
-                                                        nav.navigateTab(dest.route)
-                                                    },
-                                                )
-                                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                                            horizontalArrangement = Arrangement.SpaceAround,
+                                            verticalAlignment = Alignment.CenterVertically,
                                         ) {
-                                            Icon(
-                                                dest.icon,
-                                                contentDescription = stringResource(dest.label),
-                                                tint = if (selected) colors.accent else colors.textSecondary,
-                                                modifier = Modifier.size(20.dp),
-                                            )
-                                            Text(
-                                                text = stringResource(dest.label),
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                                                color = if (selected) colors.textPrimary else colors.textTertiary,
-                                                maxLines = 1,
-                                            )
+                                            val haptic = LocalHapticFeedback.current
+                                            destinations.filter { it.compact }.forEach { dest ->
+                                                val selected = route == dest.route
+                                                val interaction = remember { MutableInteractionSource() }
+                                                val isPressed by interaction.collectIsPressedAsState()
+                                                val scale by animateFloatAsState(
+                                                    targetValue = if (isPressed) 0.92f else if (selected) 1.05f else 1f,
+                                                    animationSpec = spring(
+                                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                        stiffness = Spring.StiffnessMedium,
+                                                    ),
+                                                    label = "nav_item_scale",
+                                                )
+                                                val bg by animateColorAsState(
+                                                    targetValue = if (selected) colors.accentMuted else Color.Transparent,
+                                                    animationSpec = tween(200),
+                                                    label = "nav_item_bg",
+                                                )
+                                                Column(
+                                                    modifier = Modifier
+                                                        .scale(scale)
+                                                        .clip(ShapePill)
+                                                        .background(bg)
+                                                        .clickable(
+                                                            interactionSource = interaction,
+                                                            indication = null,
+                                                            onClick = {
+                                                                try {
+                                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                                } catch (_: Throwable) {}
+                                                                nav.navigateTab(dest.route)
+                                                            },
+                                                        )
+                                                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                                                ) {
+                                                    Icon(
+                                                        dest.icon,
+                                                        contentDescription = stringResource(dest.label),
+                                                        tint = if (selected) colors.accent else colors.textSecondary,
+                                                        modifier = Modifier.size(20.dp),
+                                                    )
+                                                    Text(
+                                                        text = stringResource(dest.label),
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                                                        color = if (selected) colors.textPrimary else colors.textTertiary,
+                                                        maxLines = 1,
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                    },
-                ) { padding ->
-                    Column(Modifier.fillMaxSize().padding(padding)) {
-                        if (graph.demoMode && session != null) {
-                            MizanBanner(stringResource(R.string.simulation_banner), StatusTone.Warning)
-                        }
-                        if (session != null && showNav && route != "home") {
-                            val syncStatus by graph.syncTracker.state.collectAsStateWithLifecycle()
-                            val destTitle = destinations.find { it.route == route }?.let { stringResource(it.label) }
-                                ?: session?.tenant?.displayName ?: stringResource(R.string.app_name)
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
+                        },
+                    ) { padding ->
+                        Column(Modifier.fillMaxSize().padding(padding)) {
+                            if (graph.demoMode && session != null) {
+                                MizanBanner(stringResource(R.string.simulation_banner), StatusTone.Warning)
+                            }
+                            if (session != null && showNav && route != "home") {
+                                val syncStatus by graph.syncTracker.state.collectAsStateWithLifecycle()
+                                val destTitle = destinations.find { it.route == route }?.let { stringResource(it.label) }
+                                    ?: session?.tenant?.displayName ?: stringResource(R.string.app_name)
                                 Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
-                                    MizanMark()
-                                    Text(
-                                        text = destTitle,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = colors.textPrimary,
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        WakeelMark()
+                                        Text(
+                                            text = destTitle,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = colors.textPrimary,
+                                        )
+                                    }
+                                    HeaderSyncStatusIndicator(
+                                        isOnline = syncStatus.isOnline,
+                                        displayText = syncStatus.displayText,
+                                        isSyncing = syncStatus.isSyncing,
+                                        onClick = { graph.syncTracker.toggleDisplayMode() },
                                     )
                                 }
-                                HeaderSyncStatusIndicator(
-                                    isOnline = syncStatus.isOnline,
-                                    displayText = syncStatus.displayText,
-                                    isSyncing = syncStatus.isSyncing,
-                                    onClick = { graph.syncTracker.toggleDisplayMode() },
-                                )
                             }
-                        }
-                        NavHost(
-                            navController = nav,
-                            startDestination = start,
-                            modifier = Modifier.weight(1f),
-                            enterTransition = {
-                                slideIntoContainer(
-                                    AnimatedContentTransitionScope.SlideDirection.Start,
-                                    animationSpec = tween(340, easing = FastOutSlowInEasing),
-                                ) + fadeIn(animationSpec = tween(340))
-                            },
-                            exitTransition = {
-                                slideOutOfContainer(
-                                    AnimatedContentTransitionScope.SlideDirection.Start,
-                                    animationSpec = tween(340, easing = FastOutSlowInEasing),
-                                ) + fadeOut(animationSpec = tween(220))
-                            },
-                            popEnterTransition = {
-                                slideIntoContainer(
-                                    AnimatedContentTransitionScope.SlideDirection.End,
-                                    animationSpec = tween(340, easing = FastOutSlowInEasing),
-                                ) + fadeIn(animationSpec = tween(340))
-                            },
-                            popExitTransition = {
-                                slideOutOfContainer(
-                                    AnimatedContentTransitionScope.SlideDirection.End,
-                                    animationSpec = tween(340, easing = FastOutSlowInEasing),
-                                ) + fadeOut(animationSpec = tween(220))
-                            },
-                        ) {
-                            composable("onboarding") {
-                                OnboardingRoute(graph) {
-                                    nav.navigate("sign-in") { popUpTo(0) }
-                                }
-                            }
-                            composable("sign-in") {
-                                SignInRoute(graph) {
-                                    nav.navigate("home") { popUpTo(0) }
-                                }
-                            }
-                            composable("home") {
-                                HomeRoute(
-                                    graph = graph,
-                                    expanded = expanded,
-                                    onOpen = { route ->
-                                        if (destinations.any { it.route == route }) nav.navigateTab(route) else nav.navigate(route)
-                                    },
-                                    onLockSession = { isBiometricallyUnlocked = false },
-                                )
-                            }
-                            composable("agent") { AgentRoute(graph, activity, expanded) }
-                            composable("operations") { OperationsRoute(graph, expanded) }
-                            composable("reconciliation") { ReconciliationRoute(graph, expanded) }
-                            composable("evidence") { EvidenceRoute(graph, expanded) }
-                            composable("governance") { GovernanceRoute(graph) }
-                            composable("account") {
-                                AccountRoute(
-                                    graph = graph,
-                                    onOpen = { nav.navigate(it) },
-                                    onPreferencesChanged = onPreferencesChanged,
-                                    onSignedOut = {
-                                        isBiometricallyUnlocked = false
+                            NavHost(
+                                navController = nav,
+                                startDestination = start,
+                                modifier = Modifier.weight(1f),
+                                // A screen arrives by sliding, fading and settling
+                                // by two percent. It leaves faster than it came,
+                                // which is what makes a back press feel answered.
+                                enterTransition = {
+                                    slideIntoContainer(
+                                        AnimatedContentTransitionScope.SlideDirection.Start,
+                                        animationSpec = tween(320, easing = FastOutSlowInEasing),
+                                    ) + fadeIn(animationSpec = tween(220)) +
+                                        scaleIn(initialScale = 0.98f, animationSpec = tween(320, easing = FastOutSlowInEasing))
+                                },
+                                exitTransition = {
+                                    slideOutOfContainer(
+                                        AnimatedContentTransitionScope.SlideDirection.Start,
+                                        animationSpec = tween(320, easing = FastOutSlowInEasing),
+                                    ) + fadeOut(animationSpec = tween(160)) +
+                                        scaleOut(targetScale = 0.99f, animationSpec = tween(160))
+                                },
+                                popEnterTransition = {
+                                    slideIntoContainer(
+                                        AnimatedContentTransitionScope.SlideDirection.End,
+                                        animationSpec = tween(320, easing = FastOutSlowInEasing),
+                                    ) + fadeIn(animationSpec = tween(220)) +
+                                        scaleIn(initialScale = 0.98f, animationSpec = tween(320, easing = FastOutSlowInEasing))
+                                },
+                                popExitTransition = {
+                                    slideOutOfContainer(
+                                        AnimatedContentTransitionScope.SlideDirection.End,
+                                        animationSpec = tween(320, easing = FastOutSlowInEasing),
+                                    ) + fadeOut(animationSpec = tween(160)) +
+                                        scaleOut(targetScale = 0.99f, animationSpec = tween(160))
+                                },
+                            ) {
+                                composable("onboarding") {
+                                    OnboardingRoute(graph) {
                                         nav.navigate("sign-in") { popUpTo(0) }
-                                    },
-                                )
-                            }
-                            composable("search") { SearchRoute(graph) { nav.popBackStack() } }
-                            composable("connection") {
-                                app.mizan.feature.account.ConnectionRoute(graph) { nav.popBackStack() }
-                            }
-                            composable("security") {
-                                app.mizan.feature.account.SecurityRoute(graph) { nav.popBackStack() }
+                                    }
+                                }
+                                composable("sign-in") {
+                                    SignInRoute(graph) {
+                                        nav.navigate("home") { popUpTo(0) }
+                                    }
+                                }
+                                composable("home") {
+                                    HomeRoute(
+                                        graph = graph,
+                                        expanded = expanded,
+                                        onOpen = { route ->
+                                            if (destinations.any { it.route == route }) nav.navigateTab(route) else nav.navigate(route)
+                                        },
+                                        onLockSession = { isBiometricallyUnlocked = false },
+                                    )
+                                }
+                                composable("agent") { AgentRoute(graph, activity, expanded) }
+                                composable("operations") { OperationsRoute(graph, expanded) }
+                                composable("reconciliation") { ReconciliationRoute(graph, expanded) }
+                                composable("evidence") { EvidenceRoute(graph, expanded) }
+                                composable("governance") { GovernanceRoute(graph) }
+                                composable("account") {
+                                    AccountRoute(
+                                        graph = graph,
+                                        onOpen = { nav.navigate(it) },
+                                        onPreferencesChanged = onPreferencesChanged,
+                                        onSignedOut = {
+                                            isBiometricallyUnlocked = false
+                                            nav.navigate("sign-in") { popUpTo(0) }
+                                        },
+                                    )
+                                }
+                                composable("search") { SearchRoute(graph) { nav.popBackStack() } }
+                                composable("connection") {
+                                    app.mizan.feature.account.ConnectionRoute(graph) { nav.popBackStack() }
+                                }
+                                composable("security") {
+                                    app.mizan.feature.account.SecurityRoute(graph) { nav.popBackStack() }
+                                }
                             }
                         }
                     }
+                }
                 }
             }
         }

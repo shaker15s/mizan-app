@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.roborazzi)
 }
 
-val apiBaseUrl = (System.getenv("MIZAN_API_BASE_URL") ?: "")
+val apiBaseUrl = (System.getenv("WAKEEL_API_BASE_URL") ?: "")
     .replace("\\", "")
     .replace("\"", "")
 
@@ -20,12 +20,44 @@ android {
         applicationId = "app.mizan"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "2.0.0"
+        versionCode = 3
+        versionName = "2.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
-        buildConfigField("String", "MIZAN_ENV", "\"demo\"")
-        buildConfigField("boolean", "DEMO_MODE", "true")
+    }
+
+    /**
+     * The channel decides whether the device is allowed to simulate.
+     *
+     * demo        local simulator only, no service URL, results labeled simulation
+     * staging     talks to the Wakeel service, refuses writes without an HTTPS URL
+     * production  same as staging, no suffix, no simulator on the classpath
+     *
+     * The simulation classes live in `src/demo`, so a staging or production
+     * build cannot contain them, and `createAuthority` is supplied per flavor.
+     */
+    flavorDimensions += "channel"
+
+    productFlavors {
+        create("demo") {
+            dimension = "channel"
+            applicationIdSuffix = ".demo"
+            buildConfigField("boolean", "DEMO_MODE", "true")
+            buildConfigField("String", "WAKEEL_ENV", "\"demo\"")
+            buildConfigField("String", "API_BASE_URL", "\"\"")
+        }
+        create("staging") {
+            dimension = "channel"
+            applicationIdSuffix = ".staging"
+            buildConfigField("boolean", "DEMO_MODE", "false")
+            buildConfigField("String", "WAKEEL_ENV", "\"staging\"")
+            buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+        }
+        create("production") {
+            dimension = "channel"
+            buildConfigField("boolean", "DEMO_MODE", "false")
+            buildConfigField("String", "WAKEEL_ENV", "\"production\"")
+            buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+        }
     }
 
     signingConfigs {

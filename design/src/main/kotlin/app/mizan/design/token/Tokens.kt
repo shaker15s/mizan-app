@@ -1,12 +1,24 @@
 package app.mizan.design.token
 
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * MIZAN Modern Apple Glass & Fluid Intelligence theme.
- * Clean, translucent materials, precision borders, and high-contrast typography.
+ * The whole visual language of Wakeel in one data object.
+ *
+ * Screens never pick a colour: they read a token. A token is a *role*
+ * (`accent`, `surface`, `dangerContainer`), never a hue, so a new preset is a
+ * new palette and not a new set of screens.
+ *
+ * Rules this file enforces:
+ *
+ * - every preset defines both a light and a dark palette; there is no preset
+ *   that silently falls back to another one
+ * - `accent` is an action colour. It is not decoration on every surface
+ * - status is a word plus a colour, never colour alone
+ * - `accentSecondary` and `accentTertiary` exist so gradients are tokens too
  */
 data class MizanColors(
     val isDark: Boolean,
@@ -24,6 +36,8 @@ data class MizanColors(
     val accent: Color,
     val onAccent: Color,
     val accentMuted: Color,
+    val accentSecondary: Color,
+    val accentTertiary: Color,
     val userBubble: Color,
     val onUserBubble: Color,
     val success: Color,
@@ -40,223 +54,563 @@ data class MizanColors(
     val infoContainer: Color,
     val neutral: Color,
     val scrim: Color,
+) {
+
+    /** Three-stop brand gradient. Used by marks, hero cards and progress. */
+    fun accentBrush(): Brush = Brush.linearGradient(listOf(accentSecondary, accent, accentTertiary))
+
+    /**
+     * The wash behind the whole page, and the thing every glass pane refracts.
+     *
+     * Glass with nothing behind it is a grey rectangle, so the page owns a
+     * gradient: the accent, diluted, top to bottom.
+     */
+    fun backdropBrush(): Brush = Brush.verticalGradient(
+        listOf(
+            accentMuted,
+            background,
+            background,
+        ),
+    )
+
+    /** Vertical wash behind a hero surface. Subtle on purpose. */
+    fun heroBrush(): Brush = Brush.verticalGradient(
+        listOf(
+            accentMuted,
+            surface.copy(alpha = if (isDark) 0.55f else 0.75f),
+        ),
+    )
+
+    fun statusColor(tone: StatusToneToken): Color = when (tone) {
+        StatusToneToken.NEUTRAL -> neutral
+        StatusToneToken.ACCENT -> accent
+        StatusToneToken.SUCCESS -> success
+        StatusToneToken.WARNING -> warning
+        StatusToneToken.DANGER -> danger
+        StatusToneToken.INFO -> info
+    }
+
+    fun statusContainer(tone: StatusToneToken): Color = when (tone) {
+        StatusToneToken.NEUTRAL -> surfaceElevated
+        StatusToneToken.ACCENT -> accentMuted
+        StatusToneToken.SUCCESS -> successContainer
+        StatusToneToken.WARNING -> warningContainer
+        StatusToneToken.DANGER -> dangerContainer
+        StatusToneToken.INFO -> infoContainer
+    }
+
+    fun onStatus(tone: StatusToneToken): Color = when (tone) {
+        StatusToneToken.NEUTRAL -> textPrimary
+        StatusToneToken.ACCENT -> onAccent
+        StatusToneToken.SUCCESS -> onSuccess
+        StatusToneToken.WARNING -> onWarning
+        StatusToneToken.DANGER -> onDanger
+        StatusToneToken.INFO -> onInfo
+    }
+}
+
+enum class StatusToneToken { NEUTRAL, ACCENT, SUCCESS, WARNING, DANGER, INFO }
+
+/** The presets the Account screen can select. */
+object ThemePresets {
+    const val CYBER_MIZAN = "cyber_mizan"
+    const val EMERALD_GOV = "emerald_gov"
+    const val ROYAL_INDIGO = "royal_indigo"
+    const val SOVEREIGN_GOLD = "sovereign_gold"
+    const val CRIMSON_LEDGER = "crimson_ledger"
+    const val OBSIDIAN_DARK = "obsidian_dark"
+    const val AURORA_GLASS = "aurora_glass"
+    const val ARCTIC_PRISM = "arctic_prism"
+    const val BASALT_NEUTRAL = "basalt_neutral"
+    const val SANDSTONE_AMBER = "sandstone_amber"
+    const val SYSTEM_DYNAMIC = "system_dynamic"
+    const val DEFAULT = CYBER_MIZAN
+
+    val all: List<String> = listOf(
+        CYBER_MIZAN,
+        EMERALD_GOV,
+        ROYAL_INDIGO,
+        SOVEREIGN_GOLD,
+        CRIMSON_LEDGER,
+        OBSIDIAN_DARK,
+        AURORA_GLASS,
+        ARCTIC_PRISM,
+        BASALT_NEUTRAL,
+        SANDSTONE_AMBER,
+        SYSTEM_DYNAMIC,
+    )
+}
+
+/**
+ * What a preset author supplies. Everything else — borders, containers,
+ * scrim, focus — is derived, so a palette cannot be half finished.
+ */
+private data class PaletteSeed(
+    val accent: Color,
+    val accentSecondary: Color,
+    val accentTertiary: Color,
+    val onAccent: Color,
+    val background: Color,
+    val surface: Color,
+    val surfaceElevated: Color,
+    val glass: Color,
+    val textPrimary: Color,
+    val textSecondary: Color,
+    val textTertiary: Color,
+    val ink: Color,
+    val userBubble: Color,
+    val onUserBubble: Color,
 )
 
-fun lightColors() = MizanColors(
-    isDark = false,
-    background = Color(0xFFF8F9FC),
-    surface = Color(0xFFFFFFFF),
-    surfaceElevated = Color(0xFFF1F3F9),
-    glass = Color(0xEBFFFFFF),
-    glassBorder = Color(0x1C0F172A),
-    textPrimary = Color(0xFF0F172A),
-    textSecondary = Color(0xFF4B5563),
-    textTertiary = Color(0xFF94A3B8),
-    border = Color(0x0F0F172A),
-    borderStrong = Color(0x210F172A),
-    focus = Color(0xFF0D9488),
-    accent = Color(0xFF0D9488),
+private fun PaletteSeed.materialize(isDark: Boolean): MizanColors {
+    val status = if (isDark) DarkStatus else LightStatus
+    return MizanColors(
+        isDark = isDark,
+        background = background,
+        surface = surface,
+        surfaceElevated = surfaceElevated,
+        glass = glass,
+        glassBorder = ink.copy(alpha = if (isDark) 0.16f else 0.11f),
+        textPrimary = textPrimary,
+        textSecondary = textSecondary,
+        textTertiary = textTertiary,
+        border = ink.copy(alpha = if (isDark) 0.13f else 0.07f),
+        borderStrong = ink.copy(alpha = if (isDark) 0.26f else 0.15f),
+        focus = accent,
+        accent = accent,
+        onAccent = onAccent,
+        accentMuted = accent.copy(alpha = if (isDark) 0.18f else 0.11f),
+        accentSecondary = accentSecondary,
+        accentTertiary = accentTertiary,
+        userBubble = userBubble,
+        onUserBubble = onUserBubble,
+        success = status.success,
+        onSuccess = status.onSuccess,
+        successContainer = status.successContainer,
+        warning = status.warning,
+        onWarning = status.onWarning,
+        warningContainer = status.warningContainer,
+        danger = status.danger,
+        onDanger = status.onDanger,
+        dangerContainer = status.dangerContainer,
+        info = status.info,
+        onInfo = status.onInfo,
+        infoContainer = status.infoContainer,
+        neutral = textTertiary,
+        scrim = Color.Black.copy(alpha = if (isDark) 0.78f else 0.42f),
+    )
+}
+
+private object LightStatus {
+    val success = Color(0xFF047857)
+    val onSuccess = Color(0xFFFFFFFF)
+    val successContainer = Color(0xFFE7F8F1)
+    val warning = Color(0xFFB45309)
+    val onWarning = Color(0xFFFFFFFF)
+    val warningContainer = Color(0xFFFEF3E2)
+    val danger = Color(0xFFBE123C)
+    val onDanger = Color(0xFFFFFFFF)
+    val dangerContainer = Color(0xFFFDE8EC)
+    val info = Color(0xFF0369A1)
+    val onInfo = Color(0xFFFFFFFF)
+    val infoContainer = Color(0xFFE6F2FB)
+}
+
+private object DarkStatus {
+    val success = Color(0xFF34D399)
+    val onSuccess = Color(0xFF04231A)
+    val successContainer = Color(0xFF073B2E)
+    val warning = Color(0xFFFBBF24)
+    val onWarning = Color(0xFF3B2503)
+    val warningContainer = Color(0xFF402D06)
+    val danger = Color(0xFFFB7185)
+    val onDanger = Color(0xFF3F0A17)
+    val dangerContainer = Color(0xFF4A0E1E)
+    val info = Color(0xFF38BDF8)
+    val onInfo = Color(0xFF04283A)
+    val infoContainer = Color(0xFF08324A)
+}
+
+// ---------------------------------------------------------------------------
+// Presets. Each one defines light and dark. None of them borrows another.
+// ---------------------------------------------------------------------------
+
+private fun cyberLight() = PaletteSeed(
+    accent = Color(0xFF0E7490),
+    accentSecondary = Color(0xFF22D3EE),
+    accentTertiary = Color(0xFF0F766E),
     onAccent = Color(0xFFFFFFFF),
-    accentMuted = Color(0x180D9488),
-    userBubble = Color(0xFF0F172A),
-    onUserBubble = Color(0xFFFFFFFF),
-    success = Color(0xFF0D9488),
-    onSuccess = Color(0xFFFFFFFF),
-    successContainer = Color(0xFFF0FDF4),
-    warning = Color(0xFFD97706),
-    onWarning = Color(0xFFFFFFFF),
-    warningContainer = Color(0xFFFFFBEB),
-    danger = Color(0xFFE11D48),
-    onDanger = Color(0xFFFFFFFF),
-    dangerContainer = Color(0xFFFFF1F2),
-    info = Color(0xFF0284C7),
-    onInfo = Color(0xFFFFFFFF),
-    infoContainer = Color(0xFFF0F9FF),
-    neutral = Color(0xFF64748B),
-    scrim = Color(0x4D0F172A),
+    background = Color(0xFFF4F8FA),
+    surface = Color(0xFFFFFFFF),
+    surfaceElevated = Color(0xFFEAF2F6),
+    glass = Color(0xF2FFFFFF),
+    textPrimary = Color(0xFF0B192C),
+    textSecondary = Color(0xFF3D5165),
+    textTertiary = Color(0xFF596C7C),
+    ink = Color(0xFF0B192C),
+    userBubble = Color(0xFF0B192C),
+    onUserBubble = Color(0xFFF8FDFF),
 )
 
-fun darkColors() = MizanColors(
-    isDark = true,
-    background = Color(0xFF0B0F17),
-    surface = Color(0xFF131926),
-    surfaceElevated = Color(0xFF1A2234),
-    glass = Color(0xD9131926),
-    glassBorder = Color(0x26FFFFFF),
-    textPrimary = Color(0xFFF8FAFC),
-    textSecondary = Color(0xFF94A3B8),
-    textTertiary = Color(0xFF64748B),
-    border = Color(0x1FFFFFFF),
-    borderStrong = Color(0x33FFFFFF),
-    focus = Color(0xFF10B981),
-    accent = Color(0xFF10B981),
-    onAccent = Color(0xFF022C22),
-    accentMuted = Color(0x2610B981),
-    userBubble = Color(0xFF1E293B),
-    onUserBubble = Color(0xFFF8FAFC),
-    success = Color(0xFF10B981),
-    onSuccess = Color(0xFF022C22),
-    successContainer = Color(0xFF064E3B),
-    warning = Color(0xFFF59E0B),
-    onWarning = Color(0xFF451A03),
-    warningContainer = Color(0xFF78350F),
-    danger = Color(0xFFEF4444),
-    onDanger = Color(0xFF450A0A),
-    dangerContainer = Color(0xFF7F1D1D),
-    info = Color(0xFF38BDF8),
-    onInfo = Color(0xFF082F49),
-    infoContainer = Color(0xFF0C4A6E),
-    neutral = Color(0xFF94A3B8),
-    scrim = Color(0xCC000000),
+private fun cyberDark() = PaletteSeed(
+    accent = Color(0xFF22D3EE),
+    accentSecondary = Color(0xFF67E8F9),
+    accentTertiary = Color(0xFF0E9F9F),
+    onAccent = Color(0xFF04212B),
+    background = Color(0xFF060D16),
+    surface = Color(0xFF0E1724),
+    surfaceElevated = Color(0xFF152234),
+    glass = Color(0xDE0E1724),
+    textPrimary = Color(0xFFEAF6FB),
+    textSecondary = Color(0xFF9DB4C6),
+    textTertiary = Color(0xFF7890A0),
+    ink = Color(0xFF000000),
+    userBubble = Color(0xFF16283A),
+    onUserBubble = Color(0xFFEAF6FB),
 )
 
-fun cyberColors(isDark: Boolean): MizanColors = if (isDark) {
-    MizanColors(
-        isDark = true,
-        background = Color(0xFF080C14),
-        surface = Color(0xFF0F172A),
-        surfaceElevated = Color(0xFF152238),
-        glass = Color(0xEB0E1726),
-        glassBorder = Color(0x3800F2FE),
-        textPrimary = Color(0xFFF0FDF4),
-        textSecondary = Color(0xFF94A3B8),
-        textTertiary = Color(0xFF64748B),
-        border = Color(0x2600F2FE),
-        borderStrong = Color(0x4D00F2FE),
-        focus = Color(0xFF00F2FE),
-        accent = Color(0xFF00F2FE),
-        onAccent = Color(0xFF041E28),
-        accentMuted = Color(0x2E00F2FE),
-        userBubble = Color(0xFF1E293B),
-        onUserBubble = Color(0xFFF0FDF4),
-        success = Color(0xFF00F2FE),
-        onSuccess = Color(0xFF041E28),
-        successContainer = Color(0xFF083344),
-        warning = Color(0xFFFBBF24),
-        onWarning = Color(0xFF451A03),
-        warningContainer = Color(0xFF78350F),
-        danger = Color(0xFFF43F5E),
-        onDanger = Color(0xFF4C0519),
-        dangerContainer = Color(0xFF881337),
-        info = Color(0xFF38BDF8),
-        onInfo = Color(0xFF082F49),
-        infoContainer = Color(0xFF0C4A6E),
-        neutral = Color(0xFF94A3B8),
-        scrim = Color(0xE6000000),
-    )
-} else {
-    MizanColors(
-        isDark = false,
-        background = Color(0xFFF3F7FA),
-        surface = Color(0xFFFFFFFF),
-        surfaceElevated = Color(0xFFE8F1F5),
-        glass = Color(0xF2FFFFFF),
-        glassBorder = Color(0x2E0891B2),
-        textPrimary = Color(0xFF0B192C),
-        textSecondary = Color(0xFF334155),
-        textTertiary = Color(0xFF64748B),
-        border = Color(0x1F0891B2),
-        borderStrong = Color(0x3D0891B2),
-        focus = Color(0xFF0891B2),
-        accent = Color(0xFF0891B2),
-        onAccent = Color(0xFFFFFFFF),
-        accentMuted = Color(0x1A0891B2),
-        userBubble = Color(0xFF0B192C),
-        onUserBubble = Color(0xFFFFFFFF),
-        success = Color(0xFF059669),
-        onSuccess = Color(0xFFFFFFFF),
-        successContainer = Color(0xFFECFDF5),
-        warning = Color(0xFFD97706),
-        onWarning = Color(0xFFFFFFFF),
-        warningContainer = Color(0xFFFFFBEB),
-        danger = Color(0xFFE11D48),
-        onDanger = Color(0xFFFFFFFF),
-        dangerContainer = Color(0xFFFFF1F2),
-        info = Color(0xFF0284C7),
-        onInfo = Color(0xFFFFFFFF),
-        infoContainer = Color(0xFFF0F9FF),
-        neutral = Color(0xFF64748B),
-        scrim = Color(0x590B192C),
-    )
-}
+private fun emeraldLight() = PaletteSeed(
+    accent = Color(0xFF047857),
+    accentSecondary = Color(0xFF34D399),
+    accentTertiary = Color(0xFF059669),
+    onAccent = Color(0xFFFFFFFF),
+    background = Color(0xFFF3FAF6),
+    surface = Color(0xFFFFFFFF),
+    surfaceElevated = Color(0xFFE7F4ED),
+    glass = Color(0xF2FFFFFF),
+    textPrimary = Color(0xFF08251B),
+    textSecondary = Color(0xFF3B5A4E),
+    textTertiary = Color(0xFF567064),
+    ink = Color(0xFF08251B),
+    userBubble = Color(0xFF08251B),
+    onUserBubble = Color(0xFFF1FBF6),
+)
 
-fun goldColors(isDark: Boolean): MizanColors = if (isDark) {
-    MizanColors(
-        isDark = true,
-        background = Color(0xFF0C0E14),
-        surface = Color(0xFF161922),
-        surfaceElevated = Color(0xFF202430),
-        glass = Color(0xEB161922),
-        glassBorder = Color(0x38F59E0B),
-        textPrimary = Color(0xFFFFFBEB),
-        textSecondary = Color(0xFFD1D5DB),
-        textTertiary = Color(0xFF9CA3AF),
-        border = Color(0x26F59E0B),
-        borderStrong = Color(0x4DF59E0B),
-        focus = Color(0xFFF59E0B),
-        accent = Color(0xFFF59E0B),
-        onAccent = Color(0xFF451A03),
-        accentMuted = Color(0x2EF59E0B),
-        userBubble = Color(0xFF282C37),
-        onUserBubble = Color(0xFFFFFBEB),
-        success = Color(0xFF10B981),
-        onSuccess = Color(0xFF022C22),
-        successContainer = Color(0xFF064E3B),
-        warning = Color(0xFFF59E0B),
-        onWarning = Color(0xFF451A03),
-        warningContainer = Color(0xFF78350F),
-        danger = Color(0xFFEF4444),
-        onDanger = Color(0xFF450A0A),
-        dangerContainer = Color(0xFF7F1D1D),
-        info = Color(0xFF38BDF8),
-        onInfo = Color(0xFF082F49),
-        infoContainer = Color(0xFF0C4A6E),
-        neutral = Color(0xFF9CA3AF),
-        scrim = Color(0xE6000000),
-    )
-} else {
-    MizanColors(
-        isDark = false,
-        background = Color(0xFFFDFCF7),
-        surface = Color(0xFFFFFFFF),
-        surfaceElevated = Color(0xFFF8F5EB),
-        glass = Color(0xF2FFFFFF),
-        glassBorder = Color(0x33B45309),
-        textPrimary = Color(0xFF1E1B18),
-        textSecondary = Color(0xFF4B453D),
-        textTertiary = Color(0xFF78716C),
-        border = Color(0x24B45309),
-        borderStrong = Color(0x42B45309),
-        focus = Color(0xFFB45309),
-        accent = Color(0xFFB45309),
-        onAccent = Color(0xFFFFFFFF),
-        accentMuted = Color(0x1AB45309),
-        userBubble = Color(0xFF292524),
-        onUserBubble = Color(0xFFFFFFFF),
-        success = Color(0xFF059669),
-        onSuccess = Color(0xFFFFFFFF),
-        successContainer = Color(0xFFECFDF5),
-        warning = Color(0xFFD97706),
-        onWarning = Color(0xFFFFFFFF),
-        warningContainer = Color(0xFFFFFBEB),
-        danger = Color(0xFFE11D48),
-        onDanger = Color(0xFFFFFFFF),
-        dangerContainer = Color(0xFFFFF1F2),
-        info = Color(0xFF0284C7),
-        onInfo = Color(0xFFFFFFFF),
-        infoContainer = Color(0xFFF0F9FF),
-        neutral = Color(0xFF78716C),
-        scrim = Color(0x591E1B18),
-    )
-}
+private fun emeraldDark() = PaletteSeed(
+    accent = Color(0xFF34D399),
+    accentSecondary = Color(0xFF6EE7B7),
+    accentTertiary = Color(0xFF0F9E76),
+    onAccent = Color(0xFF04231A),
+    background = Color(0xFF05130E),
+    surface = Color(0xFF0C1F18),
+    surfaceElevated = Color(0xFF123026),
+    glass = Color(0xDE0C1F18),
+    textPrimary = Color(0xFFE9FBF3),
+    textSecondary = Color(0xFF9DBCAA),
+    textTertiary = Color(0xFF7E9D8D),
+    ink = Color(0xFF000000),
+    userBubble = Color(0xFF123026),
+    onUserBubble = Color(0xFFE9FBF3),
+)
 
+private fun indigoLight() = PaletteSeed(
+    accent = Color(0xFF4338CA),
+    accentSecondary = Color(0xFF818CF8),
+    accentTertiary = Color(0xFF6D28D9),
+    onAccent = Color(0xFFFFFFFF),
+    background = Color(0xFFF6F6FD),
+    surface = Color(0xFFFFFFFF),
+    surfaceElevated = Color(0xFFEDECFA),
+    glass = Color(0xF2FFFFFF),
+    textPrimary = Color(0xFF141338),
+    textSecondary = Color(0xFF464466),
+    textTertiary = Color(0xFF666587),
+    ink = Color(0xFF141338),
+    userBubble = Color(0xFF141338),
+    onUserBubble = Color(0xFFF5F5FF),
+)
+
+private fun indigoDark() = PaletteSeed(
+    accent = Color(0xFF818CF8),
+    accentSecondary = Color(0xFFA5B4FC),
+    accentTertiary = Color(0xFF7C3AED),
+    onAccent = Color(0xFF0B0A24),
+    background = Color(0xFF08081A),
+    surface = Color(0xFF12122B),
+    surfaceElevated = Color(0xFF1B1B3C),
+    glass = Color(0xDE12122B),
+    textPrimary = Color(0xFFF0F0FF),
+    textSecondary = Color(0xFFA9A8CC),
+    textTertiary = Color(0xFF8988AA),
+    ink = Color(0xFF000000),
+    userBubble = Color(0xFF1B1B3C),
+    onUserBubble = Color(0xFFF0F0FF),
+)
+
+private fun goldLight() = PaletteSeed(
+    accent = Color(0xFFB45309),
+    accentSecondary = Color(0xFFFBBF24),
+    accentTertiary = Color(0xFFD97706),
+    onAccent = Color(0xFFFFFFFF),
+    background = Color(0xFFFDFBF5),
+    surface = Color(0xFFFFFFFF),
+    surfaceElevated = Color(0xFFF7F0E2),
+    glass = Color(0xF2FFFFFF),
+    textPrimary = Color(0xFF241B0E),
+    textSecondary = Color(0xFF5A4A34),
+    textTertiary = Color(0xFF776753),
+    ink = Color(0xFF241B0E),
+    userBubble = Color(0xFF241B0E),
+    onUserBubble = Color(0xFFFDF6E9),
+)
+
+private fun goldDark() = PaletteSeed(
+    accent = Color(0xFFFBBF24),
+    accentSecondary = Color(0xFFFDE68A),
+    accentTertiary = Color(0xFFD97706),
+    onAccent = Color(0xFF3B2503),
+    background = Color(0xFF14100A),
+    surface = Color(0xFF1E1810),
+    surfaceElevated = Color(0xFF2B2216),
+    glass = Color(0xDE1E1810),
+    textPrimary = Color(0xFFFDF6E9),
+    textSecondary = Color(0xFFC6B79C),
+    textTertiary = Color(0xFF998D78),
+    ink = Color(0xFF000000),
+    userBubble = Color(0xFF2B2216),
+    onUserBubble = Color(0xFFFDF6E9),
+)
+
+private fun crimsonLight() = PaletteSeed(
+    accent = Color(0xFFBE123C),
+    accentSecondary = Color(0xFFFB7185),
+    accentTertiary = Color(0xFFE11D48),
+    onAccent = Color(0xFFFFFFFF),
+    background = Color(0xFFFDF6F7),
+    surface = Color(0xFFFFFFFF),
+    surfaceElevated = Color(0xFFFAE9ED),
+    glass = Color(0xF2FFFFFF),
+    textPrimary = Color(0xFF2B0A14),
+    textSecondary = Color(0xFF5F3441),
+    textTertiary = Color(0xFF805F69),
+    ink = Color(0xFF2B0A14),
+    userBubble = Color(0xFF2B0A14),
+    onUserBubble = Color(0xFFFEF2F4),
+)
+
+private fun crimsonDark() = PaletteSeed(
+    accent = Color(0xFFFB7185),
+    accentSecondary = Color(0xFFFDA4AF),
+    accentTertiary = Color(0xFFE11D48),
+    onAccent = Color(0xFF3F0A17),
+    background = Color(0xFF14080C),
+    surface = Color(0xFF1E1015),
+    surfaceElevated = Color(0xFF2C1620),
+    glass = Color(0xDE1E1015),
+    textPrimary = Color(0xFFFEF2F4),
+    textSecondary = Color(0xFFC7A2AC),
+    textTertiary = Color(0xFF9D818B),
+    ink = Color(0xFF000000),
+    userBubble = Color(0xFF2C1620),
+    onUserBubble = Color(0xFFFEF2F4),
+)
+
+/** True black, for OLED. Ice blue accent so it does not look like a bug. */
+private fun obsidianLight() = PaletteSeed(
+    accent = Color(0xFF334155),
+    accentSecondary = Color(0xFF94A3B8),
+    accentTertiary = Color(0xFF0F172A),
+    onAccent = Color(0xFFFFFFFF),
+    background = Color(0xFFF6F7F9),
+    surface = Color(0xFFFFFFFF),
+    surfaceElevated = Color(0xFFECEEF2),
+    glass = Color(0xF2FFFFFF),
+    textPrimary = Color(0xFF0B0D10),
+    textSecondary = Color(0xFF454A52),
+    textTertiary = Color(0xFF646972),
+    ink = Color(0xFF0B0D10),
+    userBubble = Color(0xFF0B0D10),
+    onUserBubble = Color(0xFFF8F9FB),
+)
+
+private fun obsidianDark() = PaletteSeed(
+    accent = Color(0xFF93C5FD),
+    accentSecondary = Color(0xFFE2E8F0),
+    accentTertiary = Color(0xFF38BDF8),
+    onAccent = Color(0xFF04121F),
+    background = Color(0xFF000000),
+    surface = Color(0xFF0A0A0A),
+    surfaceElevated = Color(0xFF151515),
+    glass = Color(0xE00A0A0A),
+    textPrimary = Color(0xFFF5F7FA),
+    textSecondary = Color(0xFFA6ADB8),
+    textTertiary = Color(0xFF7D838E),
+    ink = Color(0xFF000000),
+    userBubble = Color(0xFF151515),
+    onUserBubble = Color(0xFFF5F7FA),
+)
+
+private fun auroraLight() = PaletteSeed(
+    accent = Color(0xFF6D28D9),
+    accentSecondary = Color(0xFF0E9F9F),
+    accentTertiary = Color(0xFF2563EB),
+    onAccent = Color(0xFFFFFFFF),
+    background = Color(0xFFF6F4FB),
+    surface = Color(0xFFFFFFFF),
+    surfaceElevated = Color(0xFFEFECF9),
+    glass = Color(0xF2FFFFFF),
+    textPrimary = Color(0xFF150E2B),
+    textSecondary = Color(0xFF4A3F6B),
+    textTertiary = Color(0xFF6D6286),
+    ink = Color(0xFF150E2B),
+    userBubble = Color(0xFF150E2B),
+    onUserBubble = Color(0xFFF7F5FF),
+)
+
+private fun auroraDark() = PaletteSeed(
+    accent = Color(0xFFA78BFA),
+    accentSecondary = Color(0xFF2DD4BF),
+    accentTertiary = Color(0xFF60A5FA),
+    onAccent = Color(0xFF1A0F33),
+    background = Color(0xFF08060F),
+    surface = Color(0xFF141024),
+    surfaceElevated = Color(0xFF1D1834),
+    glass = Color(0xE6141024),
+    textPrimary = Color(0xFFF2EEFF),
+    textSecondary = Color(0xFFB3AAD1),
+    textTertiary = Color(0xFF8B83AC),
+    ink = Color(0xFF000000),
+    userBubble = Color(0xFF2C2250),
+    onUserBubble = Color(0xFFF2EEFF),
+)
+
+private fun arcticLight() = PaletteSeed(
+    accent = Color(0xFF0369A1),
+    accentSecondary = Color(0xFF0EA5E9),
+    accentTertiary = Color(0xFF0891B2),
+    onAccent = Color(0xFFFFFFFF),
+    background = Color(0xFFF7FBFD),
+    surface = Color(0xFFFFFFFF),
+    surfaceElevated = Color(0xFFEAF3F8),
+    glass = Color(0xF2FFFFFF),
+    textPrimary = Color(0xFF0A1A24),
+    textSecondary = Color(0xFF39566B),
+    textTertiary = Color(0xFF566D7E),
+    ink = Color(0xFF0A1A24),
+    userBubble = Color(0xFF0A1A24),
+    onUserBubble = Color(0xFFF4FBFE),
+)
+
+private fun arcticDark() = PaletteSeed(
+    accent = Color(0xFF7DD3FC),
+    accentSecondary = Color(0xFF38BDF8),
+    accentTertiary = Color(0xFF22D3EE),
+    onAccent = Color(0xFF04222E),
+    background = Color(0xFF04090E),
+    surface = Color(0xFF0C1620),
+    surfaceElevated = Color(0xFF14232F),
+    glass = Color(0xE60C1620),
+    textPrimary = Color(0xFFEAF6FC),
+    textSecondary = Color(0xFFA9C4D4),
+    textTertiary = Color(0xFF7A94A5),
+    ink = Color(0xFF000000),
+    userBubble = Color(0xFF14232F),
+    onUserBubble = Color(0xFFEAF6FC),
+)
+
+private fun basaltLight() = PaletteSeed(
+    accent = Color(0xFF334155),
+    accentSecondary = Color(0xFF64748B),
+    accentTertiary = Color(0xFF0F172A),
+    onAccent = Color(0xFFFFFFFF),
+    background = Color(0xFFF5F6F7),
+    surface = Color(0xFFFFFFFF),
+    surfaceElevated = Color(0xFFE9EBEE),
+    glass = Color(0xF2FFFFFF),
+    textPrimary = Color(0xFF11161C),
+    textSecondary = Color(0xFF414A57),
+    textTertiary = Color(0xFF5D6772),
+    ink = Color(0xFF11161C),
+    userBubble = Color(0xFF11161C),
+    onUserBubble = Color(0xFFF7F8F9),
+)
+
+private fun basaltDark() = PaletteSeed(
+    accent = Color(0xFFCBD5E1),
+    accentSecondary = Color(0xFF94A3B8),
+    accentTertiary = Color(0xFFF1F5F9),
+    onAccent = Color(0xFF0B1017),
+    background = Color(0xFF0A0C0F),
+    surface = Color(0xFF14181D),
+    surfaceElevated = Color(0xFF1E242B),
+    glass = Color(0xE614181D),
+    textPrimary = Color(0xFFEDF0F4),
+    textSecondary = Color(0xFFA9B2BE),
+    textTertiary = Color(0xFF858F9B),
+    ink = Color(0xFF000000),
+    userBubble = Color(0xFF1E242B),
+    onUserBubble = Color(0xFFEDF0F4),
+)
+
+private fun sandstoneLight() = PaletteSeed(
+    accent = Color(0xFFB45309),
+    accentSecondary = Color(0xFFF59E0B),
+    accentTertiary = Color(0xFFD97706),
+    onAccent = Color(0xFFFFFDF7),
+    background = Color(0xFFFDF9F3),
+    surface = Color(0xFFFFFFFF),
+    surfaceElevated = Color(0xFFF6EEDF),
+    glass = Color(0xF2FFFFFF),
+    textPrimary = Color(0xFF231708),
+    textSecondary = Color(0xFF5B4527),
+    textTertiary = Color(0xFF7C6547),
+    ink = Color(0xFF231708),
+    userBubble = Color(0xFF231708),
+    onUserBubble = Color(0xFFFDF6EA),
+)
+
+private fun sandstoneDark() = PaletteSeed(
+    accent = Color(0xFFFBBF24),
+    accentSecondary = Color(0xFFFCD34D),
+    accentTertiary = Color(0xFFF59E0B),
+    onAccent = Color(0xFF2A1A02),
+    background = Color(0xFF100B05),
+    surface = Color(0xFF1A140C),
+    surfaceElevated = Color(0xFF261E12),
+    glass = Color(0xE61A140C),
+    textPrimary = Color(0xFFFBF3E4),
+    textSecondary = Color(0xFFCDBA98),
+    textTertiary = Color(0xFF9B896E),
+    ink = Color(0xFF000000),
+    userBubble = Color(0xFF261E12),
+    onUserBubble = Color(0xFFFBF3E4),
+)
+
+/** Resolves a preset. Every branch returns a real palette. */
 fun resolveThemeColors(preset: String, isDark: Boolean): MizanColors = when (preset) {
-    "cyber_mizan" -> cyberColors(isDark)
-    "sovereign_gold" -> goldColors(isDark)
-    "emerald_gov" -> if (isDark) darkColors() else lightColors()
-    "obsidian_dark" -> if (isDark) darkColors() else lightColors()
-    else -> if (isDark) darkColors() else lightColors()
+    ThemePresets.CYBER_MIZAN -> if (isDark) cyberDark().materialize(true) else cyberLight().materialize(false)
+    ThemePresets.EMERALD_GOV -> if (isDark) emeraldDark().materialize(true) else emeraldLight().materialize(false)
+    ThemePresets.ROYAL_INDIGO -> if (isDark) indigoDark().materialize(true) else indigoLight().materialize(false)
+    ThemePresets.SOVEREIGN_GOLD -> if (isDark) goldDark().materialize(true) else goldLight().materialize(false)
+    ThemePresets.CRIMSON_LEDGER -> if (isDark) crimsonDark().materialize(true) else crimsonLight().materialize(false)
+    ThemePresets.OBSIDIAN_DARK -> if (isDark) obsidianDark().materialize(true) else obsidianLight().materialize(false)
+    ThemePresets.AURORA_GLASS -> if (isDark) auroraDark().materialize(true) else auroraLight().materialize(false)
+    ThemePresets.ARCTIC_PRISM -> if (isDark) arcticDark().materialize(true) else arcticLight().materialize(false)
+    ThemePresets.BASALT_NEUTRAL -> if (isDark) basaltDark().materialize(true) else basaltLight().materialize(false)
+    ThemePresets.SANDSTONE_AMBER -> if (isDark) sandstoneDark().materialize(true) else sandstoneLight().materialize(false)
+    else -> if (isDark) cyberDark().materialize(true) else cyberLight().materialize(false)
 }
+
+/** Older builds and saved preferences may hold these names. */
+fun normalizePreset(preset: String?): String = when (preset) {
+    ThemePresets.CYBER_MIZAN,
+    ThemePresets.EMERALD_GOV,
+    ThemePresets.ROYAL_INDIGO,
+    ThemePresets.SOVEREIGN_GOLD,
+    ThemePresets.CRIMSON_LEDGER,
+    ThemePresets.OBSIDIAN_DARK,
+    ThemePresets.AURORA_GLASS,
+    ThemePresets.ARCTIC_PRISM,
+    ThemePresets.BASALT_NEUTRAL,
+    ThemePresets.SANDSTONE_AMBER,
+    ThemePresets.SYSTEM_DYNAMIC,
+    -> preset
+    else -> ThemePresets.DEFAULT
+}
+
+// ---------------------------------------------------------------------------
+// Spacing, shape, elevation
+// ---------------------------------------------------------------------------
 
 object Space {
     val xs: Dp = 4.dp
@@ -266,11 +620,38 @@ object Space {
     val xl: Dp = 20.dp
     val xxl: Dp = 24.dp
     val xxxl: Dp = 32.dp
+    val huge: Dp = 48.dp
 }
 
-enum class MotionToken { INSTANT, FAST, STANDARD, EMPHASIZED, TRANSITION, MODAL, NAVIGATION, FEEDBACK }
+object Elevation {
+    val flat: Dp = 0.dp
+    val card: Dp = 1.dp
+    val raised: Dp = 4.dp
+    val floating: Dp = 10.dp
+    val modal: Dp = 20.dp
+}
+
+// ---------------------------------------------------------------------------
+// Motion
+// ---------------------------------------------------------------------------
+
+enum class MotionToken {
+    INSTANT,
+    FAST,
+    STANDARD,
+    EMPHASIZED,
+    TRANSITION,
+    MODAL,
+    NAVIGATION,
+    FEEDBACK,
+}
 
 object Motion {
+    /**
+     * Reduced motion collapses every duration to 1 ms. It does not remove the
+     * animation, because a state that appears instantly is its own confusion;
+     * it makes the change legible instead of decorative.
+     */
     fun millis(token: MotionToken, reduced: Boolean): Int {
         if (reduced && token != MotionToken.INSTANT) return 1
         return when (token) {
@@ -283,5 +664,11 @@ object Motion {
             MotionToken.NAVIGATION -> 240
             MotionToken.FEEDBACK -> 140
         }
+    }
+
+    /** Staggered reveal delay for list items, capped so long lists stay snappy. */
+    fun stagger(index: Int, reduced: Boolean): Int {
+        if (reduced) return 0
+        return (index * 26).coerceAtMost(240)
     }
 }

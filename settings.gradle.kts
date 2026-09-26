@@ -30,4 +30,6 @@ include(
     ":integration",
     ":data",
     ":design",
+    // Server side. Not packaged into the Android application.
+    ":service",
 )

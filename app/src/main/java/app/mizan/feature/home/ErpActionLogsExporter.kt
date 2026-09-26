@@ -33,7 +33,7 @@ object ErpActionLogsExporter {
         context: Context,
         logs: List<HistoricalErpActionLog>,
         workspaceName: String,
-        customTitle: String = "MIZAN ERP Action Logs Audit Report",
+        customTitle: String = "Wakeel ERP Action Logs Audit Report",
     ): File {
         val exportDir = File(context.cacheDir, "exports").apply { mkdirs() }
         val fileName = "mizan_audit_report_${fileTimeFormatter.format(Instant.now())}.pdf"
@@ -91,7 +91,7 @@ object ErpActionLogsExporter {
 
             // Title and Subtitle in Header
             headerPaint.color = Color.WHITE
-            canvas.drawText("MIZAN · ERP AUDIT COMPLIANCE REPORT", 30f, 32f, headerPaint)
+            canvas.drawText("WAKEEL · ERP AUDIT COMPLIANCE REPORT", 30f, 32f, headerPaint)
             subPaint.color = Color.rgb(148, 163, 184)
             canvas.drawText(
                 "Workspace: $workspaceName  |  Generated: ${reportTimeFormatter.format(Instant.now())}  |  Compliance Level: High-Assurance",
@@ -214,7 +214,7 @@ object ErpActionLogsExporter {
             subPaint.color = Color.rgb(100, 116, 139)
             subPaint.textSize = 8f
             canvas.drawText(
-                "CONFIDENTIAL & PROPRIETARY  |  Generated for Audit Compliance  |  MIZAN Verification Protocol",
+                "CONFIDENTIAL & PROPRIETARY  |  Generated for Audit Compliance  |  Wakeel Verification Protocol",
                 30f,
                 footerY,
                 subPaint,
@@ -293,7 +293,7 @@ object ErpActionLogsExporter {
             type = mimeType
             putExtra(Intent.EXTRA_STREAM, contentUri)
             putExtra(Intent.EXTRA_SUBJECT, file.name)
-            putExtra(Intent.EXTRA_TEXT, "Attached is the MIZAN ERP Action Logs Audit Report for compliance review.")
+            putExtra(Intent.EXTRA_TEXT, "Attached is the Wakeel ERP Action Logs Audit Report for compliance review.")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
 

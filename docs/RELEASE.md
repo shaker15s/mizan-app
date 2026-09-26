@@ -22,7 +22,7 @@ Release signing is applied only when `KEYSTORE_PATH` exists and `STORE_PASSWORD`
 
 ## Service URL
 
-`MIZAN_API_BASE_URL` is a build-time field. Empty is legal and means the production app refuses writes. It must not be filled with a placeholder host.
+`Wakeel_API_BASE_URL` is a build-time field. Empty is legal and means the production app refuses writes. It must not be filled with a placeholder host.
 
 ## What a release must not contain
 

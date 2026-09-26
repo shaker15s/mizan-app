@@ -81,6 +81,6 @@ enum class SessionMode {
     /** Local simulator. Every result must be labeled as simulation. */
     SIMULATION,
 
-    /** Short-lived session against the MIZAN service. */
+    /** Short-lived session against the Wakeel service. */
     REMOTE,
 }

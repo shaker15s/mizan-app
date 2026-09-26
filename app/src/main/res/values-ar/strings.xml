@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">ميزان</string>
+    <string name="app_name">وكيل</string>
     <string name="simulation_banner">محاكاة. لا شيء هنا سجل حقيقي في نظام الموارد.</string>
     <string name="nav_home">الرئيسية</string>
     <string name="nav_agent">الوكيل</string>
@@ -11,7 +11,7 @@
     <string name="nav_governance">القواعد</string>
     <string name="cd_search">بحث في هذا الجهاز</string>
     <string name="cd_back">رجوع</string>
-    <string name="cd_mark">ميزان</string>
+    <string name="cd_mark">وكيل</string>
 
     <string name="home_kicker">ما الذي يحتاجك</string>
     <string name="home_recent">مؤخرًا</string>
@@ -29,8 +29,9 @@
     <string name="attention_backend">خدمة مساحة العمل غير مؤكدة</string>
 
     <string name="agent_placeholder">ماذا نجهّز؟</string>
+    <string name="agent_thinking">أقرأ ما كتبته</string>
     <string name="agent_send">إرسال</string>
-    <string name="agent_intro">صف ما تريده. سيسألك ميزان عما لا يستطيع قراءته من كلامك. لن يخترع مبلغًا أو عميلًا أو رقم أمر.</string>
+    <string name="agent_intro">صف ما تريده. سيسألك وكيل عما لا يستطيع قراءته من كلامك. لن يخترع مبلغًا أو عميلًا أو رقم أمر.</string>
     <string name="agent_clarify">ينقص بعض التفاصيل</string>
     <string name="agent_unsupported">مساحة العمل هذه لا تدعم هذا الإجراء.</string>
     <string name="agent_rejected">لم يُجهَّز هذا الطلب.</string>
@@ -50,7 +51,7 @@
     <string name="approve_title">اعتماد هذا الطلب؟</string>
     <string name="approve_execute">اعتماد وتنفيذ</string>
     <string name="approve_keep">عدم التنفيذ</string>
-    <string name="approve_destructive_title">لا يمكن التراجع عن هذا من ميزان</string>
+    <string name="approve_destructive_title">لا يمكن التراجع عن هذا من وكيل</string>
     <string name="approve_destructive_body">قد يحرر الإلغاء مخزونًا محجوزًا في نظام السجلات. أكّد فقط إذا كان هذا ما تريده.</string>
     <string name="approve_cancel_order">إلغاء الأمر</string>
     <string name="approve_sod_ok">فصل المهام متحقّق.</string>
@@ -66,7 +67,7 @@
     <string name="outcome_sim_checked">فُحص داخل المحاكاة. هذا ليس سجل نظام موارد.</string>
     <string name="outcome_erp_checked">طُابق مع سجل نظام الموارد.</string>
     <string name="outcome_accepted">قبلت الخدمة الطلب. سجل نظام الموارد لم يُؤكَّد بعد.</string>
-    <string name="outcome_uncertain">لم يتأكد ميزان إن كان الطلب قد قُبل. لم تُعد المحاولة، حتى لا يُنشأ سجل مكرر بالخطأ.</string>
+    <string name="outcome_uncertain">لم يتأكد وكيل إن كان الطلب قد قُبل. لم تُعد المحاولة، حتى لا يُنشأ سجل مكرر بالخطأ.</string>
     <string name="outcome_open_recon">فتح التسوية</string>
     <string name="outcome_refused">لم يُنفَّذ الطلب.</string>
 
@@ -150,13 +151,13 @@
     <string name="connection_refresh">فحص مرة أخرى</string>
 
     <string name="sign_in_title">تسجيل الدخول</string>
-    <string name="sign_in_body">تُرسل كلمة السر إلى خدمة ميزان فقط، ولا تُحفظ هنا. بيانات نظام الموارد لا تُدخل في هذه الشاشة.</string>
+    <string name="sign_in_body">تُرسل كلمة السر إلى خدمة وكيل فقط، ولا تُحفظ هنا. بيانات نظام الموارد لا تُدخل في هذه الشاشة.</string>
     <string name="sign_in_email">البريد</string>
     <string name="sign_in_password">كلمة السر</string>
     <string name="sign_in_continue">متابعة</string>
     <string name="sign_in_url">عنوان الخدمة</string>
     <string name="sign_in_url_invalid">يجب أن يبدأ عنوان الخدمة بـ https://</string>
-    <string name="sign_in_missing_service">هذا الإصدار بلا عنوان لخدمة ميزان. لن يخترع الجهاز مساحة عمل مسجّلة.</string>
+    <string name="sign_in_missing_service">هذا الإصدار بلا عنوان لخدمة وكيل. لن يخترع الجهاز مساحة عمل مسجّلة.</string>
     <string name="demo_title">مساحة محاكاة</string>
     <string name="demo_body">هذا الإصدار لا يتصل بنظام موارد. يمكنك تجربة الاعتماد وعدم اليقين والأدلة ببيانات معلّمة.</string>
     <string name="demo_enter">دخول المحاكاة</string>
@@ -184,7 +185,7 @@
     <string name="onboarding_craft_ws_demo_title">محاكاة شركة ACME</string>
     <string name="onboarding_craft_ws_demo_body">بيئة متكاملة جاهزة مع عملاء ومخزون وسجلات مالية للتجربة المباشرة.</string>
     <string name="onboarding_craft_ws_remote_title">نظام موارد المؤسسة المباشر</string>
-    <string name="onboarding_craft_ws_remote_body">اتصال مشفر مباشر مع خادم ميزان المؤسسي لنظام الموارد الفعلي.</string>
+    <string name="onboarding_craft_ws_remote_body">اتصال مشفر مباشر مع خادم وكيل المؤسسي لنظام الموارد الفعلي.</string>
     <string name="onboarding_craft_step3_title">جاهزية البصمة البيومترية</string>
     <string name="onboarding_craft_step3_subtitle">حماية عتاد الجهاز والمصادقة الفورية مفعلة</string>
     <string name="onboarding_craft_bio_ready">الحساس جاهز · تشفير عتادي AES-256</string>
@@ -199,7 +200,7 @@
 
     <string name="error_retry">حاول مرة أخرى</string>
     <string name="error_not_configured_title">الخدمة غير مهيأة</string>
-    <string name="error_not_configured_body">هذا الجهاز لا يستطيع اعتماد تغيير في نظام الموارد وحده. اربط خدمة ميزان قبل التنفيذ.</string>
+    <string name="error_not_configured_body">هذا الجهاز لا يستطيع اعتماد تغيير في نظام الموارد وحده. اربط خدمة وكيل قبل التنفيذ.</string>
     <string name="error_network_title">الخدمة لم تستجب</string>
     <string name="error_network_body">النسخة المحفوظة لم تتغير. إذا كان التغيير قد أُرسل، سيظهر في التسوية — ولن يُعلَّم فاشلًا.</string>
     <string name="loading">جارٍ التحميل</string>
@@ -238,7 +239,7 @@
     <string name="reason_INJECTION_BLOCKED">النص حاول تجاوز القواعد. لم يُجهَّز.</string>
     <string name="reason_TOOL_NOT_SUPPORTED">النظام المتصل لا يقدّم هذا الإجراء.</string>
     <string name="reason_CONFIRM_NO_AMOUNT">يرجى تأكيد هذا التغيير.</string>
-    <string name="reason_API_NOT_CONFIGURED">لا توجد خدمة ميزان مهيأة.</string>
+    <string name="reason_API_NOT_CONFIGURED">لا توجد خدمة وكيل مهيأة.</string>
     <string name="reason_SESSION_MISSING">سجّل الدخول مرة أخرى.</string>
     <string name="reason_SESSION_EXPIRED">انتهت الجلسة.</string>
     <string name="reason_FORBIDDEN">غير مسموح لك بهذا.</string>
@@ -280,7 +281,7 @@
     <string name="health_UNAVAILABLE">غير متاح</string>
     <string name="health_UNKNOWN">لم يُفحص</string>
     <string name="health_network">الشبكة</string>
-    <string name="health_backend">خدمة ميزان</string>
+    <string name="health_backend">خدمة وكيل</string>
     <string name="health_erp">نظام الموارد</string>
     <string name="health_sync">النسخة المحفوظة</string>
 

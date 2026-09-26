@@ -30,7 +30,7 @@ data class SyncConnectivityState(
 )
 
 /**
- * Tracks MIZAN service connectivity using persistent local storage state (SharedPreferences + Room SyncStore).
+ * Tracks Wakeel service connectivity using persistent local storage state (SharedPreferences + Room SyncStore).
  * Provides live reactive status displaying 'Online' or 'Last synced: [Time]'.
  */
 class SyncConnectivityTracker(

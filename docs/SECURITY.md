@@ -4,7 +4,7 @@ This document states what the code enforces. It does not claim the product is se
 
 ## Authority
 
-The production client is not the authority. `RemoteExecutionAuthority` refuses a write when `MIZAN_API_BASE_URL` (or a user-entered HTTPS override) is missing, when the URL is not `https://`, or when there is no session token. Dual approval (L4) is refused on the device if a second approver was not supplied. The production UI cannot appoint that second person; the service must.
+The production client is not the authority. `RemoteExecutionAuthority` refuses a write when `Wakeel_API_BASE_URL` (or a user-entered HTTPS override) is missing, when the URL is not `https://`, or when there is no session token. Dual approval (L4) is refused on the device if a second approver was not supplied. The production UI cannot appoint that second person; the service must.
 
 Demo execution is a different class. It is compiled only into the demo flavor, labeled in the UI, and writes `SIM-` ids with `EvidenceOrigin.SIMULATION`.
 

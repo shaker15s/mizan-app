@@ -1,27 +1,228 @@
 # Design system
 
-The system lives in `:design`. Screens use those components. They do not pick ad-hoc colors.
+The system lives in `:design`. Screens use those components and tokens. They do
+not pick ad-hoc colors, sizes, or durations.
+
+Everything below is what the code does, not what it intends to do.
+
+## Brand
+
+**Wakeel** (وكيل) is the one who acts for you: an agent for systems and ERP.
+The mark says that in three parts, and nothing else:
+
+```text
+        the و          a loop with a tail, the first letter of وكيل
+        two nodes      the ERP it acts on. One system is a server; two is an ERP
+        the seal       the answer was authorised, not guessed
+```
+
+The agent and the systems are two colours. The و carries the accent, the nodes
+carry the only cool colour in the mark, so the eye reads "agent here, systems
+there" without being told. It is asymmetric on purpose: a balance at rest reads
+as fair, which is what the old mark meant; an agent reads as moving.
+
+The geometry lives in one place and is authored twice from it:
+
+```text
+tools/render_brand.py   ──▶  brand/preview-mark-512.png      (the mark, 64 unit square)
+                       ──▶  brand/preview-launcher-512.png   (108 unit adaptive icon)
+                       ──▶  app/.../mipmap-*/ic_launcher*.png        (5 densities)
+                       ──▶  app + design: drawable/ic_wakeel_mark.xml
+                       ──▶  app: drawable/ic_launcher_foreground.xml
+                            app: drawable/ic_launcher_background.xml
+                            app: drawable/ic_launcher_monochrome.xml  (themed icons)
+```
+
+`python3 tools/render_brand.py` regenerates all of it with no external tool:
+the rasteriser is in the script, supersampled 3x, with a source-over composite
+and a real PNG writer. The mipmaps and the vector drawables are built from the
+same `MARK_PARTS` list, so the raster and the vector cannot disagree about where
+a stroke is. `python3 tools/render_brand.py --check` verifies sizes.
+`python3 tools/render_preview.py` renders `brand/preview-design-system.png` from
+the palettes parsed out of `Tokens.kt`, so the sheet cannot drift.
+
+In the app, `WakeelMark` draws the same 64 unit geometry on a Canvas, which is
+why it is crisp at 18 dp in a row and at 112 dp on a hero. Its only motion is
+one node exhaling: a ring that leaves the system node and fades. It says "the
+agent is talking to the systems" and it is not a progress indicator -- it does
+not stop when work finishes. `WakeelEmblem` puts it in a frosted squircle with
+an accent aura. `WakeelWordmark` pairs the mark with tracked type -- the bundled
+faces are one weight, and a logotype faked in a weight the file does not contain
+looks worse than honest type.
+
+Package, module and Gradle names keep the `mizan` namespace. Renaming a shipped
+package is a migration, not a rebrand.
 
 ## Tokens
 
-Warm paper and ink. Brass (`accent`) is the action, not a decoration on every surface. Status uses a badge and a word, not color alone. Spacing is `Space`. Motion durations are in `Motion` and collapse to 1 ms when reduced motion is on or the system animator scale is 0.
+`MizanColors` is a bag of *roles*, not hues: `background`, `surface`,
+`surfaceElevated`, `glass`, `textPrimary/Secondary/Tertiary`, `border`,
+`borderStrong`, `focus`, `accent` + `onAccent` + `accentMuted` +
+`accentSecondary` + `accentTertiary`, `userBubble`, the four status families
+(`success`, `warning`, `danger`, `info`, each with an `on-` and a `-Container`),
+`neutral`, and `scrim`.
 
-Light and dark are full palettes, selected from Account or the system theme.
+A preset supplies a `PaletteSeed` — accent trio, surfaces, glass, text, ink,
+and the user bubble. Borders, containers, scrim, focus and the muted accent are
+**derived**, so a palette cannot be half finished.
+
+| preset | character |
+| --- | --- |
+| `cyber_mizan` | the default: cyan to teal on deep ink |
+| `emerald_gov` | governance green, calmer and more institutional |
+| `royal_indigo` | indigo and violet, for long audit sessions |
+| `sovereign_gold` | brass on paper, warm and formal |
+| `crimson_ledger` | finance rose, high contrast |
+| `obsidian_dark` | true black with an ice accent, for OLED |
+| `system_dynamic` | Material You from Android 12, mapped onto Wakeel roles |
+
+Every preset defines **both** a light and a dark palette. There is no preset
+that silently falls back to another one, and `normalizePreset` maps anything
+unknown back to the default rather than rendering a half-themed screen.
+
+`system_dynamic` is only offered on API 31+, and the dynamic scheme is mapped
+onto Wakeel roles instead of used raw, so `accentMuted` and `dangerContainer`
+still belong to the app's semantic set rather than to a wallpaper.
+
+## Gradients
+
+Gradients are tokens, not decoration: `accentBrush()` (three stops, diagonal)
+and `heroBrush()` (a vertical accent wash). The primary button uses
+`accentBrush()`, the hero emblem uses a radial aura. Nothing else gradients.
+
+## Glass
+
+Glass is four things at once, and `design/.../component/Glass.kt` implements
+all four. A pane that is only translucent reads as a grey rectangle; the other
+three are what the eye reads as glass.
+
+| layer | what it does |
+| --- | --- |
+| refraction | the pane redraws the page wash inside itself and blurs that copy with a render effect, on Android 12 and later |
+| tint | vertical, lighter at the top, because light comes from above |
+| sheen | a specular highlight that leans toward the finger while the pane is touched |
+| edge | a hairline that is bright at the top-left and nearly gone at the bottom-right |
+
+Two entry points:
+
+- `MizanGlassSurface` / `MizanGlassDock` / `MizanGlassOverlay` — a pane that
+  refracts. Used for the navigation dock, dialogs, sheets and feature cards:
+  a handful per screen.
+- `Modifier.mizanGlassPane` — the same tint, sheen and edge **without** the
+  blur, for the dozens of card surfaces that already existed. One render
+  effect per card is a cost a mid-range phone pays in dropped frames; at card
+  size the tint and the edge carry most of the look for free.
+
+Below Android 12 there is no render effect, so the blur is dropped and the tint
+is raised. The pane stays legible instead of becoming a flat wash.
+
+The refraction is honest about one thing: Compose does not expose the pixels
+behind a composable, so the pane redraws the backdrop itself. There is no
+public API on Android for a true backdrop blur at the view level either. Every
+backdrop Wakeel ships is a gradient, and for a gradient the copy is exact.
 
 ## Type
 
-Plus Jakarta Sans for English, Cairo for Arabic, JetBrains Mono for ids and hashes. The bundled files are a single weight. Hierarchy is size and color. The theme does not request a bold the files do not contain.
+Plus Jakarta Sans for English, Cairo for Arabic, JetBrains Mono for ids and
+hashes. Each file is a single weight, so hierarchy is size, colour, spacing and
+tracking — never a synthesized bold. `displayLarge` through `labelSmall` are
+defined, and letter spacing tightens as the size grows.
+
+Arabic raises line height (26 sp against 22 sp for body) because the script
+needs it, and it switches the whole family, not just the strings.
+
+## Motion
+
+`design/.../motion/Interactions.kt` is the only place interaction is defined:
+
+| API | what it does |
+| --- | --- |
+| `mizanTap` | spring scale (0.97), a ripple, one haptic tick. Every tappable surface |
+| `mizanPressable` | the same spring for a container that hosts its own controls |
+| `mizanReveal(index)` | staggered fade + 18 px rise + 1.5% settle, 26 ms per item, capped at 240 ms |
+| `mizanShimmer` | a sheen across a placeholder, not a spinner for unasked content |
+| `mizanPulse` | a slow breath on something waiting for a person |
+| `mizanGlow` | one radial gradient behind a hero element; no blur, no shadow node |
+| `mizanLiveBorder` | a highlight that walks once around a border, for the one thing on the screen waiting on a person |
+| `rememberMizanHaptics` | tap, select and reject as named gestures |
+
+`mizanBounceClick`, which screens already used, now delegates to `mizanTap`, so
+there is one press implementation and not two that drift.
+
+Every tappable surface in the app goes through `mizanTap` or `mizanPressable`,
+including the shared list row, the section action, and a glass pane marked
+interactive. Before this, `mizanPressable` existed and was called nowhere: the
+rows answered with nothing at all.
+
+Durations come from `Motion.millis(MotionToken, reduced)` and collapse to 1 ms
+under reduced motion. Springs are `MizanPressSpring` (bouncy, for touch) and
+`MizanValueSpring` (no overshoot: money should not bounce).
+
+Screen transitions combine slide, fade and a 2% scale, entering in 320 ms and
+leaving in 160 ms: a back press is answered faster than a forward one.
+
+Lists stagger in: the three metric cards and the attention rows on Home, the
+evidence receipts, the operations records and the reconciliation cases. A list
+that appears all at once gives the eye nothing to follow.
 
 ## Components
 
-`MizanSurface`, `MizanSectionHeader`, `MizanStatusBadge`, `MizanBanner`, primary / secondary / danger / ghost buttons (minimum 48 dp), empty / error / loading states, list rows, command field, icon button with a content description, `LtrText` for technical strings, key-value rows, and the glass dock.
+`MizanSurface`, `MizanGlassCard`, `MizanSectionHeader`, `MizanStatusBadge` (its
+dot breathes on warning and danger), `MizanBanner` (a rounded card that reveals
+instead of popping), primary / secondary / danger / ghost buttons (48 dp
+minimum, gradient on primary, no layout jump when the loader appears), empty,
+error and loading states (the loading state shows the *shape* of what is
+coming), list rows, command field, icon button with a content description,
+`LtrText` for technical strings, key-value rows, and the glass dock.
 
-Glass is the dock and the bottom bar. It is not the default page surface. There is no blur.
+Every card surface in the app is one of the two glass entry points, so a card
+looks the same wherever it is. The page behind them is a gradient wash
+(`MizanBackdrop` plus two soft lights), provided once at the shell through
+`ProvideMizanBackdrop`, which is what gives the panes something to refract.
 
 ## Layout
 
-Under 600 dp, five destinations in a bottom bar. From 600 dp, a rail. From 840 dp, the rail shows reconciliation and rules as well, and operations uses a list-detail split.
+Under 600 dp, five destinations in a bottom bar. From 600 dp, a rail. From
+840 dp the rail shows reconciliation and rules as well and operations uses a
+list-detail split. `Space` is 4/8/12/16/20/24/32/48.
 
 ## Accessibility
 
-Buttons meet 48 dp. Icons that navigate have content descriptions. Status is a word plus a mark. Reduced motion is a preference. This is not a completed TalkBack audit; no device pass was run.
+Buttons meet 48 dp. Icons that navigate have content descriptions. Status is a
+word plus a mark, never colour alone. Reduced motion is a preference and is
+honoured by every animation in the motion package. Contrast is a property of
+the palette derivation, not of a per-screen decision, and it is checked:
+`tools/check_contrast.py` reads the palettes out of `Tokens.kt`, reproduces
+what `materialize()` derives, composites every translucent role over the
+surface it is drawn on, and computes the WCAG ratio for the 17 pairs the UI
+draws. It fails when a preset drops below AA.
+
+This is not a completed TalkBack audit; no device pass was run.
+
+## What is deliberately absent
+
+- No blur on the dozens of ordinary cards: only the panes that are few per
+  screen refract. No parallax.
+- No animation on a value the user is meant to trust. A number that counts up
+  is decoration; an amount either is verified or it is not, and the UI says
+  which.
+- No synthesized font weights, no fake logotype.
+- No decorative gradient on anything but the primary action and the hero.
+
+## How any of this is verified
+
+Nothing here was measured on a device. What was checked, and by what:
+
+| check | what it proves |
+| --- | --- |
+| `python3 tools/jvm_check.py` | `:domain`, `:service` and `:integration` -- main and test sources -- compile with a real Kotlin compiler and their 163 tests pass on a real JVM. `:integration` needs OkHttp, which cannot be downloaded here, so `tools/jvm_stubs/` stands in the slice of it the module uses |
+| `python3 tools/syntax_check.py` | every one of the 104 Kotlin files parses with the real Kotlin parser. It carries a `--self-test` that feeds it a file with a missing brace and fails if the checker does not report it |
+| `python3 tools/check_contrast.py` | every preset meets WCAG AA for the 17 pairs the UI draws |
+| `docs/USE_CASES.md` | the twenty things a company does with the app, each one asserted by a named test |
+| `python3 tools/repo_check.py` | hygiene, secrets, ambiguous imports, and the documented commands |
+| `python3 tools/render_brand.py --check` | every launcher icon exists at the right density |
+
+Not verified, because this environment has no Android SDK, no Google Maven and
+no Gradle distribution: no APK was assembled, no Compose preview was rendered,
+no frame was timed, and no TalkBack pass was run. The glass, the motion and
+the palettes are derived and reviewable, not measured.

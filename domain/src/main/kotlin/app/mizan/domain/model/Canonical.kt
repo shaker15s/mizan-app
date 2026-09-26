@@ -52,7 +52,16 @@ object CanonicalJson {
                 '\n' -> append("\\n")
                 '\r' -> append("\\r")
                 '\t' -> append("\\t")
-                else -> append(ch)
+                '\b' -> append("\\b")
+                0x0C.toChar() -> append("\\f")
+                else -> if (ch < 0x20.toChar()) {
+                    // Every other control character must be escaped or the
+                    // result is not JSON and the hash is not reproducible.
+                    append("\\u")
+                    append(ch.code.toString(16).padStart(4, '0'))
+                } else {
+                    append(ch)
+                }
             }
         }
         append('"')

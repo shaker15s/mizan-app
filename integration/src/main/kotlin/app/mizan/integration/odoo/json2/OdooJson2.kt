@@ -25,7 +25,7 @@ object OdooJson2Request {
         val headers = linkedMapOf(
             "Content-Type" to "application/json",
             "Accept" to "application/json",
-            "User-Agent" to "MIZAN/1.0",
+            "User-Agent" to "Wakeel/1.0",
         )
         if (!database.isNullOrBlank()) headers["X-Odoo-Database"] = database
         return headers

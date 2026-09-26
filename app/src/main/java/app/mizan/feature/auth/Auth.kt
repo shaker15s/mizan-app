@@ -59,18 +59,18 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.mizan.R
+import app.mizan.design.component.mizanGlassPane
 import app.mizan.design.component.CraftFeatureCard
 import app.mizan.design.component.CraftPageIndicator
 import app.mizan.design.component.CraftSelectableCard
 import app.mizan.design.component.MizanGhostButton
-import app.mizan.design.component.MizanHeroEmblem
+import app.mizan.design.component.WakeelEmblem
 import app.mizan.design.component.MizanPrimaryButton
 import app.mizan.design.component.MizanSecondaryButton
 import app.mizan.design.component.MizanStatusBadge
@@ -81,22 +81,21 @@ import app.mizan.design.component.StatusTone
 import app.mizan.design.theme.LocalMizanColors
 import app.mizan.design.theme.MizanMono
 import app.mizan.design.token.Space
+import app.mizan.design.motion.mizanTap
 import app.mizan.domain.model.SessionMode
 import app.mizan.domain.model.TenantContext
 import app.mizan.domain.model.TenantId
 import app.mizan.graph.AppGraph
 import app.mizan.integration.api.SessionApi
 import app.mizan.integration.api.SignInResult
-import app.mizan.onSimulationEntered
 import app.mizan.session.SessionController
 import app.mizan.session.WorkspaceSession
-import app.mizan.simulationEntry
 import app.mizan.ui.reasonLabel
 import kotlinx.coroutines.launch
 import java.time.Instant
 
 /**
- * Craft iOS Onboarding Flow for MIZAN Intelligence.
+ * Craft iOS Onboarding Flow for Wakeel Intelligence.
  * Sleek Apple Glass aesthetic, interactive selection cards, biometric readiness,
  * and high-density value presentation.
  */
@@ -125,7 +124,7 @@ fun OnboardingRoute(graph: AppGraph, onDone: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(Space.lg),
         ) {
             // Hero Emblem with radiant ambient aura
-            MizanHeroEmblem(size = 76.dp)
+            WakeelEmblem(size = 76.dp)
 
             AnimatedContent(
                 targetState = page,
@@ -320,9 +319,7 @@ private fun OnboardingStep2Workspace(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.6.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -397,7 +394,7 @@ private fun OnboardingStep3Biometrics(
                         BorderStroke(1.5.dp, colors.accent),
                         CircleShape,
                     )
-                    .clickable(role = Role.Button, onClick = onVerify),
+                    .mizanTap(onClick = onVerify),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -431,9 +428,7 @@ private fun OnboardingStep3Biometrics(
         // Hardware Attestation Note
         Row(
             modifier = Modifier
-                .clip(ShapePill)
-                .background(colors.surfaceElevated)
-                .border(BorderStroke(0.6.dp, colors.borderStrong), ShapePill)
+                .mizanGlassPane(ShapePill)
                 .padding(horizontal = Space.md, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -477,7 +472,7 @@ fun SignInRoute(graph: AppGraph, onSignedIn: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Space.lg),
         ) {
-            MizanHeroEmblem(size = 72.dp)
+            WakeelEmblem(size = 72.dp)
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -499,9 +494,7 @@ fun SignInRoute(graph: AppGraph, onSignedIn: () -> Unit) {
             // Mode Selector Pill Segment
             Row(
                 modifier = Modifier
-                    .clip(ShapePill)
-                    .background(colors.surfaceElevated)
-                    .border(BorderStroke(0.8.dp, colors.glassBorder), ShapePill)
+                    .mizanGlassPane(ShapePill)
                     .padding(4.dp),
             ) {
                 Box(
@@ -553,9 +546,7 @@ private fun DemoSignInCard(graph: AppGraph, onSignedIn: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(ShapeCard)
-            .background(colors.glass)
-            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+            .mizanGlassPane(ShapeCard)
             .padding(Space.xl),
         verticalArrangement = Arrangement.spacedBy(Space.md),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -580,21 +571,25 @@ private fun DemoSignInCard(graph: AppGraph, onSignedIn: () -> Unit) {
             color = colors.textSecondary,
         )
 
-        MizanPrimaryButton(
-            text = stringResource(R.string.demo_enter),
-            onClick = {
-                scope.launch {
-                    val entry = simulationEntry() ?: return@launch
-                    val (actor, tenant) = entry
-                    onSimulationEntered(graph, tenant.id)
-                    graph.session.open(
-                        WorkspaceSession(actor, tenant, SessionMode.SIMULATION, expiresAt = null),
-                    )
-                    onSignedIn()
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-        )
+        // Outside the demo flavor there is no simulation to enter, and a
+        // button that does nothing is worse than no button.
+        if (graph.simulation.isAvailable) {
+            MizanPrimaryButton(
+                text = stringResource(R.string.demo_enter),
+                onClick = {
+                    scope.launch {
+                        val entry = graph.simulation.entry() ?: return@launch
+                        val (actor, tenant) = entry
+                        graph.simulation.seed(graph, tenant.id)
+                        graph.session.open(
+                            WorkspaceSession(actor, tenant, SessionMode.SIMULATION, expiresAt = null),
+                        )
+                        onSignedIn()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 
@@ -613,9 +608,7 @@ private fun RemoteSignInCard(graph: AppGraph, onSignedIn: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(ShapeCard)
-            .background(colors.glass)
-            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+            .mizanGlassPane(ShapeCard)
             .padding(Space.xl),
         verticalArrangement = Arrangement.spacedBy(Space.md),
     ) {

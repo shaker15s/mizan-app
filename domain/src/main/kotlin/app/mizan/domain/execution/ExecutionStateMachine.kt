@@ -18,6 +18,14 @@ enum class ExecutionPhase {
     VERIFIED,
     REJECTED,
     CANCELLED,
+
+    /**
+     * Never entered by a transition: a timeout resolves to [AMBIGUOUS] when
+     * the request may have been sent and to [ERP_FAILURE] when it was not.
+     * It stays in the enum because a stored row can still carry this name,
+     * and [IdempotencyGuard] treats it exactly like [AMBIGUOUS] — blocked,
+     * never retried.
+     */
     TIMEOUT,
     ERP_FAILURE,
     AMBIGUOUS,

@@ -56,13 +56,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.mizan.R
+import app.mizan.design.component.mizanGlassPane
+import app.mizan.design.motion.mizanReveal
 import app.mizan.design.component.AuditTrailReceiptCard
 import app.mizan.design.component.ErpSuccessProgressGauge
 import app.mizan.design.component.GlassSegmentedControl
 import app.mizan.design.component.MizanGhostButton
 import app.mizan.design.component.MizanIconButton
 import app.mizan.design.component.MizanListRow
-import app.mizan.design.component.MizanMark
+import app.mizan.design.component.WakeelMark
 import app.mizan.design.component.MizanSectionHeader
 import app.mizan.design.component.MizanStatusBadge
 import app.mizan.design.component.ShapeCard
@@ -78,6 +80,8 @@ import app.mizan.domain.model.ExecutionRecord
 import app.mizan.domain.model.HealthStatus
 import app.mizan.domain.model.SystemHealth
 import app.mizan.design.component.HeaderSyncStatusIndicator
+import app.mizan.design.motion.mizanTap
+import app.mizan.design.motion.mizanLiveBorder
 import app.mizan.domain.audit.AuditEvent
 import app.mizan.domain.model.Digests
 import app.mizan.domain.model.HistoricalErpActionLog
@@ -260,13 +264,11 @@ fun HomeRoute(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            MizanMark()
+            WakeelMark()
             Column(
                 Modifier
                     .weight(1f)
@@ -330,7 +332,7 @@ fun HomeRoute(
                 icon = Icons.Outlined.FactCheck,
                 tone = if (state.attention.isEmpty()) StatusTone.Success else StatusTone.Warning,
                 onClick = { onOpen(if (state.attention.isEmpty()) "operations" else "agent") },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).mizanReveal(0),
             )
             MetricCard(
                 title = "Vault",
@@ -338,7 +340,7 @@ fun HomeRoute(
                 icon = Icons.Outlined.Fingerprint,
                 tone = StatusTone.Success,
                 onClick = { onOpen("security") },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).mizanReveal(1),
             )
             MetricCard(
                 title = "System",
@@ -346,7 +348,7 @@ fun HomeRoute(
                 icon = Icons.Outlined.Shield,
                 tone = if (state.offline) StatusTone.Danger else StatusTone.Success,
                 onClick = { onOpen("connection") },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).mizanReveal(2),
             )
         }
 
@@ -411,9 +413,7 @@ fun HomeRoute(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(ShapeCard)
-                    .background(colors.glass)
-                    .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                    .mizanGlassPane(ShapeCard)
                     .padding(Space.md),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -434,13 +434,15 @@ fun HomeRoute(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(ShapeCard)
-                    .background(colors.glass)
-                    .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                    .mizanGlassPane(ShapeCard)
+                    // One thing on this screen is waiting on a person, so one
+                    // thing on this screen moves.
+                    .mizanLiveBorder(color = colors.warning, shape = ShapeCard)
                     .padding(horizontal = Space.md, vertical = Space.xs),
             ) {
-                state.attention.forEach { item ->
+                state.attention.forEachIndexed { index, item ->
                     MizanListRow(
+                        modifier = Modifier.mizanReveal(index),
                         title = attentionLabel(item.kind),
                         subtitle = item.referenceId,
                         trailing = when (item.kind) {
@@ -472,9 +474,7 @@ fun HomeRoute(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.md),
             verticalArrangement = Arrangement.spacedBy(Space.xs),
         ) {
@@ -528,7 +528,7 @@ private fun AuditTrailSection(
                 style = MaterialTheme.typography.labelSmall,
                 color = colors.accent,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.clickable(role = Role.Button, onClick = onOpenAll),
+                modifier = Modifier.mizanTap(onClick = onOpenAll),
             )
         }
 
@@ -544,9 +544,7 @@ private fun AuditTrailSection(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(ShapeCard)
-                    .background(colors.glass)
-                    .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                    .mizanGlassPane(ShapeCard)
                     .padding(Space.md),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -633,9 +631,7 @@ private fun MetricCard(
     val colors = LocalMizanColors.current
     Column(
         modifier = modifier
-            .clip(ShapeCard)
-            .background(colors.glass)
-            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+            .mizanGlassPane(ShapeCard)
             .mizanBounceClick(role = Role.Button, onClick = onClick)
             .padding(Space.md),
         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -673,9 +669,7 @@ private fun QuickChip(
     val colors = LocalMizanColors.current
     Row(
         modifier = Modifier
-            .clip(ShapePill)
-            .background(colors.surfaceElevated)
-            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapePill)
+            .mizanGlassPane(ShapePill)
             .mizanBounceClick(role = Role.Button, onClick = onClick)
             .padding(horizontal = Space.md, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="MIZAN">
+  <title>MIZAN</title>
+  <defs>
+    <linearGradient id="mz-a" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#22D3EE"/>
+      <stop offset="0.45" stop-color="#0EA5A4"/>
+      <stop offset="1" stop-color="#0B6F76"/>
+    </linearGradient>
+    <linearGradient id="mz-b" x1="32" y1="8" x2="32" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5EEAD4"/>
+      <stop offset="1" stop-color="#0E7490"/>
+    </linearGradient>
+  </defs>
+
+  <!-- seal -->
+  <circle cx="32" cy="32" r="29.2" fill="none" stroke="url(#mz-a)" stroke-width="3.2" opacity="0.34"/>
+  <circle cx="32" cy="32" r="29.2" fill="none" stroke="url(#mz-b)" stroke-width="1.2"/>
+
+  <!-- beam -->
+  <rect x="12.2" y="20.1" width="39.6" height="3.8" rx="1.9" fill="url(#mz-b)"/>
+  <!-- end caps -->
+  <circle cx="13" cy="22" r="2.9" fill="url(#mz-b)"/>
+  <circle cx="51" cy="22" r="2.9" fill="url(#mz-b)"/>
+  <!-- cables -->
+  <rect x="12.15" y="24.6" width="1.7" height="7.6" rx="0.85" fill="url(#mz-b)" opacity="0.85"/>
+  <rect x="50.15" y="24.6" width="1.7" height="7.6" rx="0.85" fill="url(#mz-b)" opacity="0.85"/>
+  <!-- pans -->
+  <path d="M6.5 32.4 A6.5 6.5 0 0 0 19.5 32.4 Z" fill="url(#mz-b)"/>
+  <path d="M44.5 32.4 A6.5 6.5 0 0 0 57.5 32.4 Z" fill="url(#mz-b)"/>
+  <!-- fulcrum -->
+  <path d="M32 21.6 L25.4 31.2 L38.6 31.2 Z" fill="url(#mz-a)"/>
+  <!-- pillar -->
+  <rect x="30.1" y="30.6" width="3.8" height="14.6" rx="1.9" fill="url(#mz-b)"/>
+  <!-- base -->
+  <rect x="20" y="45.2" width="24" height="4.4" rx="2.2" fill="url(#mz-b)"/>
+  <rect x="25" y="51.4" width="14" height="2.6" rx="1.3" fill="url(#mz-a)" opacity="0.55"/>
+</svg>

@@ -47,9 +47,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.mizan.design.component.MizanKeyValue
 import app.mizan.design.component.MizanPrimaryButton
-import app.mizan.design.component.MizanRobotScale
+import app.mizan.design.component.WakeelMascot
 import app.mizan.design.component.MizanSecondaryButton
-import app.mizan.design.component.RobotScaleState
+import app.mizan.design.component.MascotState
 import app.mizan.design.component.ShapeCard
 import app.mizan.design.component.ShapeControl
 import app.mizan.design.component.ShapePill
@@ -112,7 +112,7 @@ fun DevProConsoleDialog(
                 }
                 Column {
                     Text(
-                        text = "MIZAN Pro Master Console",
+                        text = "Wakeel Pro Master Console",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colors.textPrimary,
@@ -143,10 +143,10 @@ fun DevProConsoleDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    MizanRobotScale(size = 54.dp, state = RobotScaleState.IDLE_BALANCED)
+                    WakeelMascot(size = 54.dp, state = MascotState.IDLE_BALANCED)
                     Column(modifier = Modifier.padding(end = Space.md)) {
                         Text(
-                            text = "MIZAN Hybrid Scale Engine",
+                            text = "Wakeel Hybrid Scale Engine",
                             style = MaterialTheme.typography.labelSmall,
                             color = colors.accent,
                             fontWeight = FontWeight.Bold,

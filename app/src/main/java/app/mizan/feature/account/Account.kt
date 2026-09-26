@@ -21,6 +21,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import android.os.Build
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
@@ -41,8 +45,6 @@ import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material.icons.outlined.VerifiedUser
-import app.mizan.design.component.MizanRobotScale
-import app.mizan.design.component.RobotScaleState
 import app.mizan.feature.agent.AiPromptCustomizerDialog
 import app.mizan.feature.home.DevProConsoleDialog
 import androidx.compose.material3.HorizontalDivider
@@ -74,6 +76,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mizan.R
+import app.mizan.design.component.mizanGlassPane
 import app.mizan.design.component.CraftSelectableCard
 import app.mizan.design.component.GlassSegmentedControl
 import app.mizan.design.component.MizanGhostButton
@@ -81,6 +84,8 @@ import app.mizan.design.component.MizanKeyValue
 import app.mizan.design.component.MizanSectionHeader
 import app.mizan.design.component.MizanStatusBadge
 import app.mizan.design.component.ShapeCard
+import app.mizan.design.component.GlassTone
+import app.mizan.design.component.MizanGlassSurface
 import app.mizan.design.component.ShapeControl
 import app.mizan.design.component.ShapePill
 import app.mizan.design.component.StatusTone
@@ -90,7 +95,6 @@ import app.mizan.design.token.Space
 import app.mizan.domain.model.HealthStatus
 import app.mizan.graph.AppGraph
 import app.mizan.log.StartupTrace
-import app.mizan.simulationActors
 import app.mizan.ui.healthLabel
 import app.mizan.ui.roleLabel
 
@@ -296,9 +300,7 @@ fun AccountRoute(
                     spotColor = Color(0x0F0F172A),
                     ambientColor = Color(0x050F172A),
                 )
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(vertical = Space.xs),
         ) {
             SettingNavRow(
@@ -360,50 +362,49 @@ fun AccountRoute(
             color = colors.textSecondary,
             fontWeight = FontWeight.SemiBold,
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(Space.xs),
-        ) {
-            ThemePresetTile(
-                name = "Cyber",
-                color = Color(0xFF00F2FE),
-                selected = graph.preferences.activeThemePreset == "cyber_mizan",
-                onClick = {
-                    graph.preferences.activeThemePreset = "cyber_mizan"
-                    onPreferencesChanged()
-                },
-                modifier = Modifier.weight(1f),
-            )
-            ThemePresetTile(
-                name = "Gold",
-                color = Color(0xFFF59E0B),
-                selected = graph.preferences.activeThemePreset == "sovereign_gold",
-                onClick = {
-                    graph.preferences.activeThemePreset = "sovereign_gold"
-                    onPreferencesChanged()
-                },
-                modifier = Modifier.weight(1f),
-            )
-            ThemePresetTile(
-                name = "Emerald",
-                color = Color(0xFF10B981),
-                selected = graph.preferences.activeThemePreset == "emerald_gov",
-                onClick = {
-                    graph.preferences.activeThemePreset = "emerald_gov"
-                    onPreferencesChanged()
-                },
-                modifier = Modifier.weight(1f),
-            )
-            ThemePresetTile(
-                name = "Obsidian",
-                color = Color(0xFF38BDF8),
-                selected = graph.preferences.activeThemePreset == "obsidian_dark",
-                onClick = {
-                    graph.preferences.activeThemePreset = "obsidian_dark"
-                    onPreferencesChanged()
-                },
-                modifier = Modifier.weight(1f),
-            )
+        // Each swatch is the preset's own gradient, so the tile previews the
+        // palette instead of hinting at it with one colour.
+        val presets: List<Triple<String, String, List<Color>>> = buildList {
+            add(Triple("Cyber", "cyber_mizan", listOf(Color(0xFF22D3EE), Color(0xFF0E9F9F), Color(0xFF67E8F9))))
+            add(Triple("Emerald", "emerald_gov", listOf(Color(0xFF34D399), Color(0xFF059669))))
+            add(Triple("Indigo", "royal_indigo", listOf(Color(0xFF818CF8), Color(0xFF4F46E5))))
+            add(Triple("Gold", "sovereign_gold", listOf(Color(0xFFFBBF24), Color(0xFFB45309))))
+            add(Triple("Ledger", "crimson_ledger", listOf(Color(0xFFFB7185), Color(0xFFBE123C))))
+            add(Triple("Obsidian", "obsidian_dark", listOf(Color(0xFF93C5FD), Color(0xFF334155))))
+            add(Triple("Aurora", "aurora_glass", listOf(Color(0xFFA78BFA), Color(0xFF2DD4BF), Color(0xFF60A5FA))))
+            add(Triple("Arctic", "arctic_prism", listOf(Color(0xFF7DD3FC), Color(0xFF38BDF8), Color(0xFF22D3EE))))
+            add(Triple("Basalt", "basalt_neutral", listOf(Color(0xFFCBD5E1), Color(0xFF64748B))))
+            add(Triple("Sandstone", "sandstone_amber", listOf(Color(0xFFFBBF24), Color(0xFFB45309), Color(0xFFF59E0B))))
+            // Material You exists from Android 12. Offering the tile on an
+            // older device would be a button that quietly does nothing.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                add(
+                    Triple(
+                        "Dynamic",
+                        "system_dynamic",
+                        listOf(Color(0xFF7C4DFF), Color(0xFF00BCD4), Color(0xFFFF8A65)),
+                    ),
+                )
+            }
+        }
+        presets.chunked(4).forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.xs),
+            ) {
+                row.forEach { (name, id, swatch) ->
+                    ThemePresetTile(
+                        name = name,
+                        swatch = swatch,
+                        selected = graph.preferences.activeThemePreset == id,
+                        onClick = {
+                            graph.preferences.activeThemePreset = id
+                            onPreferencesChanged()
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
         }
 
         // Section: AI Tuning & Specialized Prompt
@@ -411,9 +412,7 @@ fun AccountRoute(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(vertical = Space.xs),
         ) {
             SettingNavRow(
@@ -429,7 +428,7 @@ fun AccountRoute(
             )
             SettingNavRow(
                 icon = Icons.Outlined.Terminal,
-                title = "MIZAN Pro Console & Stress Telemetry",
+                title = "Wakeel Pro Console & Stress Telemetry",
                 subtitle = "Ledger validation, stress transaction injector & diagnostics",
                 onClick = { showProConsole = true },
             )
@@ -440,9 +439,7 @@ fun AccountRoute(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.md),
             verticalArrangement = Arrangement.spacedBy(Space.sm),
         ) {
@@ -507,9 +504,7 @@ fun AccountRoute(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.md),
         ) {
             var motion by remember { mutableStateOf(graph.preferences.reducedMotion) }
@@ -553,7 +548,7 @@ fun AccountRoute(
                 style = MaterialTheme.typography.bodySmall,
             )
             Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-                simulationActors(current.tenant.id).forEach { actor ->
+                graph.simulation.actors(current.tenant.id).forEach { actor ->
                     val isCurrentActor = actor.id == current.actor.id
                     CraftSelectableCard(
                         title = actor.displayName,
@@ -569,9 +564,7 @@ fun AccountRoute(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(ShapeCard)
-                    .background(colors.glass)
-                    .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                    .mizanGlassPane(ShapeCard)
                     .padding(Space.md),
             ) {
                 var ambiguous by remember { mutableStateOf(graph.preferences.simulateNextAmbiguous) }
@@ -610,9 +603,7 @@ fun AccountRoute(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.md),
             verticalArrangement = Arrangement.spacedBy(Space.sm),
         ) {
@@ -706,9 +697,7 @@ private fun TrustGridTile(
 
     Column(
         modifier = modifier
-            .clip(ShapeCard)
-            .background(colors.glass)
-            .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+            .mizanGlassPane(ShapeCard)
             .padding(Space.md),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -804,9 +793,7 @@ fun ConnectionRoute(graph: AppGraph, onBack: () -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -838,9 +825,7 @@ fun ConnectionRoute(graph: AppGraph, onBack: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.lg),
             verticalArrangement = Arrangement.spacedBy(Space.sm),
         ) {
@@ -881,9 +866,7 @@ fun SecurityRoute(graph: AppGraph, onBack: () -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -916,9 +899,7 @@ fun SecurityRoute(graph: AppGraph, onBack: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ShapeCard)
-                .background(colors.glass)
-                .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
+                .mizanGlassPane(ShapeCard)
                 .padding(Space.lg),
             verticalArrangement = Arrangement.spacedBy(Space.sm),
         ) {
@@ -946,41 +927,62 @@ fun SecurityRoute(graph: AppGraph, onBack: () -> Unit) {
 @Composable
 private fun ThemePresetTile(
     name: String,
-    color: Color,
+    swatch: List<Color>,
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalMizanColors.current
-    Box(
-        modifier = modifier
-            .clip(ShapeControl)
-            .background(if (selected) color.copy(alpha = 0.22f) else colors.surfaceElevated)
-            .border(
-                BorderStroke(if (selected) 1.5.dp else 0.6.dp, if (selected) color else colors.border),
-                ShapeControl,
-            )
-            .clickable(onClick = onClick)
-            .padding(vertical = 10.dp, horizontal = 4.dp),
+    val brush: Brush = if (swatch.size > 1) Brush.horizontalGradient(swatch) else SolidColor(swatch.first())
+    val borderWidth by animateDpAsState(
+        targetValue = if (selected) 2.dp else 0.6.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium,
+        ),
+        label = "preset_border",
+    )
+    val dotSize by animateDpAsState(
+        targetValue = if (selected) 20.dp else 16.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium,
+        ),
+        label = "preset_dot",
+    )
+    MizanGlassSurface(
+        modifier = modifier.mizanBounceClick(onClick = onClick),
+        shape = ShapeControl,
+        tone = GlassTone.THIN,
+        interactive = true,
         contentAlignment = Alignment.Center,
     ) {
         Column(
+            modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Box(
                 modifier = Modifier
-                    .size(16.dp)
+                    .size(dotSize)
+                    .then(if (selected) Modifier.mizanGlow(radius = 26.dp, strength = 0.45f) else Modifier)
                     .clip(CircleShape)
-                    .background(color),
+                    .background(brush)
+                    .mizanLiquidSheen(CircleShape, strength = 0.34f),
             )
             Text(
                 text = name,
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                 color = if (selected) colors.textPrimary else colors.textSecondary,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                 maxLines = 1,
             )
         }
+        // The selection ring sits above the sheen so it always reads.
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .border(borderWidth, if (selected) swatch.first() else colors.border, ShapeControl),
+        )
     }
 }

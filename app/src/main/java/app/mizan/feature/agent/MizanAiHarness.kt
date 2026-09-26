@@ -7,7 +7,7 @@ import app.mizan.integration.ai.MizanAiIntegrationClient
 import app.mizan.integration.ai.MizanAiPrompts
 
 /**
- * High-performance, token-efficient AI harness for MIZAN ERP.
+ * High-performance, token-efficient AI harness for Wakeel ERP.
  * Integrates with the [MizanAiIntegrationClient] in the integration module.
  * Operates with lean, ERP-specific system prompts that strip out general-purpose
  * conversational overhead to drastically reduce token usage and improve inference speed.
@@ -18,7 +18,7 @@ class MizanAiHarness(
 ) {
     companion object {
         /**
-         * Specialized lean system prompt tailored exclusively for MIZAN ERP actions.
+         * Specialized lean system prompt tailored exclusively for Wakeel ERP actions.
          * Sourced directly from :integration module.
          */
         const val SYSTEM_PROMPT_CONCISE_ERP = MizanAiPrompts.LEAN_ERP_SYSTEM_PROMPT
