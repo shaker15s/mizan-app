@@ -57,6 +57,17 @@ jobs:
         run: ./gradlew :domain:test :integration:test :service:test --stacktrace
       - name: Reference service smoke test
         run: ./gradlew :service:test --tests '*MizanServiceHttpTest*' --stacktrace
+      - name: The same suite without Gradle
+        # The plan's portability check: the JVM modules must be provable with a
+        # JDK and a Kotlin compiler alone, so a machine that cannot resolve
+        # Maven Central is not a machine that cannot verify this repository.
+        run: python3 tools/jvm_check.py
+      - name: The same suite with a self-provisioned toolchain
+        # No setup-java, no network to Maven: the bootstrap fetches a JDK and a
+        # Kotlin compiler, unpacks them, and jvm_check runs against them.
+        run: |
+          python3 tools/bootstrap_toolchain.py --check || python3 tools/bootstrap_toolchain.py
+          JAVA_HOME="$MIZAN_TOOLCHAIN_DIR/jdk/jdk4py/java-runtime"             KOTLINC_HOME="$MIZAN_TOOLCHAIN_DIR/kotlinc" python3 tools/jvm_check.py
       - if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -105,9 +116,14 @@ The Android job needs `android-actions/setup-android` for the SDK. The release
 build is unsigned unless `KEYSTORE_PATH`, `STORE_PASSWORD`, `KEY_ALIAS`, and
 `KEY_PASSWORD` are set in the environment, which the build treats as optional.
 
-Without Gradle, `python3 tools/jvm_check.py` compiles `:domain` and `:service`
-and runs their 74 tests with a JDK and kotlinc alone, and
+Without Gradle, `python3 tools/jvm_check.py` compiles `:domain`, `:service` and
+`:integration` and runs their 300 tests with a JDK and kotlinc alone, and
 `python3 tools/syntax_check.py` parses every Kotlin file with the real parser.
-They cover the invariants and the syntax; they cannot cover the UI.
+They cover the invariants, the governed pipeline, the ERP boundary and the
+syntax; they cannot cover the UI.
+
+`python3 tools/bootstrap_toolchain.py` provisions that JDK and compiler on a
+machine that has neither, from the only index it can reach, so the fallback
+works in a locked-down environment as well as on a normal runner.
 
 Until a machine with a JDK runs this, CI is a plan, not a green check.
