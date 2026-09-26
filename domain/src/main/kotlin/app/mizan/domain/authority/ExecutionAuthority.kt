@@ -15,12 +15,29 @@ enum class AuthorityMode {
     SIMULATION,
 }
 
+/**
+ * The approval an execution is claiming, and the device proof that answers for
+ * it.
+ *
+ * The service recomputes the fingerprint from the arguments it is about to
+ * execute, so this is a claim the device makes and the service checks, not a
+ * fact the device establishes. Without it the ladder for any privileged write
+ * refuses, which is the whole point.
+ */
+data class ApprovalReference(
+    val approvalId: String,
+    val proposalFingerprint: String,
+    val deviceChallengeId: String? = null,
+    val deviceSignature: String? = null,
+)
+
 data class ExecuteCommand(
     val proposal: Proposal,
     val approver: Actor,
     val proof: AuthProof?,
     val secondApprover: Actor? = null,
     val simulateAmbiguous: Boolean = false,
+    val approval: ApprovalReference? = null,
 )
 
 sealed interface AuthorityOutcome {
