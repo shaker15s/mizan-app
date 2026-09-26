@@ -53,6 +53,7 @@ class ServiceStores(
     private val reconciliationLog = DurableLog(directory.resolve("reconciliation.log"))
     private val auditLog = DurableLog(directory.resolve("audit.log"))
     private val approvalLog = DurableLog(directory.resolve("approvals.log"))
+    private val outboxLog = DurableLog(directory.resolve("outbox.log"))
 
     val journals = JournalStore(journalLog)
     val idempotency = IdempotencyStore(idempotencyLog)
@@ -63,6 +64,7 @@ class ServiceStores(
     val reconciliations = ReconciliationStore(reconciliationLog)
     val audit = AuditStore(auditLog)
     val approvals = ApprovalStore(approvalLog)
+    val outbox = app.mizan.service.outbox.Outbox(outboxLog)
 
     override fun close() {
         listOf(
@@ -75,6 +77,7 @@ class ServiceStores(
             reconciliationLog,
             auditLog,
             approvalLog,
+            outboxLog,
         ).forEach { it.close() }
     }
 }

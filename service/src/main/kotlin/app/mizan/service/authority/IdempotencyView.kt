@@ -78,12 +78,16 @@ internal class IdempotencyView(
                     ),
                 )
 
-                JournalStage.REJECTED, JournalStage.CANCELLED, JournalStage.EXPIRED, JournalStage.FAILED ->
-                    if (durable.stage == JournalStage.FAILED) {
-                        Prior.Conflict("EXECUTION_ALREADY_FAILED", 409)
-                    } else {
-                        Prior.None
-                    }
+                // A failure that reached a terminal stage is a *definite*
+                // answer: the ERP said no, or the write never happened.
+                // Asking again is safe, and refusing to would leave a person
+                // with a read that can never be retried. An uncertain outcome
+                // never lands here -- it is AMBIGUOUS, and that is blocked.
+                JournalStage.REJECTED,
+                JournalStage.CANCELLED,
+                JournalStage.EXPIRED,
+                JournalStage.FAILED,
+                -> Prior.None
 
                 JournalStage.AMBIGUOUS, JournalStage.RECONCILIATION_REQUIRED ->
                     Prior.Conflict("EXECUTION_ALREADY_AMBIGUOUS", 409)
@@ -122,7 +126,6 @@ internal class IdempotencyView(
         request: ExecutionRequest,
         canonicalArguments: String,
         outcome: ExecutionOutcome,
-        journal: ExecutionJournal?,
     ) {
         val key = request.idempotencyKey ?: return
         val candidates = if (outcome is ExecutionOutcome.Ambiguous) outcome.candidateRecordIds else emptyList()
@@ -175,7 +178,11 @@ internal class IdempotencyView(
             ),
         )
         stores?.idempotency?.maybeCompact()
-        journal?.let { stores?.journals?.save(it) }
+        // The journal is deliberately *not* saved here. The pipeline is its
+        // only writer, and it saves the journal after the dispatch: the copy
+        // this method used to hold was the pre-dispatch one, so writing it
+        // last quietly erased the read-back record, the record id and the
+        // stage the execution actually reached.
     }
 
     fun replay(entry: Entry): ExecutionOutcome = when (entry.status) {

@@ -100,6 +100,31 @@ class ServiceAuthority(
 
     private val sod = SeparationOfDuties()
 
+    /**
+     * Turns a read the ERP could not answer into an outbox entry.
+     *
+     * The entry is written to the same durable log as the journal, so the
+     * intention survives the process that formed it.
+     */
+    private fun retryHook(): ExecutionPipeline.RetryHook? {
+        val store = stores ?: return null
+        return ExecutionPipeline.RetryHook { request, actorId, errorCode, delayMillis ->
+            store.outbox.enqueue(
+                app.mizan.service.outbox.Outbox.forRetryableRead(
+                    id = "OBX-" + request.executionId,
+                    tenantId = request.tenantId,
+                    actorId = actorId,
+                    tool = ToolName.fromWire(request.toolWire) ?: ToolName.UNKNOWN,
+                    executionId = request.executionId,
+                    idempotencyKey = request.idempotencyKey ?: "",
+                    arguments = request.canonicalArguments(),
+                    nowMillis = clock(),
+                    delayMillis = delayMillis,
+                ).copy(lastErrorCode = errorCode),
+            )
+        }
+    }
+
     /** The only writer of the journal. */
     private val book = JournalBook(stores, clock)
 
@@ -107,7 +132,7 @@ class ServiceAuthority(
     private val idempotency = IdempotencyView(ledger, stores, clock)
 
     /** The only code that touches the ERP. */
-    private val pipeline = ExecutionPipeline(connector, stores, signer, clock, book)
+    private val pipeline = ExecutionPipeline(connector, stores, signer, clock, book, retryHook())
 
     // ------------------------------------------------------------- entry point
 
@@ -248,7 +273,7 @@ class ServiceAuthority(
             .let { book.withProof(it, request.proofReference) }
 
         val outcome = pipeline.execute(request, tool, definition, simulateAmbiguous, authorized)
-        idempotency.remember(request, canonicalArguments, outcome, authorized)
+        idempotency.remember(request, canonicalArguments, outcome)
         audit.append(
             tenantId = request.tenantId,
             traceId = request.traceId,
@@ -440,7 +465,7 @@ class ServiceAuthority(
         val outcome = Outcomes.rejected(request, messageCode, httpStatus, retryAfterSeconds)
         // A refusal is remembered too: a repeat of the same key with the same
         // arguments must not be re-evaluated into a different answer.
-        idempotency.remember(request, request.canonicalArguments(), outcome, null)
+        idempotency.remember(request, request.canonicalArguments(), outcome)
         return outcome
     }
 

@@ -46,7 +46,26 @@ internal class ExecutionPipeline(
     private val signer: ReceiptSigner?,
     private val clock: () -> Long,
     private val book: JournalBook,
+    /**
+     * Told about a read the ERP could not answer, so the question is asked
+     * again later instead of being dropped.
+     *
+     * Reads only. A write that failed uncertainly is ambiguous and belongs to
+     * reconciliation; queueing it would be a duplicate-record generator.
+     */
+    private val retryHook: RetryHook? = null,
 ) {
+
+    /**
+     * Remembers that a read should be attempted again.
+     *
+     * It is a one-method interface rather than a queue because the pipeline
+     * must not know how the retry is stored, and because a test can assert
+     * that the hook was called without standing up a store.
+     */
+    fun interface RetryHook {
+        fun schedule(request: ExecutionRequest, actorId: String, errorCode: String, delayMillis: Long)
+    }
 
     fun execute(
         request: ExecutionRequest,
@@ -374,7 +393,18 @@ internal class ExecutionPipeline(
             // "zero available" would be inventing stock levels.
             is ErpResult.Refused -> failed(request, result.reasonCode, dispatching)
             is ErpResult.NotSupported -> failed(request, "TOOL_NOT_SUPPORTED_BY_ERP", dispatching)
-            is ErpResult.Unavailable -> failed(request, result.reasonCode, dispatching)
+            is ErpResult.Unavailable -> {
+                // The ERP is down or rate-limiting us. Nothing was read, and
+                // nothing was written: ask again later rather than leave the
+                // person with an empty answer they might mistake for zero.
+                retryHook?.schedule(
+                    request = request,
+                    actorId = journal.actorId.value,
+                    errorCode = result.reasonCode,
+                    delayMillis = result.retryAfterMillis ?: 0L,
+                )
+                failed(request, result.reasonCode, dispatching)
+            }
             is ErpResult.Malformed -> failed(request, result.reasonCode, dispatching)
             is ErpResult.Unknown -> failed(request, "ERP_UNKNOWN_ANSWER", dispatching)
         }

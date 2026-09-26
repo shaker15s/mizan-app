@@ -64,6 +64,12 @@ data class ServiceConfig(
     /** The connector the authority writes through. Defaults to the reference adapter. */
     val connector: ErpConnector? = null,
     val rateLimiting: Boolean = true,
+    /**
+     * How often the retry sweeper runs, in milliseconds. Zero disables it, and
+     * a deployment that runs the sweeper as a separate process sets it to zero
+     * here rather than having two workers race for the same entries.
+     */
+    val outboxSweepMillis: Long = 15_000L,
     /** Per-surface budgets. A test that must observe a refusal passes strict ones. */
     val budgets: Map<app.mizan.service.security.LimitSurface, app.mizan.service.security.Budget> =
         app.mizan.service.security.LimitSurface.defaultBudgets,
@@ -145,7 +151,22 @@ class MizanService(
         rateLimiter = rateLimiter,
     )
 
+    /**
+     * Retries the reads the ERP could not answer. Present only when the
+     * deployment has a durable store: an in-memory retry queue that dies with
+     * the process would be a promise the service cannot keep.
+     */
+    val outbox: ServiceOutboxWorker? = stores?.let {
+        ServiceOutboxWorker(
+            stores = it,
+            authority = authority,
+            clock = clock,
+            capabilities = config.capabilities,
+        )
+    }
+
     private var server: HttpServer? = null
+    private var sweeper: Thread? = null
     private var pool = Executors.newFixedThreadPool(config.workerThreads)
 
     /**
@@ -172,19 +193,56 @@ class MizanService(
         http.executor = pool
         http.start()
         server = http
+        // Anything a previous process left in flight is put back before the
+        // first pass, so a restart does not quietly drop the work.
+        outbox?.recover()
+        startOutboxSweeper()
         return http.address.port
     }
 
     @Synchronized
     fun stop() {
+        sweeper?.interrupt()
+        sweeper = null
         server?.stop(0)
         server = null
         pool.shutdownNow()
         stores?.close()
     }
 
+    /**
+     * Drains the retry queue on a timer.
+     *
+     * A queue that nobody drains is a log file with extra steps, so the
+     * service that writes the entries is also the one that takes them back
+     * out. The thread is a daemon and does exactly one short pass per
+     * interval: no pass may hold a lock a request needs, and a failure during
+     * a pass is counted, never fatal.
+     */
+    private fun startOutboxSweeper() {
+        val worker = outbox ?: return
+        if (config.outboxSweepMillis <= 0L) return
+        val thread = Thread({
+            while (!Thread.currentThread().isInterrupted) {
+                try {
+                    Thread.sleep(config.outboxSweepMillis)
+                } catch (_: InterruptedException) {
+                    return@Thread
+                }
+                runCatching { worker.runOnce(users = directory.all()) }
+            }
+        }, "mizan-outbox-sweeper")
+        thread.isDaemon = true
+        thread.start()
+        sweeper = thread
+    }
+
     val isRunning: Boolean
         get() = server != null
+
+    /** The port the listener is actually bound to. Zero when it is not running. */
+    val boundPort: Int
+        get() = server?.address?.port ?: 0
 
     // ------------------------------------------------------------------ routes
 
@@ -461,6 +519,12 @@ class MizanService(
                 "journalEntries" to Json.num(stores?.journals?.count() ?: 0),
                 "tenants" to Json.num(audit.tenants().size),
                 "rateLimited" to Json.num(rateLimiter.refusalCount()),
+                "outbox" to Json.obj(
+                    "durable" to Json.bool(stores != null),
+                    "sweeping" to Json.bool(sweeper != null),
+                    "pending" to Json.num(stores?.outbox?.pending()?.size ?: 0),
+                    "deadLettered" to Json.num(stores?.outbox?.deadLettered()?.size ?: 0),
+                ),
                 "nowEpochMillis" to Json.num(clock()),
             ),
         )
