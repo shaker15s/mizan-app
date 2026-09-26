@@ -41,7 +41,7 @@ import app.mizan.design.theme.LocalReducedMotion
 import kotlinx.coroutines.launch
 import kotlin.math.sin
 
-enum class RobotScaleState {
+enum class MascotState {
     IDLE_BALANCED,
     VERIFYING,
     SUCCESS,
@@ -49,7 +49,7 @@ enum class RobotScaleState {
 }
 
 /**
- * MIZAN Robot-Scale Emblem (ميزان روبوت ذكي)
+ * Wakeel mascot: the assistant, drawn.
  * A fusion between the ancient Scales of Justice and an Autonomous AI Robot:
  * - Central pillar: Sleek robotic torso, neck, and head with glowing visor eyes.
  * - Central fulcrum: Glowing cybernetic intelligence core.
@@ -57,10 +57,10 @@ enum class RobotScaleState {
  * - Balance pans: Precision holographic weighing dishes holding ledger nodes.
  */
 @Composable
-fun MizanRobotScale(
+fun WakeelMascot(
     modifier: Modifier = Modifier,
     size: Dp = 120.dp,
-    state: RobotScaleState = RobotScaleState.IDLE_BALANCED,
+    state: MascotState = MascotState.IDLE_BALANCED,
     interactive: Boolean = true,
     onClick: (() -> Unit)? = null,
 ) {
@@ -105,13 +105,13 @@ fun MizanRobotScale(
         label = "visor_scan",
     )
 
-    val currentTotalTilt = if (reducedMotion) 0f else (userTilt.value + if (state == RobotScaleState.VERIFYING) idleTilt * 1.8f else idleTilt)
+    val currentTotalTilt = if (reducedMotion) 0f else (userTilt.value + if (state == MascotState.VERIFYING) idleTilt * 1.8f else idleTilt)
 
     val accentColor = when (state) {
-        RobotScaleState.IDLE_BALANCED -> colors.accent
-        RobotScaleState.VERIFYING -> Color(0xFF00F2FE)
-        RobotScaleState.SUCCESS -> colors.success
-        RobotScaleState.ALERT -> colors.warning
+        MascotState.IDLE_BALANCED -> colors.accent
+        MascotState.VERIFYING -> Color(0xFF00F2FE)
+        MascotState.SUCCESS -> colors.success
+        MascotState.ALERT -> colors.warning
     }
 
     val glowColor = accentColor.copy(alpha = 0.45f * corePulse)

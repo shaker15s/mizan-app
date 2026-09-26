@@ -52,6 +52,7 @@ import app.mizan.design.component.StatusTone
 import app.mizan.design.theme.LocalMizanColors
 import app.mizan.design.theme.MizanMono
 import app.mizan.design.token.Space
+import app.mizan.design.motion.mizanTap
 import app.mizan.domain.model.ActorId
 import app.mizan.domain.model.TenantId
 import app.mizan.domain.security.AuthMethod
@@ -189,7 +190,7 @@ fun BiometricAuthModal(
                         .clip(CircleShape)
                         .background(colors.accentMuted)
                         .border(BorderStroke(1.dp, colors.accent.copy(alpha = 0.4f)), CircleShape)
-                        .clickable(onClick = onConfirm),
+                        .mizanTap(onClick = onConfirm),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(

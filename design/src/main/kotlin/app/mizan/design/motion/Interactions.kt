@@ -26,6 +26,9 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.drawOutline
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -37,9 +40,13 @@ import app.mizan.design.theme.LocalMizanColors
 import app.mizan.design.theme.LocalReducedMotion
 import app.mizan.design.token.Motion
 import app.mizan.design.token.MotionToken
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.max
+import kotlin.math.sin
 
 /**
- * One place for how MIZAN feels.
+ * One place for how Wakeel feels.
  *
  * Every interactive surface uses [mizanTap], every list uses [mizanReveal],
  * and every waiting state uses [mizanShimmer]. When the device asks for
@@ -199,6 +206,55 @@ fun Modifier.mizanPulse(active: Boolean = true, strength: Float = 0.35f): Modifi
         label = "mizan_pulse_alpha",
     )
     return this.graphicsLayer { this.alpha = alpha }
+}
+
+/**
+ * A light that travels once around the border, slowly.
+ *
+ * Reserved for the one thing on a screen that is waiting on a person: an
+ * approval, a reconciliation, a case only a human can close. If everything
+ * on the screen glows, nothing on it is urgent.
+ */
+@Composable
+fun Modifier.mizanLiveBorder(
+    active: Boolean = true,
+    color: Color = Color.Unspecified,
+    shape: Shape,
+    width: Dp = 1.4.dp,
+    periodMillis: Int = 4200,
+): Modifier {
+    if (!active) return this
+    val reduced = LocalReducedMotion.current
+    val colors = LocalMizanColors.current
+    val tint = if (color == Color.Unspecified) colors.accent else color
+    val transition = rememberInfiniteTransition(label = "mizan_live_border")
+    val sweep by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = if (reduced) 1 else periodMillis, easing = LinearEasing),
+        ),
+        label = "mizan_live_border_sweep",
+    )
+    return this.drawWithContent {
+        drawContent()
+        val outline = shape.createOutline(size, layoutDirection, this)
+        // A linear gradient whose ends rotate around the centre: the highlight
+        // walks around the border instead of sliding across it.
+        val reach = max(size.width, size.height)
+        val angle = sweep * 2.0 * PI
+        val dx = (cos(angle) * reach).toFloat()
+        val dy = (sin(angle) * reach).toFloat()
+        drawOutline(
+            outline = outline,
+            brush = Brush.linearGradient(
+                colors = listOf(Color.Transparent, tint, tint.copy(alpha = 0.18f), Color.Transparent),
+                start = Offset(center.x + dx, center.y + dy),
+                end = Offset(center.x - dx, center.y - dy),
+            ),
+            style = Stroke(width = width.toPx()),
+        )
+    }
 }
 
 /**

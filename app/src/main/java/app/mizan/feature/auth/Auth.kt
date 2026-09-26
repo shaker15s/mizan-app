@@ -59,7 +59,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -71,7 +70,7 @@ import app.mizan.design.component.CraftFeatureCard
 import app.mizan.design.component.CraftPageIndicator
 import app.mizan.design.component.CraftSelectableCard
 import app.mizan.design.component.MizanGhostButton
-import app.mizan.design.component.MizanHeroEmblem
+import app.mizan.design.component.WakeelEmblem
 import app.mizan.design.component.MizanPrimaryButton
 import app.mizan.design.component.MizanSecondaryButton
 import app.mizan.design.component.MizanStatusBadge
@@ -82,6 +81,7 @@ import app.mizan.design.component.StatusTone
 import app.mizan.design.theme.LocalMizanColors
 import app.mizan.design.theme.MizanMono
 import app.mizan.design.token.Space
+import app.mizan.design.motion.mizanTap
 import app.mizan.domain.model.SessionMode
 import app.mizan.domain.model.TenantContext
 import app.mizan.domain.model.TenantId
@@ -95,7 +95,7 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 
 /**
- * Craft iOS Onboarding Flow for MIZAN Intelligence.
+ * Craft iOS Onboarding Flow for Wakeel Intelligence.
  * Sleek Apple Glass aesthetic, interactive selection cards, biometric readiness,
  * and high-density value presentation.
  */
@@ -124,7 +124,7 @@ fun OnboardingRoute(graph: AppGraph, onDone: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(Space.lg),
         ) {
             // Hero Emblem with radiant ambient aura
-            MizanHeroEmblem(size = 76.dp)
+            WakeelEmblem(size = 76.dp)
 
             AnimatedContent(
                 targetState = page,
@@ -394,7 +394,7 @@ private fun OnboardingStep3Biometrics(
                         BorderStroke(1.5.dp, colors.accent),
                         CircleShape,
                     )
-                    .clickable(role = Role.Button, onClick = onVerify),
+                    .mizanTap(onClick = onVerify),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -472,7 +472,7 @@ fun SignInRoute(graph: AppGraph, onSignedIn: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Space.lg),
         ) {
-            MizanHeroEmblem(size = 72.dp)
+            WakeelEmblem(size = 72.dp)
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,

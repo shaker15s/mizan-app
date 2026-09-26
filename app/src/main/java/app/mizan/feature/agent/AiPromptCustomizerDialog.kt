@@ -49,6 +49,7 @@ import app.mizan.design.component.ShapePill
 import app.mizan.design.theme.LocalMizanColors
 import app.mizan.design.theme.MizanMono
 import app.mizan.design.token.Space
+import app.mizan.design.motion.mizanTap
 import app.mizan.prefs.UserPreferences
 
 @Composable
@@ -275,7 +276,7 @@ private fun PromptPresetPill(
             .clip(ShapePill)
             .background(if (active) colors.accent else colors.surface)
             .border(BorderStroke(0.6.dp, if (active) colors.accent else colors.border), ShapePill)
-            .clickable(onClick = onClick)
+            .mizanTap(onClick = onClick)
             .padding(vertical = 6.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -301,7 +302,7 @@ private fun SpeedTierPill(
             .clip(ShapeControl)
             .background(if (selected) colors.accentMuted else colors.surface)
             .border(BorderStroke(0.8.dp, if (selected) colors.accent else colors.border), ShapeControl)
-            .clickable(onClick = onClick)
+            .mizanTap(onClick = onClick)
             .padding(vertical = 6.dp),
         contentAlignment = Alignment.Center,
     ) {

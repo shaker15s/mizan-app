@@ -46,7 +46,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,6 +59,7 @@ import app.mizan.design.component.ShapePill
 import app.mizan.design.component.StatusTone
 import app.mizan.design.theme.LocalMizanColors
 import app.mizan.design.token.Space
+import app.mizan.design.motion.mizanTap
 import app.mizan.graph.AppGraph
 
 @Composable
@@ -211,7 +211,7 @@ private fun GovernanceRuleCard(
                 ),
             )
             .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
-            .clickable(role = Role.Button) { expanded = !expanded }
+            .mizanTap { expanded = !expanded }
             .padding(Space.md),
         verticalArrangement = Arrangement.spacedBy(Space.xs),
     ) {

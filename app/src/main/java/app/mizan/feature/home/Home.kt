@@ -64,7 +64,7 @@ import app.mizan.design.component.GlassSegmentedControl
 import app.mizan.design.component.MizanGhostButton
 import app.mizan.design.component.MizanIconButton
 import app.mizan.design.component.MizanListRow
-import app.mizan.design.component.MizanMark
+import app.mizan.design.component.WakeelMark
 import app.mizan.design.component.MizanSectionHeader
 import app.mizan.design.component.MizanStatusBadge
 import app.mizan.design.component.ShapeCard
@@ -80,6 +80,8 @@ import app.mizan.domain.model.ExecutionRecord
 import app.mizan.domain.model.HealthStatus
 import app.mizan.domain.model.SystemHealth
 import app.mizan.design.component.HeaderSyncStatusIndicator
+import app.mizan.design.motion.mizanTap
+import app.mizan.design.motion.mizanLiveBorder
 import app.mizan.domain.audit.AuditEvent
 import app.mizan.domain.model.Digests
 import app.mizan.domain.model.HistoricalErpActionLog
@@ -266,7 +268,7 @@ fun HomeRoute(
                 .padding(Space.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            MizanMark()
+            WakeelMark()
             Column(
                 Modifier
                     .weight(1f)
@@ -433,6 +435,9 @@ fun HomeRoute(
                 modifier = Modifier
                     .fillMaxWidth()
                     .mizanGlassPane(ShapeCard)
+                    // One thing on this screen is waiting on a person, so one
+                    // thing on this screen moves.
+                    .mizanLiveBorder(color = colors.warning, shape = ShapeCard)
                     .padding(horizontal = Space.md, vertical = Space.xs),
             ) {
                 state.attention.forEachIndexed { index, item ->
@@ -523,7 +528,7 @@ private fun AuditTrailSection(
                 style = MaterialTheme.typography.labelSmall,
                 color = colors.accent,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.clickable(role = Role.Button, onClick = onOpenAll),
+                modifier = Modifier.mizanTap(onClick = onOpenAll),
             )
         }
 

@@ -83,7 +83,7 @@ import androidx.navigation.compose.rememberNavController
 import app.mizan.R
 import app.mizan.design.component.HeaderSyncStatusIndicator
 import app.mizan.design.component.MizanBanner
-import app.mizan.design.component.MizanMark
+import app.mizan.design.component.WakeelMark
 import app.mizan.design.component.StatusTone
 import app.mizan.design.theme.LocalMizanColors
 import app.mizan.feature.account.AccountRoute
@@ -185,7 +185,7 @@ fun MizanShell(
                     if (showNav && (medium || expanded)) {
                         NavigationRail(containerColor = colors.glass, modifier = Modifier.fillMaxHeight()) {
                             Column(Modifier.padding(vertical = 12.dp)) {
-                                MizanMark()
+                                WakeelMark()
                             }
                             destinations.filter { expanded || it.compact }.forEach { dest ->
                                 NavigationRailItem(
@@ -300,7 +300,7 @@ fun MizanShell(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     ) {
-                                        MizanMark()
+                                        WakeelMark()
                                         Text(
                                             text = destTitle,
                                             style = MaterialTheme.typography.titleMedium,

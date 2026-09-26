@@ -1,5 +1,11 @@
 package app.mizan.feature.agent
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -52,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -67,8 +74,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import app.mizan.R
 import app.mizan.design.component.mizanGlassPane
 import app.mizan.design.component.MizanDangerButton
-import app.mizan.design.component.MizanRobotScale
-import app.mizan.design.component.RobotScaleState
 import app.mizan.design.component.MizanPrimaryButton
 import app.mizan.design.component.MizanSecondaryButton
 import app.mizan.design.component.MizanStatusBadge
@@ -77,9 +82,12 @@ import app.mizan.design.component.ShapeBubbleUser
 import app.mizan.design.component.ShapeCard
 import app.mizan.design.component.ShapePill
 import app.mizan.design.component.StatusTone
+import app.mizan.design.component.WakeelEmblem
+import app.mizan.design.motion.mizanReveal
 import app.mizan.design.theme.LocalMizanColors
 import app.mizan.design.theme.MizanMono
 import app.mizan.design.token.Space
+import app.mizan.design.motion.mizanTap
 import app.mizan.domain.agent.MissingField
 import app.mizan.domain.agent.ProposalResult
 import app.mizan.domain.authority.AuthorityOutcome
@@ -390,21 +398,30 @@ fun AgentRoute(graph: AppGraph, activity: FragmentActivity, expanded: Boolean) {
                     contentPadding = PaddingValues(vertical = Space.md),
                 ) {
                     items(lines, key = { it.id }, contentType = { it::class.simpleName }) { line ->
-                        when (line) {
-                            is AgentLine.User -> ChatGPTUserBubble(line.text)
-                            is AgentLine.Info -> ChatGPTInfoBlock(reasonLabel(line.code))
-                            is AgentLine.Clarify -> ClarifyBlock(line.fields)
-                            is AgentLine.ProposalLine -> ProposalBlock(
-                                proposal = line.proposal,
-                                demo = graph.demoMode,
-                                secondId = vm.secondApproverId,
-                                actors = graph.session.session.value?.let { graph.simulation.actors(it.tenant.id) }.orEmpty(),
-                                onSecond = { vm.secondApproverId = it },
-                                onReview = vm::requestApproval,
-                                onDismiss = vm::dismiss,
-                            )
-                            is AgentLine.Result -> ResultBlock(line)
+                        // Only the newest line animates in. Animating every
+                        // row would replay the whole conversation each time
+                        // the list recomposes.
+                        val newest = line.id == lines.last().id
+                        Box(modifier = if (newest) Modifier.mizanReveal(0) else Modifier) {
+                            when (line) {
+                                is AgentLine.User -> ChatGPTUserBubble(line.text)
+                                is AgentLine.Info -> ChatGPTInfoBlock(reasonLabel(line.code))
+                                is AgentLine.Clarify -> ClarifyBlock(line.fields)
+                                is AgentLine.ProposalLine -> ProposalBlock(
+                                    proposal = line.proposal,
+                                    demo = graph.demoMode,
+                                    secondId = vm.secondApproverId,
+                                    actors = graph.session.session.value?.let { graph.simulation.actors(it.tenant.id) }.orEmpty(),
+                                    onSecond = { vm.secondApproverId = it },
+                                    onReview = vm::requestApproval,
+                                    onDismiss = vm::dismiss,
+                                )
+                                is AgentLine.Result -> ResultBlock(line)
+                            }
                         }
+                    }
+                    if (vm.busy) {
+                        item { ThinkingBlock() }
                     }
                 }
             }
@@ -456,7 +473,7 @@ private fun AgentTopBar(
             Spacer(Modifier.width(Space.sm))
             Column {
                 Text(
-                    text = "Mizan AI",
+                    text = "Wakeel",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = colors.textPrimary,
@@ -502,17 +519,14 @@ private fun AgentEmptyHero(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        // Robot-Scale Emblem (ميزان وروبوت في نفس الوقت)
-        MizanRobotScale(
-            size = 115.dp,
-            state = RobotScaleState.IDLE_BALANCED,
-            interactive = true,
-        )
+        // The identity, not a mascot: the agent is the product, so the empty
+        // state shows the mark rather than a character.
+        WakeelEmblem(size = 112.dp)
 
         Spacer(Modifier.height(Space.md))
 
         Text(
-            text = "Mizan Intelligence",
+            text = "Wakeel",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
             color = colors.textPrimary,
@@ -522,7 +536,7 @@ private fun AgentEmptyHero(
         Spacer(Modifier.height(Space.xs))
 
         Text(
-            text = "Command ERP operations, check stock, or draft orders.",
+            text = stringResource(R.string.agent_intro),
             style = MaterialTheme.typography.bodyMedium,
             color = colors.textSecondary,
             textAlign = TextAlign.Center,
@@ -568,7 +582,7 @@ private fun PromptChip(
         modifier = Modifier
             .fillMaxWidth()
             .mizanGlassPane(ShapeCard)
-            .clickable(role = Role.Button, onClick = onClick)
+            .mizanTap(onClick = onClick)
             .padding(horizontal = Space.md, vertical = Space.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -854,6 +868,56 @@ private fun ResultBlock(line: AgentLine.Result) {
     }
 }
 
+/**
+ * Three dots while the agent reads.
+ *
+ * It is not a progress bar and it does not promise a duration: it says the
+ * request was taken, which is the only thing that is true at that moment.
+ */
+@Composable
+private fun ThinkingBlock() {
+    val colors = LocalMizanColors.current
+    val reduced = LocalReducedMotion.current
+    Row(
+        modifier = Modifier
+            .mizanReveal(0)
+            .mizanGlassPane(ShapeBubbleAgent)
+            .padding(horizontal = Space.md, vertical = Space.sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        repeat(3) { index ->
+            val transition = rememberInfiniteTransition(label = "thinking_$index")
+            val scale by transition.animateFloat(
+                initialValue = 0.65f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(
+                        durationMillis = if (reduced) 1 else 780,
+                        easing = FastOutSlowInEasing,
+                        delayMillis = index * 110,
+                    ),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+                label = "thinking_dot_$index",
+            )
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .scale(scale)
+                    .clip(CircleShape)
+                    .background(colors.accent.copy(alpha = 0.8f)),
+            )
+        }
+        Spacer(Modifier.width(Space.xs))
+        Text(
+            text = stringResource(R.string.agent_thinking),
+            style = MaterialTheme.typography.bodySmall,
+            color = colors.textSecondary,
+        )
+    }
+}
+
 @Composable
 private fun ChatGPTFloatingDock(
     input: String,
@@ -939,7 +1003,7 @@ private fun ChatGPTFloatingDock(
                     Box(contentAlignment = Alignment.CenterStart) {
                         if (input.isEmpty()) {
                             Text(
-                                text = "Ask Mizan or command ERP...",
+                                text = stringResource(R.string.agent_placeholder),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = colors.textTertiary,
                             )
@@ -955,7 +1019,7 @@ private fun ChatGPTFloatingDock(
                     .size(34.dp)
                     .clip(CircleShape)
                     .background(if (canSend) colors.accent else colors.border)
-                    .clickable(enabled = canSend, role = Role.Button, onClick = onSubmit),
+                    .mizanTap(enabled = canSend, onClick = onSubmit),
                 contentAlignment = Alignment.Center,
             ) {
                 if (busy) {
@@ -989,7 +1053,7 @@ private fun CompactChip(
             .clip(ShapePill)
             .background(colors.surfaceElevated)
             .border(BorderStroke(0.6.dp, colors.glassBorder), ShapePill)
-            .clickable(role = Role.Button, onClick = onClick)
+            .mizanTap(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

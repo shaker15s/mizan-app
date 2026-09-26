@@ -144,6 +144,7 @@ fun MizanGlassCard(
         tone = tone,
         interactive = interactive,
         edge = border == null,
+        pressable = interactive,
     ) {
         Column(
             modifier = Modifier
@@ -180,7 +181,7 @@ fun MizanSectionHeader(
                 color = colors.accent,
                 modifier = Modifier
                     .heightIn(min = 48.dp)
-                    .clickable(role = Role.Button, onClick = onAction)
+                    .mizanTap(onClick = onAction)
                     .padding(horizontal = Space.sm)
                     .semantics { contentDescription = action },
             )
@@ -495,7 +496,7 @@ fun MizanListRow(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
-            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .then(if (onClick != null) Modifier.mizanTap(onClick = onClick) else Modifier)
             .padding(vertical = Space.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -635,7 +636,7 @@ fun SuggestionRow(suggestions: List<Pair<String, () -> Unit>>, modifier: Modifie
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 44.dp)
-                    .clickable(role = Role.Button, onClick = action)
+                    .mizanTap(onClick = action)
                     .padding(vertical = Space.sm),
             )
         }
@@ -671,7 +672,7 @@ fun CraftFeatureCard(
                 ),
             )
             .border(BorderStroke(0.8.dp, colors.glassBorder), ShapeCard)
-            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .then(if (onClick != null) Modifier.mizanTap(onClick = onClick) else Modifier)
             .padding(Space.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
