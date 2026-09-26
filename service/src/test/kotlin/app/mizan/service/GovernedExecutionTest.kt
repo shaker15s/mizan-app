@@ -153,6 +153,29 @@ class GovernedExecutionTest {
         return Device(deviceId, keyPair)
     }
 
+    /**
+     * Opens an approval the way the app does, and returns its id and the
+     * fingerprint the service computed. The tests below that need an approval
+     * in a particular state start from a real one and then move it: an
+     * approval planted in the store by hand would prove nothing about the
+     * route that creates them.
+     */
+    private fun openApproval(executionId: String, amountMinor: Long, token: String): Pair<String, String> {
+        val reply = send(
+            MizanContract.PATH_APPROVALS,
+            "POST",
+            """{"tool":"sales.order.create_draft","toolVersion":"2.1.0","tenantId":"sim-alamal",""" +
+                """"executionId":"$executionId","proposalId":"PRP-$executionId",""" +
+                """"arguments":{"amountMinor":"$amountMinor","currency":"USD",""" +
+                """"customerName":"Acme Corp","itemsSummary":"test items"}}""",
+            token = token,
+        )
+        assertEquals("an approval must open: ${reply.body}", 201, reply.status)
+        val id = reply.field("approvalId") ?: error("approval id")
+        val fingerprint = reply.field("proposalFingerprint") ?: error("fingerprint")
+        return id to fingerprint
+    }
+
     private fun proofFor(
         device: Device,
         token: String,
@@ -420,69 +443,48 @@ class GovernedExecutionTest {
 
     @Test
     fun anExpiredApprovalIsRefusedAndSaysSo() {
-        val approval = app.mizan.domain.approval.ApprovalRequest(
-            id = "APR-EXPIRED",
-            proposalId = "PRP-EXPIRED",
-            tenantId = TenantId("sim-alamal"),
-            initiatorId = ActorId("USR-REP"),
-            proposalRevision = 1,
-            proposalFingerprint = "fingerprint-expired",
-            requiredLevel = ApprovalLevel.L2_PRIVILEGED,
-            policyVersionId = "v12",
-            policyHash = app.mizan.domain.policy.VersionedPolicy.demoV12.snapshot.rulesHash,
-            state = ApprovalState.GRANTED,
-            createdAtMillis = 1_000L,
-            expiresAtMillis = 2_000L,
-            approvals = emptyList(),
-            decisions = emptyList(),
-        )
-        service.stores?.approvals?.save(approval)
+        val (approvalId, fingerprint) = openApproval("EXE-GOV-EXPIRED", 250_000L, repToken)
+        // The window is policy, not a constant, and a test cannot wait four
+        // hours: the approval is expired by moving its own expiry, in the same
+        // store the service reads.
+        val stored = service.stores!!.approvals.get(approvalId)!!
+        service.stores!!.approvals.save(stored.copy(expiresAtMillis = System.currentTimeMillis() - 1_000L))
+
         val reply = send(
             MizanContract.PATH_EXECUTIONS,
             "POST",
             draftOrderBody(
                 executionId = "EXE-GOV-EXPIRED",
                 amountMinor = 250_000L,
-                approvalId = "APR-EXPIRED",
-                proposalFingerprint = "fingerprint-expired",
+                approvalId = approvalId,
+                proposalFingerprint = fingerprint,
             ),
             token = repToken,
         )
-        assertEquals(409, reply.status)
+        assertEquals(reply.body, 409, reply.status)
         assertEquals("APPROVAL_EXPIRED", reply.field("messageCode"))
     }
 
     @Test
     fun anApprovalGrantedUnderAnotherPolicyVersionIsRefused() {
-        val approval = app.mizan.domain.approval.ApprovalRequest(
-            id = "APR-OLD-POLICY",
-            proposalId = "PRP-OLD",
-            tenantId = TenantId("sim-alamal"),
-            initiatorId = ActorId("USR-REP"),
-            proposalRevision = 1,
-            proposalFingerprint = "fingerprint-old-policy",
-            requiredLevel = ApprovalLevel.L2_PRIVILEGED,
-            policyVersionId = "v11",
-            policyHash = "a-different-policy-hash",
-            state = ApprovalState.GRANTED,
-            createdAtMillis = System.currentTimeMillis(),
-            expiresAtMillis = System.currentTimeMillis() + 60 * 60 * 1000L,
-            approvals = emptyList(),
-            decisions = emptyList(),
-        )
-        service.stores?.approvals?.save(approval)
+        val (approvalId, fingerprint) = openApproval("EXE-GOV-OLDPOLICY", 250_000L, repToken)
+        // The policy moves while an approval waits. The approval is dead, and
+        // it says which kind of dead it is.
+        val stored = service.stores!!.approvals.get(approvalId)!!
+        service.stores!!.approvals.save(stored.copy(policyVersionId = "v11", policyHash = "a-superseded-hash"))
+
         val reply = send(
             MizanContract.PATH_EXECUTIONS,
             "POST",
             draftOrderBody(
                 executionId = "EXE-GOV-OLDPOLICY",
                 amountMinor = 250_000L,
-                approvalId = "APR-OLD-POLICY",
-                proposalFingerprint = "fingerprint-old-policy",
+                approvalId = approvalId,
+                proposalFingerprint = fingerprint,
             ),
             token = repToken,
         )
-        assertEquals(409, reply.status)
+        assertEquals(reply.body, 409, reply.status)
         assertEquals("POLICY_VERSION_CHANGED", reply.field("messageCode"))
     }
 
@@ -490,24 +492,22 @@ class GovernedExecutionTest {
     fun aFreshApprovalWithTheRightIdentityIsAccepted() {
         val token = repToken
         val device = enrollDevice("DEV-APPROVED", token)
-        val fingerprint = "fingerprint-approved"
-        val approval = app.mizan.domain.approval.ApprovalRequest(
-            id = "APR-FRESH",
-            proposalId = "PRP-FRESH",
-            tenantId = TenantId("sim-alamal"),
-            initiatorId = ActorId("USR-REP"),
-            proposalRevision = 1,
-            proposalFingerprint = fingerprint,
-            requiredLevel = ApprovalLevel.L2_PRIVILEGED,
-            policyVersionId = "v12",
-            policyHash = app.mizan.domain.policy.VersionedPolicy.demoV12.snapshot.rulesHash,
-            state = ApprovalState.GRANTED,
-            createdAtMillis = System.currentTimeMillis(),
-            expiresAtMillis = System.currentTimeMillis() + 60 * 60 * 1000L,
-            approvals = emptyList(),
-            decisions = emptyList(),
+        val (approvalId, fingerprint) = openApproval("EXE-GOV-FRESH", 250_000L, token)
+
+        // The approver answers on their own enrolled device, over the
+        // approval's own fingerprint: the proof is of the person and of the
+        // thing they are approving, not of the request that carries it.
+        val approverDevice = enrollDevice("DEV-APPROVER", managerToken)
+        val (grantChallenge, grantSignature) = proofFor(approverDevice, managerToken, approvalId, fingerprint)
+        val granted = send(
+            "${MizanContract.PATH_APPROVALS}/$approvalId/grant",
+            "POST",
+            """{"deviceChallengeId":"$grantChallenge","deviceSignature":"$grantSignature"}""",
+            token = managerToken,
         )
-        service.stores?.approvals?.save(approval)
+        assertEquals("a manager must be able to grant it: ${granted.body}", 200, granted.status)
+        assertEquals("GRANTED", granted.field("state"))
+
         val (challengeId, signature) = proofFor(device, token, "EXE-GOV-FRESH", fingerprint)
         val reply = send(
             MizanContract.PATH_EXECUTIONS,
@@ -515,7 +515,7 @@ class GovernedExecutionTest {
             draftOrderBody(
                 executionId = "EXE-GOV-FRESH",
                 amountMinor = 250_000L,
-                approvalId = "APR-FRESH",
+                approvalId = approvalId,
                 proposalFingerprint = fingerprint,
                 challengeId = challengeId,
                 signature = signature,
@@ -525,8 +525,13 @@ class GovernedExecutionTest {
         assertEquals(reply.body, 200, reply.status)
         assertTrue(reply.isStatus(MizanContract.Status.VERIFIED))
         assertEquals(
-            approval.id,
+            approvalId,
             service.stores?.journals?.get("EXE-GOV-FRESH")?.approvalId,
+        )
+        // The approval authorised exactly one execution and is spent.
+        assertEquals(
+            "CONSUMED",
+            service.stores!!.approvals.get(approvalId)?.state?.name,
         )
     }
 

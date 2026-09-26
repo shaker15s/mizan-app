@@ -21,6 +21,7 @@ object MizanContract {
     const val PATH_POLICY = "/v1/policy"
     const val PATH_RECONCILIATION = "/v1/reconciliation"
     const val PATH_RECEIPTS = "/v1/receipts"
+    const val PATH_APPROVALS = "/v1/approvals"
     const val PATH_DEVICES = "/v1/devices"
 
     const val HEADER_AUTHORIZATION = "Authorization"

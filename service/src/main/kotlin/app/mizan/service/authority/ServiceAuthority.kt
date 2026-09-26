@@ -1,6 +1,7 @@
 package app.mizan.service.authority
 
 import app.mizan.domain.approval.ApprovalPolicy
+import app.mizan.domain.approval.ApprovalState
 import app.mizan.domain.approval.ApprovalVerdict
 import app.mizan.domain.approval.ProposalDiff
 import app.mizan.domain.error.DispatchState
@@ -13,7 +14,6 @@ import app.mizan.domain.model.Actor
 import app.mizan.domain.model.ActorId
 import app.mizan.domain.model.ApprovalLevel
 import app.mizan.domain.model.ConnectorCapabilities
-import app.mizan.domain.model.Digests
 import app.mizan.domain.model.ExecutionId
 import app.mizan.domain.model.IdempotencyKey
 import app.mizan.domain.model.Money
@@ -22,7 +22,13 @@ import app.mizan.domain.model.ReconciliationStatus
 import app.mizan.domain.model.RiskTier
 import app.mizan.domain.model.Role
 import app.mizan.domain.model.TenantId
+import app.mizan.domain.model.CanonicalJson
+import app.mizan.domain.model.CanonicalValue
+import app.mizan.domain.model.Digests
+import app.mizan.domain.model.Fingerprints
 import app.mizan.domain.model.ToolName
+import app.mizan.domain.policy.PolicyDecision
+import app.mizan.service.protocol.typedArguments
 import app.mizan.domain.policy.ApprovalRecord
 import app.mizan.domain.policy.PolicyEvaluator
 import app.mizan.domain.policy.PolicyRequest
@@ -149,10 +155,6 @@ class ServiceAuthority(
         if (request.toolVersion.isNotBlank() && request.toolVersion != tool.version) {
             return refuse(request, "TOOL_VERSION_MISMATCH", 422)
         }
-        val definition = ToolCatalog.find(tool)
-        if (definition != null && ToolCatalog.unavailableCapabilities(tool, connector.capabilities().capabilities).isNotEmpty()) {
-            return refuse(request, "TOOL_NOT_SUPPORTED_BY_ERP", 422)
-        }
 
         rateLimiter?.let { limiter ->
             val decision = limiter.consume(LimitSurface.EXECUTION, user.tenantId, user.actorId)
@@ -179,31 +181,29 @@ class ServiceAuthority(
             IdempotencyView.Prior.None -> Unit
         }
 
-        // Required arguments are checked before policy: a request that is
-        // simply missing its amount answers MISSING_AMOUNT, not the refusal
-        // code of the approval ladder it happened to fall into.
-        requiredArgumentRefusal(tool, request)?.let { return it }
+        // The ladder is computed by the same code an approval is created
+        // against, so "what was approved" and "what executes" cannot be two
+        // different ladders. Required arguments are checked inside it, before
+        // policy: a request that is simply missing its amount answers
+        // MISSING_AMOUNT, not the refusal code of the ladder it fell into.
+        val ladder = when (val computed = ladderFor(request, user)) {
+            is Ladder.Refused -> return refuse(request, computed.code, computed.httpStatus)
+            is Ladder.Requires -> computed
+        }
+        val definition = ladder.definition
+        val decision = ladder.decision
+        val amount = ladder.amount
+        val customerName = ladder.customerName
 
-        val actor = Actor(ActorId(user.actorId), user.displayName, user.role, TenantId(user.tenantId))
-        val amount = policyAmount(tool, request)
-        val customerName = request.arguments.text(MizanContract.ArgumentField.CUSTOMER_NAME)
-        val customer = customerName?.let { connector.customerState(request.tenantId, it) }
-        val blocked = customer?.status.equals("blocked", ignoreCase = true)
-        val exceeds = exceedsCredit(customer?.creditMinor, customer?.balanceMinor, amount)
-        val actorLimit = versionedPolicy.ruleFor(tool, amount?.currency)?.actorLimitMinor
-
-        val decision = policy.evaluate(
-            PolicyRequest(
-                actor = actor,
-                tool = tool,
-                amount = amount,
-                destructive = tool.destructive,
-                customerBlocked = blocked,
-                exceedsCredit = exceeds,
-                actorLimitMinor = actorLimit,
-            ),
-        )
-        if (!decision.allowed) return refuse(request, decision.reasonCode, 422)
+        // An approval is bound to a fingerprint. When one is named, the
+        // fingerprint the client sent is compared to the one this service
+        // computed from the arguments it is about to execute -- so an approval
+        // for one order cannot authorise a different one.
+        if (request.approvalId != null && request.proposalFingerprint != null &&
+            request.proposalFingerprint != ladder.fingerprint
+        ) {
+            return refuse(request, "PROPOSAL_FINGERPRINT_MISMATCH", 422)
+        }
 
         val approvals = ArrayList<ApprovalRecord>()
         val approverId = request.approverId
@@ -232,7 +232,13 @@ class ServiceAuthority(
 
         // The approval object, when one is named, must still be valid for this
         // exact proposal revision under this exact policy.
-        approvalValidationFailure(request, decision.policyVersionId, decision.policyHash, canonicalArguments)
+        approvalValidationFailure(
+            request = request,
+            policyVersionId = decision.policyVersionId,
+            policyHash = decision.policyHash,
+            canonicalArguments = canonicalArguments,
+            executedFingerprint = if (request.approvalId != null) ladder.fingerprint else null,
+        )
             ?.let { return it }
 
         // A tool that moves money needs proof that the person was present and
@@ -272,6 +278,12 @@ class ServiceAuthority(
             .let { book.advance(it, JournalEvent.AUTHORIZED) }
             .let { book.withProof(it, request.proofReference) }
 
+        // An approval authorises exactly one execution. It is consumed here,
+        // at the moment the execution is authorised, so a dispatch that fails
+        // does not leave a usable approval behind: the person approves the
+        // retry, not the failure.
+        consumeApproval(request.approvalId)
+
         val outcome = pipeline.execute(request, tool, definition, simulateAmbiguous, authorized)
         idempotency.remember(request, canonicalArguments, outcome)
         audit.append(
@@ -284,6 +296,172 @@ class ServiceAuthority(
             details = details(request, decision.ruleId, decision.approval, risk.tier, risk.factors.size),
         )
         return outcome
+    }
+
+    /**
+     * The approval ladder a request falls into, decided once.
+     *
+     * Two callers need this answer: the execution path, which then checks that
+     * an approval exists for exactly this ladder, and the approval API, which
+     * cannot let a person approve something the service has not judged. They
+     * call the same function for the same reason a proposal has one
+     * fingerprint: two implementations of "how risky is this" is one too many.
+     *
+     * It has no side effects. A refusal here does not remember anything under
+     * an idempotency key; [decide] does that when it turns the refusal into an
+     * answer.
+     */
+    sealed interface Ladder {
+
+        /** The request cannot be judged. The code is a refusal, not a throw. */
+        data class Refused(val code: String, val httpStatus: Int) : Ladder
+
+        /** The request is understood and judged. */
+        data class Requires(
+            val tool: ToolName,
+            val definition: ToolDefinition?,
+            val decision: PolicyDecision,
+            val amount: Money?,
+            val customerName: String?,
+            val canonicalArguments: String,
+            /** The fingerprint of this proposal, computed here, never trusted from a client. */
+            val fingerprint: String,
+            val initiator: Actor,
+        ) : Ladder
+    }
+
+    fun ladderFor(request: ExecutionRequest, user: ServiceUser): Ladder {
+        val tool = ToolName.fromWire(request.toolWire)
+        if (tool == null || tool == ToolName.UNKNOWN) return Ladder.Refused("TOOL_UNKNOWN", 422)
+        if (user.tenantId != request.tenantId) return Ladder.Refused("TENANT_MISMATCH", 403)
+        if (!capabilities.supports(tool)) return Ladder.Refused("TOOL_NOT_SUPPORTED_BY_ERP", 422)
+        if (request.toolVersion.isNotBlank() && request.toolVersion != tool.version) {
+            return Ladder.Refused("TOOL_VERSION_MISMATCH", 422)
+        }
+        val definition = ToolCatalog.find(tool)
+        if (definition != null &&
+            ToolCatalog.unavailableCapabilities(tool, connector.capabilities().capabilities).isNotEmpty()
+        ) {
+            return Ladder.Refused("TOOL_NOT_SUPPORTED_BY_ERP", 422)
+        }
+        missingArgument(tool, request)?.let { return Ladder.Refused(it, 422) }
+
+        val actor = Actor(ActorId(user.actorId), user.displayName, user.role, TenantId(user.tenantId))
+        val amount = policyAmount(tool, request)
+        val customerName = request.arguments.text(MizanContract.ArgumentField.CUSTOMER_NAME)
+        val customer = customerName?.let { connector.customerState(request.tenantId, it) }
+        val blocked = customer?.status.equals("blocked", ignoreCase = true)
+        val exceeds = exceedsCredit(customer?.creditMinor, customer?.balanceMinor, amount)
+        val actorLimit = versionedPolicy.ruleFor(tool, amount?.currency)?.actorLimitMinor
+
+        val decision = policy.evaluate(
+            PolicyRequest(
+                actor = actor,
+                tool = tool,
+                amount = amount,
+                destructive = tool.destructive,
+                customerBlocked = blocked,
+                exceedsCredit = exceeds,
+                actorLimitMinor = actorLimit,
+            ),
+        )
+        if (!decision.allowed) return Ladder.Refused(decision.reasonCode, 422)
+
+        return Ladder.Requires(
+            tool = tool,
+            definition = definition,
+            decision = decision,
+            amount = amount,
+            customerName = customerName,
+            canonicalArguments = request.canonicalArguments(),
+            fingerprint = fingerprintOf(request, user, tool, actor, amount, decision),
+            initiator = actor,
+        )
+    }
+
+    /**
+     * The fingerprint of the proposal *as this service read it*.
+     *
+     * The device computes the same value from the same typed arguments, and
+     * the execution path recomputes it rather than believing the header: a
+     * fingerprint a client can choose is a fingerprint that proves nothing
+     * about what the client is about to do.
+     */
+    fun fingerprintOf(
+        request: ExecutionRequest,
+        user: ServiceUser,
+        tool: ToolName,
+        actor: Actor,
+        amount: Money?,
+        decision: PolicyDecision,
+    ): String {
+        val typed = request.typedArguments(tool)
+        if (typed != null) {
+            return Fingerprints.proposal(
+                tenantId = TenantId(request.tenantId),
+                initiatorId = actor.id,
+                tool = tool,
+                args = typed,
+                amount = amount,
+                policyRuleId = decision.ruleId,
+                approval = decision.approval,
+            )
+        }
+        // A tool without typed arguments still gets a fingerprint, and it is
+        // over the canonical arguments plus everything that decides the action.
+        return CanonicalJson.write(
+            CanonicalValue.Obj(
+                listOf(
+                    "tenant" to CanonicalValue.Str(request.tenantId),
+                    "initiator" to CanonicalValue.Str(user.actorId),
+                    "tool" to CanonicalValue.Str(tool.wire),
+                    "toolVersion" to CanonicalValue.Str(tool.version),
+                    "arguments" to CanonicalValue.Str(request.canonicalArguments()),
+                    "amountMinor" to CanonicalValue.Num((amount?.minorUnits ?: 0L).toString()),
+                    "currency" to CanonicalValue.Str(amount?.currency ?: "XXX"),
+                    "policyRule" to CanonicalValue.Str(decision.ruleId),
+                    "approval" to CanonicalValue.Str(decision.approval.name),
+                ),
+            ),
+        ).let { Digests.sha256(it) }
+    }
+
+    /** The code for a request that does not carry what its tool needs. */
+    private fun missingArgument(tool: ToolName, request: ExecutionRequest): String? {
+        val args = request.arguments
+        return when (tool) {
+            ToolName.STOCK_AVAILABILITY -> if (args.text(MizanContract.ArgumentField.SKU) == null) "MISSING_SKU" else null
+            ToolName.CUSTOMER_SEARCH -> if (args.text(MizanContract.ArgumentField.QUERY) == null) "MISSING_QUERY" else null
+            ToolName.CREATE_DRAFT_ORDER -> when {
+                args.text(MizanContract.ArgumentField.CUSTOMER_NAME) == null -> "MISSING_CUSTOMER"
+                args.wholeOrNumericText(MizanContract.ArgumentField.AMOUNT_MINOR) == null -> "MISSING_AMOUNT"
+                args.text(MizanContract.ArgumentField.ITEMS_SUMMARY) == null -> "MISSING_ITEMS"
+                else -> null
+            }
+            ToolName.CREATE_INVOICE ->
+                if (args.text(MizanContract.ArgumentField.ORDER_ID) == null) "MISSING_ORDER_ID" else null
+            ToolName.CANCEL_ORDER -> when {
+                args.text(MizanContract.ArgumentField.ORDER_ID) == null -> "MISSING_ORDER_ID"
+                args.text(MizanContract.ArgumentField.REASON) == null -> "MISSING_REASON"
+                else -> null
+            }
+            ToolName.REGISTER_PAYMENT -> when {
+                args.text(MizanContract.ArgumentField.INVOICE_ID) == null -> "MISSING_INVOICE_ID"
+                request.moneyOrNull() == null -> "MISSING_AMOUNT"
+                else -> null
+            }
+            ToolName.SALES_SUMMARY -> null
+            ToolName.UNKNOWN -> "TOOL_UNKNOWN"
+        }
+    }
+
+    /** Marks the approval an execution is using as consumed, once. */
+    private fun consumeApproval(approvalId: String?) {
+        if (approvalId == null) return
+        val store = stores?.approvals ?: return
+        val approval = store.get(approvalId) ?: return
+        if (approval.state != ApprovalState.GRANTED) return
+        store.save(approvalPolicy.consume(approval, clock()))
     }
 
     // -------------------------------------------------------------- the journal
@@ -351,6 +529,7 @@ class ServiceAuthority(
         policyVersionId: String,
         policyHash: String,
         canonicalArguments: String,
+        executedFingerprint: String? = null,
     ): ExecutionOutcome? {
         val approvalId = request.approvalId ?: return null
         val store = stores?.approvals
@@ -362,7 +541,9 @@ class ServiceAuthority(
         val approval = store.get(approvalId) ?: return refuse(request, "APPROVAL_UNKNOWN", 422)
         val validation = approvalPolicy.validate(
             request = approval,
-            currentFingerprint = request.proposalFingerprint ?: canonicalArguments,
+            // The approval must name the fingerprint of what is being
+            // executed now, not whatever the client says it is executing.
+            currentFingerprint = executedFingerprint ?: request.proposalFingerprint ?: canonicalArguments,
             currentRevision = approval.proposalRevision,
             currentPolicyVersionId = policyVersionId,
             currentPolicyHash = policyHash,
@@ -411,35 +592,6 @@ class ServiceAuthority(
             return (connector.orderAmount(request.tenantId, orderId) as? ErpResult.Ok)?.value
         }
         return null
-    }
-
-    private fun requiredArgumentRefusal(tool: ToolName, request: ExecutionRequest): ExecutionOutcome? {
-        val args = request.arguments
-        val code = when (tool) {
-            ToolName.STOCK_AVAILABILITY -> if (args.text(MizanContract.ArgumentField.SKU) == null) "MISSING_SKU" else null
-            ToolName.CUSTOMER_SEARCH -> if (args.text(MizanContract.ArgumentField.QUERY) == null) "MISSING_QUERY" else null
-            ToolName.CREATE_DRAFT_ORDER -> when {
-                args.text(MizanContract.ArgumentField.CUSTOMER_NAME) == null -> "MISSING_CUSTOMER"
-                args.wholeOrNumericText(MizanContract.ArgumentField.AMOUNT_MINOR) == null -> "MISSING_AMOUNT"
-                args.text(MizanContract.ArgumentField.ITEMS_SUMMARY) == null -> "MISSING_ITEMS"
-                else -> null
-            }
-            ToolName.CREATE_INVOICE ->
-                if (args.text(MizanContract.ArgumentField.ORDER_ID) == null) "MISSING_ORDER_ID" else null
-            ToolName.CANCEL_ORDER -> when {
-                args.text(MizanContract.ArgumentField.ORDER_ID) == null -> "MISSING_ORDER_ID"
-                args.text(MizanContract.ArgumentField.REASON) == null -> "MISSING_REASON"
-                else -> null
-            }
-            ToolName.REGISTER_PAYMENT -> when {
-                args.text(MizanContract.ArgumentField.INVOICE_ID) == null -> "MISSING_INVOICE_ID"
-                request.moneyOrNull() == null -> "MISSING_AMOUNT"
-                else -> null
-            }
-            ToolName.SALES_SUMMARY -> null
-            ToolName.UNKNOWN -> "TOOL_UNKNOWN"
-        } ?: return null
-        return refuse(request, code, 422)
     }
 
     private fun exceedsCredit(creditMinor: Long?, balanceMinor: Long?, amount: Money?): Boolean {

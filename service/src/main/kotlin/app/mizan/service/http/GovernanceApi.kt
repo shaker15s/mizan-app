@@ -467,6 +467,41 @@ class GovernanceApi(
 
     // ----------------------------------------------------------------- journal
 
+    /**
+     * An approval, in the shape the app renders.
+     *
+     * The fingerprint and the policy version travel with it because they are
+     * what the person is actually being asked to approve; the reasons are
+     * codes, never sentences.
+     */
+    fun approvalJson(approval: app.mizan.domain.approval.ApprovalRequest): JsonValue = Json.obj(
+        "approvalId" to Json.str(approval.id),
+        "proposalId" to Json.str(approval.proposalId),
+        "tenantId" to Json.str(approval.tenantId.value),
+        "initiatorId" to Json.str(approval.initiatorId.value),
+        "proposalRevision" to Json.num(approval.proposalRevision),
+        "proposalFingerprint" to Json.str(approval.proposalFingerprint),
+        "requiredLevel" to Json.str(approval.requiredLevel.name),
+        "policyVersionId" to Json.str(approval.policyVersionId),
+        "policyHash" to Json.str(approval.policyHash),
+        "state" to Json.str(approval.state.name),
+        "createdAtMillis" to Json.num(approval.createdAtMillis),
+        "expiresAtMillis" to Json.num(approval.expiresAtMillis),
+        "approverIds" to Json.arr(approval.approvals.map { Json.str(it.approver.id.value) }),
+        "approverLabels" to Json.arr(approval.approvals.map { Json.str(it.approver.displayName) }),
+        "decisions" to Json.arr(
+            approval.decisions.map { decision ->
+                Json.obj(
+                    "approverId" to Json.str(decision.approverId.value),
+                    "approverLabel" to Json.str(decision.approverLabel),
+                    "state" to Json.str(decision.state.name),
+                    "atEpochMillis" to Json.num(decision.atEpochMillis),
+                    "reasonCode" to Json.str(decision.reasonCode),
+                )
+            },
+        ),
+    )
+
     fun journalJson(journal: ExecutionJournal): JsonValue = Json.obj(
         "executionId" to Json.str(journal.executionId.value),
         "tenantId" to Json.str(journal.tenantId.value),
