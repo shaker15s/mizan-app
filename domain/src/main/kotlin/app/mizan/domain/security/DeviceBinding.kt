@@ -24,9 +24,21 @@ import java.util.Base64
  * so a signature collected for one proposal cannot approve another and cannot
  * approve the same one twice.
  */
-enum class DeviceKeyAlgorithm(val wire: String, val jcaName: String) {
-    ED25519("Ed25519", "Ed25519"),
-    ECDSA_P256("ES256", "SHA256withECDSA"),
+enum class DeviceKeyAlgorithm(
+    val wire: String,
+    /** The JCA name of the signature algorithm. */
+    val jcaName: String,
+    /**
+     * The JCA name of the key algorithm itself.
+     *
+     * A signature algorithm and a key algorithm are not the same string, and
+     * they are not interchangeable: asking a `KeyPairGenerator` for
+     * `SHA256withECDSA` fails at the moment a person first enrols a device.
+     */
+    val keyAlgorithmName: String,
+) {
+    ED25519("Ed25519", "Ed25519", "Ed25519"),
+    ECDSA_P256("ES256", "SHA256withECDSA", "EC"),
     ;
 
     companion object {
@@ -193,7 +205,7 @@ class DeviceBindingService(
 
     /** The bytes a device signs. Published so both sides cannot drift apart. */
     fun message(challenge: ApprovalChallenge): ByteArray =
-        Fingerprints.approvalChallenge(
+        Fingerprints.approvalChallengeBody(
             tenantId = challenge.tenantId,
             actorId = challenge.actorId,
             executionId = challenge.executionId,
@@ -276,7 +288,7 @@ class DeviceBindingService(
     companion object {
         fun parsePublicKey(algorithm: DeviceKeyAlgorithm, base64: String): PublicKey {
             val bytes = Base64.getDecoder().decode(base64)
-            return KeyFactory.getInstance(algorithm.jcaName).generatePublic(X509EncodedKeySpec(bytes))
+            return KeyFactory.getInstance(algorithm.keyAlgorithmName).generatePublic(X509EncodedKeySpec(bytes))
         }
     }
 }
@@ -287,8 +299,22 @@ class DeviceBindingService(
  * same protocol can be tested for real, with real keys and real signatures.
  */
 object DeviceKeyMaterial {
-    fun generate(algorithm: DeviceKeyAlgorithm = DeviceKeyAlgorithm.ED25519): KeyPair =
-        KeyPairGenerator.getInstance(algorithm.jcaName).apply { initialize(256) }.generateKeyPair()
+    /**
+     * A fresh key pair.
+     *
+     * Ed25519 has no key size to choose -- its generator rejects anything but
+     * its own fixed size -- so only the elliptic-curve algorithm is
+     * initialised here. Initialising both would throw on exactly one of them,
+     * at the moment a user first enrols a device.
+     */
+    fun generate(algorithm: DeviceKeyAlgorithm = DeviceKeyAlgorithm.ED25519): KeyPair {
+        val generator = KeyPairGenerator.getInstance(algorithm.keyAlgorithmName)
+        when (algorithm) {
+            DeviceKeyAlgorithm.ED25519 -> Unit
+            DeviceKeyAlgorithm.ECDSA_P256 -> generator.initialize(256)
+        }
+        return generator.generateKeyPair()
+    }
 
     fun encode(publicKey: PublicKey): String = Base64.getEncoder().encodeToString(publicKey.encoded)
 

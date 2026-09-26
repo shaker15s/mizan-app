@@ -479,48 +479,45 @@ class ServiceAuthority(
         ToolName.STOCK_AVAILABILITY -> {
             val sku = request.arguments.text(MizanContract.ArgumentField.SKU)
                 ?: return refuse(request, "MISSING_SKU", 422)
-            when (val read = connector.checkStock(request.tenantId, sku)) {
-                is ErpResult.Ok -> accepted(
-                    request,
-                    "READ_RESULT",
-                    read.value.sku,
-                    MizanContract.ErpModel.STOCK,
-                    "available=${read.value.availableQty} reserved=${read.value.reservedQty}",
-                )
-                is ErpResult.Refused -> accepted(request, read.reasonCode)
-                else -> readFailure(request, read)
-            }
+            readThrough(
+                request = request,
+                journal = journal,
+                call = { connector.checkStock(request.tenantId, sku) },
+                describe = {
+                    ReadSummary(
+                        recordId = it.sku,
+                        model = MizanContract.ErpModel.STOCK,
+                        summary = "available=${it.availableQty} reserved=${it.reservedQty}",
+                    )
+                },
+            )
         }
 
         ToolName.CUSTOMER_SEARCH -> {
             val query = request.arguments.text(MizanContract.ArgumentField.QUERY)
                 ?: return refuse(request, "MISSING_QUERY", 422)
-            when (val read = connector.findCustomer(request.tenantId, query)) {
-                is ErpResult.Ok -> accepted(
-                    request,
-                    "READ_RESULT",
-                    read.value.firstOrNull()?.recordId ?: "none",
-                    MizanContract.ErpModel.CUSTOMER,
-                    "matches=${read.value.size}",
-                )
-                is ErpResult.Refused -> accepted(request, read.reasonCode)
-                else -> readFailure(request, read)
-            }
+            readThrough(
+                request = request,
+                journal = journal,
+                call = { connector.findCustomer(request.tenantId, query) },
+                describe = { matches ->
+                    ReadSummary(
+                        recordId = matches.firstOrNull()?.recordId ?: "none",
+                        model = MizanContract.ErpModel.CUSTOMER,
+                        summary = "matches=${matches.size}",
+                    )
+                },
+            )
         }
 
         ToolName.SALES_SUMMARY -> {
             val period = request.arguments.text(MizanContract.ArgumentField.PERIOD) ?: "current"
-            when (val read = connector.salesSummary(request.tenantId, period)) {
-                is ErpResult.Ok -> accepted(
-                    request,
-                    "READ_RESULT",
-                    period,
-                    MizanContract.ErpModel.ANALYTICS,
-                    read.value,
-                )
-                is ErpResult.Refused -> accepted(request, read.reasonCode)
-                else -> readFailure(request, read)
-            }
+            readThrough(
+                request = request,
+                journal = journal,
+                call = { connector.salesSummary(request.tenantId, period) },
+                describe = { ReadSummary(period, MizanContract.ErpModel.ANALYTICS, it) },
+            )
         }
 
         ToolName.CREATE_DRAFT_ORDER -> {
@@ -768,12 +765,41 @@ class ServiceAuthority(
         return accepted(request, messageCode, write.recordId, write.model, "the record was written and not read back")
     }
 
-    /** A read that could not be answered is not a successful read. */
-    private fun readFailure(request: ExecutionRequest, result: ErpResult<*>): ExecutionOutcome = when (result) {
-        is ErpResult.Unavailable -> ExecutionOutcome.Failed(request.executionId, result.reasonCode)
-        is ErpResult.Unknown -> ExecutionOutcome.Failed(request.executionId, "ERP_UNKNOWN_ANSWER")
-        is ErpResult.Malformed -> ExecutionOutcome.Failed(request.executionId, result.reasonCode)
-        else -> ExecutionOutcome.Failed(request.executionId, "ERP_READ_FAILED")
+    /** What a successful read produced, in the shape the journal stores. */
+    private data class ReadSummary(val recordId: String, val model: String, val summary: String)
+
+    /**
+     * A read is still a call to the ERP, so it is still dispatched as far as
+     * the journal is concerned: a person reading the history must be able to
+     * see that the device asked and what came back. What a read never does is
+     * claim verification -- it is accepted, which is exactly what it is.
+     */
+    private fun <T> readThrough(
+        request: ExecutionRequest,
+        journal: ExecutionJournal,
+        call: () -> ErpResult<T>,
+        describe: (T) -> ReadSummary,
+    ): ExecutionOutcome {
+        val dispatching = advance(journal, JournalEvent.DISPATCH_STARTED)
+        val result = call()
+        return when (result) {
+            is ErpResult.Ok -> {
+                val summary = describe(result.value)
+                val accepted = advance(dispatching, JournalEvent.DISPATCH_ACCEPTED)
+                stores?.journals?.save(
+                    accepted.copy(erpModel = summary.model, erpRecordId = summary.recordId),
+                )
+                accepted(request, "READ_RESULT", summary.recordId, summary.model, summary.summary)
+            }
+            is ErpResult.Refused -> {
+                stores?.journals?.save(advance(dispatching, JournalEvent.FAILED).copy(errorCode = result.reasonCode))
+                accepted(request, result.reasonCode)
+            }
+            is ErpResult.NotSupported -> failed(request, "TOOL_NOT_SUPPORTED_BY_ERP", dispatching)
+            is ErpResult.Unavailable -> failed(request, result.reasonCode, dispatching)
+            is ErpResult.Malformed -> failed(request, result.reasonCode, dispatching)
+            is ErpResult.Unknown -> failed(request, "ERP_UNKNOWN_ANSWER", dispatching)
+        }
     }
 
     private fun writeFailureCode(reasonCode: String): String = when (reasonCode) {

@@ -57,21 +57,40 @@ object Fingerprints {
         ),
     )
 
-    /** The exact bytes a device signs when it authorises an approval. */
+    /**
+     * The exact bytes a device signs when it authorises an approval.
+     *
+     * The signed material is the canonical body, not a hash of it, so anyone
+     * holding the signature can also read what was approved: the tenant, the
+     * actor, the execution, the proposal fingerprint and the single-use nonce.
+     */
+    fun approvalChallengeBody(
+        tenantId: TenantId,
+        actorId: ActorId,
+        executionId: ExecutionId,
+        proposalFingerprint: String,
+        nonce: String,
+    ): String = CanonicalJson.write(
+        CanonicalValue.Obj(
+            listOf(
+                "actor" to CanonicalValue.Str(actorId.value),
+                "execution" to CanonicalValue.Str(executionId.value),
+                "nonce" to CanonicalValue.Str(nonce),
+                "proposal" to CanonicalValue.Str(proposalFingerprint),
+                "tenant" to CanonicalValue.Str(tenantId.value),
+            ),
+        ),
+    )
+
+    /** The fingerprint of [approvalChallengeBody]: what a log line records. */
     fun approvalChallenge(
         tenantId: TenantId,
         actorId: ActorId,
         executionId: ExecutionId,
         proposalFingerprint: String,
         nonce: String,
-    ): String = digest(
-        listOf(
-            "tenant" to CanonicalValue.Str(tenantId.value),
-            "actor" to CanonicalValue.Str(actorId.value),
-            "execution" to CanonicalValue.Str(executionId.value),
-            "proposal" to CanonicalValue.Str(proposalFingerprint),
-            "nonce" to CanonicalValue.Str(nonce),
-        ),
+    ): String = Digests.sha256(
+        approvalChallengeBody(tenantId, actorId, executionId, proposalFingerprint, nonce),
     )
 
     /** The body of a server-signed receipt. */
