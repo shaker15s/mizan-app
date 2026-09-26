@@ -9,7 +9,7 @@ import app.mizan.service.json.JsonValue
 import app.mizan.service.json.asObject
 import app.mizan.service.json.text
 import app.mizan.service.json.whole
-import app.mizan.service.store.DurableLog
+import app.mizan.service.store.RecordLog
 import java.time.Duration
 
 /**
@@ -25,7 +25,7 @@ import java.time.Duration
  * outbox refuses such an entry rather than queueing it, because a queue that
  * retries writes is a duplicate-record generator with a schedule.
  */
-class Outbox(private val log: DurableLog) {
+class Outbox(private val log: RecordLog) {
 
     enum class State {
         PENDING,

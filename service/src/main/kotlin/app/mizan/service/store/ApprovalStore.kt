@@ -23,7 +23,7 @@ import app.mizan.service.json.text
  * what, and the fingerprint that binds an approval to a proposal has to
  * outlive the process that checked it.
  */
-class ApprovalStore(private val log: DurableLog) {
+class ApprovalStore(private val log: RecordLog) {
 
     private val byId = LinkedHashMap<String, ApprovalRequest>()
     private val byProposal = LinkedHashMap<String, String>()

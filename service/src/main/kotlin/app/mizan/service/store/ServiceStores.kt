@@ -40,20 +40,24 @@ import java.util.Base64
  * decisions into.
  */
 class ServiceStores(
-    private val directory: Path,
+    private val logs: LogProvider,
     private val clock: () -> Long = { System.currentTimeMillis() },
 ) : AutoCloseable {
 
-    private val journalLog = DurableLog(directory.resolve("execution-journal.log"))
-    private val idempotencyLog = DurableLog(directory.resolve("idempotency.log"))
-    private val sessionLog = DurableLog(directory.resolve("sessions.log"))
-    private val receiptLog = DurableLog(directory.resolve("receipts.log"))
-    private val deviceLog = DurableLog(directory.resolve("devices.log"))
-    private val challengeLog = DurableLog(directory.resolve("challenges.log"))
-    private val reconciliationLog = DurableLog(directory.resolve("reconciliation.log"))
-    private val auditLog = DurableLog(directory.resolve("audit.log"))
-    private val approvalLog = DurableLog(directory.resolve("approvals.log"))
-    private val outboxLog = DurableLog(directory.resolve("outbox.log"))
+    /** The file-backed deployment: one append-only file per stream. */
+    constructor(directory: Path, clock: () -> Long = { System.currentTimeMillis() }) :
+        this(FileLogProvider(directory), clock)
+
+    private val journalLog = logs.open("execution-journal")
+    private val idempotencyLog = logs.open("idempotency")
+    private val sessionLog = logs.open("sessions")
+    private val receiptLog = logs.open("receipts")
+    private val deviceLog = logs.open("devices")
+    private val challengeLog = logs.open("challenges")
+    private val reconciliationLog = logs.open("reconciliation")
+    private val auditLog = logs.open("audit")
+    private val approvalLog = logs.open("approvals")
+    private val outboxLog = logs.open("outbox")
 
     val journals = JournalStore(journalLog)
     val idempotency = IdempotencyStore(idempotencyLog)
@@ -67,18 +71,10 @@ class ServiceStores(
     val outbox = app.mizan.service.outbox.Outbox(outboxLog)
 
     override fun close() {
-        listOf(
-            journalLog,
-            idempotencyLog,
-            sessionLog,
-            receiptLog,
-            deviceLog,
-            challengeLog,
-            reconciliationLog,
-            auditLog,
-            approvalLog,
-            outboxLog,
-        ).forEach { it.close() }
+        // The provider owns the logs, so it is the provider that closes them:
+        // a file deployment closes ten files, a SQL deployment closes nothing
+        // because its statements are short-lived transactions.
+        logs.close()
     }
 }
 
@@ -107,7 +103,7 @@ private fun instantOf(millis: Long?): Instant? = millis?.let { Instant.ofEpochMi
  * The execution journal. Keyed by execution id, indexed by idempotency key so
  * a repeat can find the original without scanning every tenant's history.
  */
-class JournalStore(private val log: DurableLog) {
+class JournalStore(private val log: RecordLog) {
 
     private val byExecution = LinkedHashMap<String, ExecutionJournal>()
     private val byKey = LinkedHashMap<String, String>()
@@ -272,7 +268,7 @@ class JournalStore(private val log: DurableLog) {
  * different arguments is a refusal, and the check happens here, before the ERP
  * is touched.
  */
-class IdempotencyStore(private val log: DurableLog) {
+class IdempotencyStore(private val log: RecordLog) {
 
     data class Entry(
         val tenantId: String,
@@ -369,7 +365,7 @@ class IdempotencyStore(private val log: DurableLog) {
  * every operator out mid-shift, which in practice is how a governance layer
  * gets bypassed.
  */
-class SessionStore(private val log: DurableLog) {
+class SessionStore(private val log: RecordLog) {
 
     data class Record(
         val tokenFingerprint: String,
@@ -441,7 +437,7 @@ class SessionStore(private val log: DurableLog) {
 }
 
 /** Signed receipts, kept so an execution can be proved after the fact. */
-class ReceiptStore(private val log: DurableLog) {
+class ReceiptStore(private val log: RecordLog) {
 
     private val byId = LinkedHashMap<String, SignedReceipt>()
 
@@ -538,7 +534,7 @@ class ReceiptStore(private val log: DurableLog) {
 }
 
 /** Devices that may sign approvals, and their revocation state. */
-class DurableDeviceRepository(private val log: DurableLog) : DeviceRepository {
+class DurableDeviceRepository(private val log: RecordLog) : DeviceRepository {
 
     private val byId = LinkedHashMap<String, DevicePublicKey>()
 
@@ -590,7 +586,7 @@ class DurableDeviceRepository(private val log: DurableLog) : DeviceRepository {
 }
 
 /** Approval challenges. A nonce must not survive as reusable after a restart. */
-class DurableChallengeRepository(private val log: DurableLog) : app.mizan.domain.security.ChallengeRepository {
+class DurableChallengeRepository(private val log: RecordLog) : app.mizan.domain.security.ChallengeRepository {
 
     private val byId = LinkedHashMap<String, ApprovalChallenge>()
 
@@ -640,7 +636,7 @@ class DurableChallengeRepository(private val log: DurableLog) : app.mizan.domain
 }
 
 /** Reconciliation cases, so an uncertain write is still a question after a restart. */
-class ReconciliationStore(private val log: DurableLog) {
+class ReconciliationStore(private val log: RecordLog) {
 
     private val byId = LinkedHashMap<String, ReconciliationCase>()
 
@@ -721,7 +717,7 @@ class ReconciliationStore(private val log: DurableLog) {
 }
 
 /** The service's own audit chain, written to disk as it is appended. */
-class AuditStore(private val log: DurableLog) {
+class AuditStore(private val log: RecordLog) {
 
     private val events = ArrayList<app.mizan.domain.audit.AuditEvent>()
 

@@ -38,7 +38,7 @@ import java.util.zip.CRC32
 class DurableLog(
     private val path: Path,
     private val forceOnAppend: Boolean = true,
-) : AutoCloseable {
+) : RecordLog {
 
     private var file: RandomAccessFile
     private var channel: FileChannel
@@ -58,7 +58,7 @@ class DurableLog(
     val sizeBytes: Long get() = readableBytes
 
     @Synchronized
-    fun append(record: String): Int {
+    override fun append(record: String) {
         val payload = record.toByteArray(StandardCharsets.UTF_8)
         val header = "%08x %08x\n".format(crc32(payload), payload.size)
         val frame = ByteBuffer.allocate(header.length + payload.size + 1)
@@ -71,11 +71,10 @@ class DurableLog(
         if (forceOnAppend) channel.force(true)
         readableBytes += (header.length + payload.size + 1)
         records += record
-        return records.size - 1
     }
 
     @Synchronized
-    fun records(): List<String> = ArrayList(records)
+    override fun records(): List<String> = ArrayList(records)
 
     @Synchronized
     fun get(index: Int): String? = records.getOrNull(index)
@@ -86,7 +85,7 @@ class DurableLog(
      * compaction leaves the old log intact rather than a half-written one.
      */
     @Synchronized
-    fun compact(state: List<String>) {
+    override fun compact(state: List<String>) {
         val temporary = path.resolveSibling(path.fileName.toString() + ".compact")
         RandomAccessFile(temporary.toFile(), "rw").use { handle ->
             handle.setLength(0)

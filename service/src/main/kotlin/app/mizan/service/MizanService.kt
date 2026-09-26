@@ -55,6 +55,17 @@ data class ServiceConfig(
      * directory and survive a restart.
      */
     val storeDirectory: Path? = null,
+    /**
+     * When set, the same durable state is kept in PostgreSQL instead of a
+     * directory. A deployment with more than one service process needs this:
+     * two processes writing ten files on two machines are two services.
+     */
+    val database: app.mizan.service.store.sql.DatabaseConfig? = null,
+    /**
+     * Bring your own durability. Set by tests and by a deployment that keeps
+     * its records somewhere this file has never heard of.
+     */
+    val logProvider: app.mizan.service.store.LogProvider? = null,
     /** When set, a verified write is signed with this key ring's active key. */
     val signingSecret: String? = null,
     /** When true, a tool that demands a fresh proof refuses without a device signature. */
@@ -109,6 +120,15 @@ class MizanService(
     private val clock: () -> Long = { System.currentTimeMillis() },
 ) {
 
+    init {
+        // Checked before anything is opened: a configuration that names two
+        // homes for the same state must be refused, not resolved by whichever
+        // initialiser happens to run first.
+        require(
+            !(config.database != null && config.storeDirectory != null && config.logProvider == null),
+        ) { "a deployment keeps its records in one place: a directory or a database, not both" }
+    }
+
     val erp: InMemoryErp = InMemoryErp()
     val connector: ErpConnector = config.connector ?: InMemoryErpConnector(erp, clock)
     val audit = AuditLedger(clock)
@@ -118,7 +138,24 @@ class MizanService(
     val policy = PolicyEvaluator(config.catalog, config.versionedPolicy.version, config.versionedPolicy.rules, clock)
     val rateLimiter = RateLimiter(clock, config.rateLimiting, config.budgets)
     val loginThrottle = LoginThrottle(clock = clock)
-    val stores: ServiceStores? = config.storeDirectory?.let { ServiceStores(it, clock) }
+    val stores: ServiceStores? = when {
+        config.logProvider != null -> ServiceStores(config.logProvider, clock)
+        config.database != null -> ServiceStores(
+            app.mizan.service.store.sql.SqlLogProvider(
+                app.mizan.service.store.sql.JdbcDatabase(
+                    url = config.database.url,
+                    user = config.database.user,
+                    password = config.database.password,
+                    driverClass = config.database.driverClass,
+                ),
+                config.database.table,
+            ),
+            clock,
+        )
+        config.storeDirectory != null -> ServiceStores(config.storeDirectory, clock)
+        else -> null
+    }
+
     val signer: ReceiptSigner? = config.signingSecret?.let { ReceiptSigner(listOf(ReceiptSigner.demoKey(it))) }
     val devices: DeviceBindingService? = stores?.let {
         DeviceBindingService(it.devices, it.challenges, clock)
