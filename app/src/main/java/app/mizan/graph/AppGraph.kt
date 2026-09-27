@@ -50,6 +50,37 @@ class AppGraph(context: Context) {
     /** The receipt key ids this build pinned, empty when it pinned none. */
     val receiptKeyId: String get() = app.mizan.PinnedReceiptKeys.summary
 
+    /**
+     * The device key this install signs approvals with.
+     *
+     * Lazily: generating a keystore key on app start would prompt the platform
+     * before the person has done anything, and a build that never approves
+     * anything never needs one.
+     */
+    val deviceKeys: app.mizan.security.DeviceKeyStore by lazy { app.mizan.security.DeviceKeyStore(context) }
+
+    /**
+     * The live approval queue.
+     *
+     * A demo build has no service, so the board is the unconfigured one and the
+     * screen says exactly that instead of showing an empty list, which would
+     * read as "nothing needs you" -- a claim this build cannot make.
+     */
+    val approvals: app.mizan.integration.api.ApprovalsBoard by lazy {
+        if (apiBaseUrl.isBlank()) {
+            app.mizan.integration.api.ApprovalsBoard.unconfigured()
+        } else {
+            app.mizan.integration.api.ApprovalsBoard(
+                source = app.mizan.integration.api.GovernanceApiSource(
+                    app.mizan.integration.api.GovernanceApiClient(apiBaseUrl, { tokens.read() }),
+                ),
+                actorId = { session.session.value?.actor?.id?.value.orEmpty() },
+                signChallenge = { message -> deviceKeys.sign(message) },
+                deviceId = deviceKeys.deviceId,
+            )
+        }
+    }
+
     val executions: ExecutionStore
     val receipts: ReceiptStore
     val audit: AuditStore

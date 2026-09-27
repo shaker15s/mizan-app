@@ -199,6 +199,53 @@ class GovernanceContractTest {
         assertEquals("line\nbreak \"quoted\" \\ slash أ", document.text("note"))
     }
 
+    // ------------------------------------------------------ answering an approval
+
+    @Test
+    fun aChallengeForOneApprovalIsAskedForOnThatApprovalAndCarriesOnlyTheDevice() {
+        // The service issues the challenge against the approval's own
+        // fingerprint and the execution it carries, so a screen rendering a
+        // queue does not have to remember either. The request therefore names
+        // the device and nothing else.
+        val request = client().request(
+            "POST",
+            "/v1/approvals/APR-0007/challenge",
+            app.mizan.domain.model.CanonicalJson.write(
+                app.mizan.domain.model.CanonicalValue.Obj(
+                    listOf("deviceId" to app.mizan.domain.model.CanonicalValue.Str("DEV-1")),
+                ),
+            ),
+        )
+        assertEquals("POST", request.method)
+        assertEquals("https://api.example/v1/approvals/APR-0007/challenge", request.url.toString())
+        assertEquals("Bearer tok-123", request.header("Authorization"))
+        val body = bodyOf(request)
+        assertEquals("""{"deviceId":"DEV-1"}""", body)
+    }
+
+    @Test
+    fun anApprovalTheClientCannotFullyReadIsRefusedRatherThanHalfFilled() {
+        // Every field the screen needs is required. A missing fingerprint or
+        // expiry would otherwise be rendered as an empty string or a zero, and
+        // a zero expiry is an approval that reads as expired forever.
+        val client = client()
+        assertEquals(null, client.approvalParse("""{"approvalId":"APR-1"}"""))
+        val complete = client.approvalParse(
+            """{"approvalId":"APR-1","executionId":"EXE-1","state":"PENDING","requiredLevel":"L2_PRIVILEGED",""" +
+                """"proposalFingerprint":"fp","policyVersionId":"v12","initiatorId":"USR-REP",""" +
+                """"createdAtMillis":1,"expiresAtMillis":2,"approverIds":["USR-MGR"]}""",
+        )
+        assertEquals("EXE-1", complete?.executionId)
+        // An approval created before the binding existed has no execution id;
+        // that is legal, and the challenge route refuses it honestly.
+        val legacy = client.approvalParse(
+            """{"approvalId":"APR-1","state":"PENDING","requiredLevel":"L2_PRIVILEGED",""" +
+                """"proposalFingerprint":"fp","policyVersionId":"v12","initiatorId":"USR-REP",""" +
+                """"createdAtMillis":1,"expiresAtMillis":2,"approverIds":[]}""",
+        )
+        assertEquals("", legacy?.executionId)
+    }
+
     // -------------------------------------------------------------- receipts
 
     /**

@@ -70,6 +70,7 @@ class ApprovalStore(private val log: RecordLog) {
         Json.obj(
             "id" to Json.str(request.id),
             "proposalId" to Json.str(request.proposalId),
+            "executionId" to Json.str(request.executionId),
             "tenantId" to Json.str(request.tenantId.value),
             "initiatorId" to Json.str(request.initiatorId.value),
             "proposalRevision" to Json.num(request.proposalRevision),
@@ -139,6 +140,7 @@ class ApprovalStore(private val log: RecordLog) {
         return ApprovalRequest(
             id = id,
             proposalId = record.text("proposalId") ?: "",
+            executionId = record.text("executionId") ?: "",
             tenantId = TenantId(tenantId),
             initiatorId = ActorId(initiatorId),
             proposalRevision = record.long("proposalRevision")?.toInt() ?: 1,

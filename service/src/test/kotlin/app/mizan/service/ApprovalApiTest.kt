@@ -510,6 +510,105 @@ class ApprovalApiTest {
     }
 
     @Test
+    fun anApprovalIsBoundToItsExecutionAndTheChallengeHangsOffIt() {
+        // A person looking at a queue should not have to remember which
+        // execution each row belongs to: the approval carries the binding, and
+        // the challenge is issued from the approval itself.
+        val directory = Files.createTempDirectory("mizan-approval-binding-")
+        directory.toFile().deleteOnExit()
+        val service = MizanService(
+            ServiceConfig(
+                storeDirectory = directory,
+                signingSecret = "approval-binding-key",
+                requireDeviceProof = true,
+                versionedPolicy = VersionedPolicy.demoV12,
+            ),
+        )
+        val port = service.start(port = 0)
+        val origin = "http://127.0.0.1:$port"
+        try {
+            val manager = signInOn(origin, "manager@mizan.test", "manager-demo-password")
+            val rep = signInOn(origin, "rep@mizan.test", "rep-demo-password")
+            val opened = sendOn(origin, MizanContract.PATH_APPROVALS, "POST", orderBody("EXE-APR-CHALLENGE"), rep)
+            assertEquals(opened.body, 201, opened.status)
+            val id = opened.field("approvalId")!!
+            assertEquals("the approval names its execution", "EXE-APR-CHALLENGE", opened.field("executionId"))
+
+            // An unknown device is refused as an enrolment problem, not as a
+            // signature problem: nothing has been signed yet.
+            val unknown = sendOn(
+                origin,
+                "${MizanContract.PATH_APPROVALS}/$id/challenge",
+                "POST",
+                """{"deviceId":"DEV-NOBODY"}""",
+                manager,
+            )
+            assertEquals(unknown.body, 422, unknown.status)
+            assertEquals("DEVICE_NOT_ENROLLED", unknown.field("messageCode"))
+
+            val keyPair = app.mizan.domain.security.DeviceKeyMaterial.generate(
+                app.mizan.domain.security.DeviceKeyAlgorithm.ED25519,
+            )
+            val enrolled = sendOn(
+                origin,
+                MizanContract.PATH_DEVICES,
+                "POST",
+                """{"deviceId":"DEV-QUEUE","algorithm":"Ed25519",""" +
+                    """"publicKey":"${app.mizan.domain.security.DeviceKeyMaterial.encode(keyPair.public)}",""" +
+                    """"label":"queue device"}""",
+                manager,
+            )
+            assertEquals(enrolled.body, 201, enrolled.status)
+
+            val challenge = sendOn(
+                origin,
+                "${MizanContract.PATH_APPROVALS}/$id/challenge",
+                "POST",
+                """{"deviceId":"DEV-QUEUE"}""",
+                manager,
+            )
+            assertEquals(challenge.body, 201, challenge.status)
+            assertEquals("EXE-APR-CHALLENGE", challenge.field("executionId"))
+            assertEquals(opened.field("proposalFingerprint"), challenge.field("proposalFingerprint"))
+
+            // The message the device signs contains the approval's fingerprint,
+            // so signing it is signing this approval and nothing else.
+            val message = challenge.field("messageToSign")!!
+            assertTrue("the signed body carries the fingerprint", message.contains(opened.field("proposalFingerprint")!!))
+            assertTrue("and the tenant", message.contains("sim-alamal"))
+
+            val signature = app.mizan.domain.security.DeviceKeyMaterial.sign(
+                keyPair.private,
+                message.toByteArray(Charsets.UTF_8),
+                app.mizan.domain.security.DeviceKeyAlgorithm.ED25519,
+            )
+            val granted = sendOn(
+                origin,
+                "${MizanContract.PATH_APPROVALS}/$id/grant",
+                "POST",
+                """{"deviceChallengeId":"${challenge.field("challengeId")}","deviceSignature":"$signature"}""",
+                manager,
+            )
+            assertEquals(granted.body, 200, granted.status)
+            assertEquals("GRANTED", granted.field("state"))
+
+            // A challenge for a decided approval is refused: the window for
+            // answering is the approval's pending state, not the device's.
+            val after = sendOn(
+                origin,
+                "${MizanContract.PATH_APPROVALS}/$id/challenge",
+                "POST",
+                """{"deviceId":"DEV-QUEUE"}""",
+                manager,
+            )
+            assertEquals(409, after.status)
+            assertEquals("EXECUTION_ALREADY_RESOLVED", after.field("messageCode"))
+        } finally {
+            service.stop()
+        }
+    }
+
+    @Test
     fun theHealthAndJournalSurfacesStillHoldAfterApprovals() {
         val health = send(MizanContract.PATH_HEALTH, "GET")
         assertEquals(200, health.status)

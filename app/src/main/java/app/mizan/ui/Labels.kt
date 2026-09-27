@@ -104,6 +104,27 @@ fun roleLabel(role: Role): String = stringResource(
     },
 )
 
+/**
+ * What an approval's standing is called.
+ *
+ * The standing is computed by `ApprovalsBoard` from what the service said --
+ * who it named, whether it is still pending, when it expires -- and a screen
+ * that rendered that enum's name would be showing a developer's word for it.
+ */
+@Composable
+fun standingLabel(standing: app.mizan.integration.api.ApprovalRow.Standing): String =
+    stringResource(
+        when (standing) {
+            app.mizan.integration.api.ApprovalRow.Standing.ANSWERABLE -> R.string.standing_ANSWERABLE
+            app.mizan.integration.api.ApprovalRow.Standing.AWAITING_OTHERS -> R.string.standing_AWAITING_OTHERS
+            app.mizan.integration.api.ApprovalRow.Standing.EXPIRED -> R.string.standing_EXPIRED
+            app.mizan.integration.api.ApprovalRow.Standing.GRANTED -> R.string.standing_GRANTED
+            app.mizan.integration.api.ApprovalRow.Standing.REJECTED -> R.string.standing_REJECTED
+            app.mizan.integration.api.ApprovalRow.Standing.INVALIDATED -> R.string.standing_INVALIDATED
+            app.mizan.integration.api.ApprovalRow.Standing.CONSUMED -> R.string.standing_CONSUMED
+        },
+    )
+
 @Composable
 fun chainLabel(code: String): String {
     val id = when (code) {

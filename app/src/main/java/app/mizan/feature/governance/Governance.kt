@@ -111,6 +111,10 @@ fun GovernanceRoute(graph: AppGraph) {
             }
         }
 
+        // The live queue, before the description of the rules: what needs a
+        // person comes first, and the rules below are what explain why.
+        app.mizan.feature.approvals.ApprovalsSection(graph)
+
         if (graph.demoMode) {
             Row(
                 modifier = Modifier

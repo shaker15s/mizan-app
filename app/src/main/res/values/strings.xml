@@ -295,4 +295,38 @@
     <string name="role_FINANCE_APPROVER">Finance</string>
     <string name="role_AUDITOR">Auditor</string>
     <string name="role_OPERATOR">Operator</string>
+
+    <!-- Live approvals, read from the service. -->
+    <string name="approval_live_heading">Approvals waiting in the service</string>
+    <string name="approval_reading">Reading approvals…</string>
+    <string name="approval_no_service">No service is configured in this build, so there is nothing to read.</string>
+    <string name="approval_failed">The service answered: %1$s</string>
+    <string name="approval_none">Nothing is waiting for you.</string>
+    <string name="approval_none_filtered">Nothing is waiting for you in that state.</string>
+    <string name="approval_working">Working…</string>
+    <string name="approval_recorded">Answer recorded: %1$s</string>
+    <string name="approval_refused">Not recorded: %1$s</string>
+    <string name="approval_needs_device">A device proof is required and is missing: %1$s</string>
+    <string name="approval_id_label">Approval</string>
+    <string name="approval_requested_by">Requested by</string>
+    <string name="approval_fingerprint">Fingerprint</string>
+    <string name="approval_expires">Expires in</string>
+    <string name="approval_expired_now">Expired</string>
+    <string name="approval_standing">Standing</string>
+    <string name="approval_waiting_on">Waiting on</string>
+    <string name="approval_refresh">Refresh</string>
+    <string name="approval_approve">Approve</string>
+    <string name="approval_refuse">Refuse</string>
+
+    <string name="standing_ANSWERABLE">Needs you</string>
+    <string name="standing_AWAITING_OTHERS">Waiting on someone else</string>
+    <string name="standing_EXPIRED">Expired</string>
+    <string name="standing_GRANTED">Granted</string>
+    <string name="standing_REJECTED">Refused</string>
+    <string name="standing_INVALIDATED">Invalidated by a changed proposal</string>
+    <string name="standing_CONSUMED">Used by an execution</string>
+
+    <string name="approval_remaining_hours_minutes">%1$d h %2$d m</string>
+    <string name="approval_remaining_minutes">%1$d min</string>
+    <string name="approval_remaining_seconds">%1$d s</string>
 </resources>

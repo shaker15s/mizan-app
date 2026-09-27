@@ -282,6 +282,7 @@ class MizanService(
         governance = governance,
         stores = stores,
         authenticate = ::authenticate,
+        deviceBinding = devices,
     )
 
     /**

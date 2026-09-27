@@ -36,6 +36,16 @@ data class ApprovalDecision(
 data class ApprovalRequest(
     val id: String,
     val proposalId: String,
+    /**
+     * The execution this approval authorises.
+     *
+     * It used to be implicit: an approval knew its proposal and its
+     * fingerprint, and the device challenge was issued against an execution
+     * the client had to remember. A screen showing a queue of approvals has no
+     * such memory, so the binding is carried explicitly and the challenge can
+     * be asked for on the approval itself.
+     */
+    val executionId: String = "",
     val tenantId: TenantId,
     val initiatorId: ActorId,
     /** The proposal revision this approval is about. */

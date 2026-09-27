@@ -503,6 +503,7 @@ class GovernanceApi(
     fun approvalJson(approval: app.mizan.domain.approval.ApprovalRequest): JsonValue = Json.obj(
         "approvalId" to Json.str(approval.id),
         "proposalId" to Json.str(approval.proposalId),
+        "executionId" to Json.str(approval.executionId),
         "tenantId" to Json.str(approval.tenantId.value),
         "initiatorId" to Json.str(approval.initiatorId.value),
         "proposalRevision" to Json.num(approval.proposalRevision),

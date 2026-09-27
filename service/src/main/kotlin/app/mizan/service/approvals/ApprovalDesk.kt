@@ -100,6 +100,7 @@ class ApprovalDesk(
         val approval = ApprovalRequest(
             id = newId(),
             proposalId = proposalId,
+            executionId = request.executionId,
             tenantId = TenantId(request.tenantId),
             initiatorId = ActorId(user.actorId),
             proposalRevision = proposalRevision,

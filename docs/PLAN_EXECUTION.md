@@ -25,7 +25,7 @@ words, and this file is written to survive that standard.
 | Modules that compile and run here | `:domain`, `:service`, `:integration` |
 | Modules that cannot be built here | `:app`, `:design`, `:data` — they need the Android SDK, AGP and Compose, and Maven Central and Google Maven are unreachable from this sandbox |
 | Test command | `JAVA_HOME=... KOTLINC_HOME=... python3 tools/jvm_check.py` |
-| Tests | 463, all passing (domain contracts, service pipeline over a real HTTP listener, the outbox and its sweeper, the durable journal across a restart, the PostgreSQL record log against a database double, the ERP boundary with a scripted transport) |
+| Tests | 482, all passing (domain contracts, service pipeline over a real HTTP listener, the outbox and its sweeper, the durable journal across a restart, the PostgreSQL record log against a database double, the ERP boundary with a scripted transport) |
 
 Anything marked **proven** below is proven by that command. Anything that needs
 an Android device, a Gradle build, a Postgres server or a real Odoo instance is
@@ -191,8 +191,40 @@ and identity-provider work, and neither can be built in this environment.
   performed — with a message key, never a sentence. **Proven.**
 
 ### Phase 6 — UX rebuild
-**Not started.** The screens have not been rebuilt; that work is Android-side
-and nothing here can run it.
+**Not rebuilt, but one screen is now live rather than decorative.**
+
+The plan's Phase 6 is a rebuild of eleven screens; that remains Android-side
+work this environment cannot run or see. What changed is the screen the plan
+calls out as the most important one: the **approval surface is wired to the
+service**.
+
+* `integration/api/ApprovalsBoard.kt` is the join that was missing. It reads
+  the queue from `GovernanceApiClient`, and turns what the service said into one
+  of four honest states -- unread, loaded, refused-with-a-code, or
+  `Unconfigured` when the build has no service at all. An empty list is never
+  used to mean "we could not ask".
+* It computes the standing of each row from the service's own facts: pending
+  and named for you, pending and named for someone else (and it says who),
+  past the expiry the service reported, granted, refused, invalidated, consumed.
+  It sorts what needs you first.
+* The decision path is fixed: read the row, ask the service for a challenge
+  bound to *that approval's* fingerprint, sign the bytes with the device key,
+  then grant. A build with no key refuses (`DEVICE_KEY_NOT_ENROLLED`) instead
+  of sending an unsigned grant, and a challenge the service refuses is reported
+  with the service's own code.
+* `app/security/DeviceKeyStore.kt` is the device half: a non-exportable Ed25519
+  key in the Android keystore with P-256 as the fallback, generated once and
+  never rotated silently.
+* The service side gained the binding that makes a queue possible:
+  `POST /v1/approvals/{id}/challenge` issues a challenge for the approval's own
+  fingerprint and the execution it carries, so a screen does not have to
+  remember which execution a row belongs to. An approval now carries its
+  `executionId` on the wire.
+
+**Not done here:** the other ten screens, and the visual/adaptive/accessibility
+work of Phase 6 and 7, which need a device. The approvals section is rendered
+inside the governance screen and its state machine is covered by tests; the
+pixels are not.
 
 ### Phase 7 — design system 2.0
 **Not started** beyond the tokens that already existed.

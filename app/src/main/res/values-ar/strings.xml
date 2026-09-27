@@ -295,4 +295,38 @@
     <string name="role_FINANCE_APPROVER">مالية</string>
     <string name="role_AUDITOR">مدقق</string>
     <string name="role_OPERATOR">مشغّل</string>
+
+    <!-- الموافقات الحية من الخدمة -->
+    <string name="approval_live_heading">موافقات في انتظارك لدى الخدمة</string>
+    <string name="approval_reading">جارٍ قراءة الموافقات…</string>
+    <string name="approval_no_service">لا توجد خدمة مهيّأة في هذا الإصدار، فلا شيء لقراءته.</string>
+    <string name="approval_failed">ردّت الخدمة: %1$s</string>
+    <string name="approval_none">لا شيء في انتظارك.</string>
+    <string name="approval_none_filtered">لا شيء في انتظارك في هذه الحالة.</string>
+    <string name="approval_working">جارٍ العمل…</string>
+    <string name="approval_recorded">تم تسجيل الرد: %1$s</string>
+    <string name="approval_refused">لم يُسجَّل: %1$s</string>
+    <string name="approval_needs_device">إثبات الجهاز مطلوب وغير متوفر: %1$s</string>
+    <string name="approval_id_label">الموافقة</string>
+    <string name="approval_requested_by">طلبها</string>
+    <string name="approval_fingerprint">البصمة</string>
+    <string name="approval_expires">تنتهي بعد</string>
+    <string name="approval_expired_now">منتهية</string>
+    <string name="approval_standing">الحالة</string>
+    <string name="approval_waiting_on">في انتظار</string>
+    <string name="approval_refresh">تحديث</string>
+    <string name="approval_approve">موافقة</string>
+    <string name="approval_refuse">رفض</string>
+
+    <string name="standing_ANSWERABLE">تحتاج قرارك</string>
+    <string name="standing_AWAITING_OTHERS">في انتظار شخص آخر</string>
+    <string name="standing_EXPIRED">منتهية</string>
+    <string name="standing_GRANTED">ممنوحة</string>
+    <string name="standing_REJECTED">مرفوضة</string>
+    <string name="standing_INVALIDATED">أُبطلت لتغيّر المقترح</string>
+    <string name="standing_CONSUMED">استُهلكت بتنفيذ</string>
+
+    <string name="approval_remaining_hours_minutes">%1$d س %2$d د</string>
+    <string name="approval_remaining_minutes">%1$d دقيقة</string>
+    <string name="approval_remaining_seconds">%1$d ثانية</string>
 </resources>

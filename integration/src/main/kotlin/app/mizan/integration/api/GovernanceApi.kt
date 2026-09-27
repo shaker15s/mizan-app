@@ -37,6 +37,8 @@ sealed interface RemoteResult<out T> {
 /** An approval as the service describes it. */
 data class RemoteApproval(
     val id: String,
+    /** The execution this approval authorises, as the service bound it. */
+    val executionId: String,
     val state: ApprovalState,
     val requiredLevel: ApprovalLevel,
     val proposalFingerprint: String,
@@ -201,6 +203,24 @@ class GovernanceApiClient(
     }
 
     /**
+     * A challenge to answer one approval with.
+     *
+     * The service issues it against the approval's own fingerprint and the
+     * execution it carries, for the device the caller names, so a client that
+     * is rendering a queue does not have to remember which execution a row
+     * belongs to. Signing the approval's fingerprint is the proof; signing
+     * "yes" would not be one.
+     */
+    fun challengeForApproval(approvalId: String, deviceId: String): RemoteResult<RemoteChallenge> {
+        val body = CanonicalJson.write(
+            CanonicalValue.Obj(listOf("deviceId" to CanonicalValue.Str(deviceId))),
+        )
+        return send(request("POST", "/v1/approvals/$approvalId/challenge", body)) { answer ->
+            challengeOf(answer)
+        }
+    }
+
+    /**
      * Asks for a challenge over one fingerprint.
      *
      * The fingerprint is the approval's, not the request's: signing the thing
@@ -220,18 +240,25 @@ class GovernanceApiClient(
                 ),
             ),
         )
-        return send(request("POST", "/v1/devices/challenge", body)) { answer ->
-            // A challenge that cannot be read is not a challenge. Returning
-            // null here becomes a refusal, which is the honest answer.
-            val obj = JsonText.parse(answer) as? JsonText.Obj ?: return@send null
-            val challengeId = obj.text("challengeId") ?: return@send null
-            val message = obj.text("messageToSign") ?: return@send null
-            RemoteChallenge(
-                challengeId = challengeId,
-                messageToSign = message,
-                expiresAtMillis = obj.whole("expiresAtMillis") ?: 0L,
-            )
-        }
+        return send(request("POST", "/v1/devices/challenge", body)) { answer -> challengeOf(answer) }
+    }
+
+    /**
+     * Reads a challenge, or nothing.
+     *
+     * A challenge that cannot be read is not a challenge. Returning null here
+     * becomes a refusal, which is the honest answer: a device that signed a
+     * half-read message would be proving something nobody asked for.
+     */
+    private fun challengeOf(answer: String): RemoteChallenge? {
+        val obj = JsonText.parse(answer) as? JsonText.Obj ?: return null
+        val challengeId = obj.text("challengeId") ?: return null
+        val message = obj.text("messageToSign") ?: return null
+        return RemoteChallenge(
+            challengeId = challengeId,
+            messageToSign = message,
+            expiresAtMillis = obj.whole("expiresAtMillis") ?: 0L,
+        )
     }
 
     // -------------------------------------------------------------- receipts
@@ -363,6 +390,10 @@ class GovernanceApiClient(
         val id = obj.text("approvalId") ?: return null
         return RemoteApproval(
             id = id,
+            // Empty is legal and not a failure: an approval created before the
+            // binding existed has no execution id, and the challenge route
+            // then refuses it honestly rather than the reader inventing one.
+            executionId = obj.text("executionId").orEmpty(),
             state = ApprovalState.entries.firstOrNull { it.name == obj.text("state") } ?: return null,
             requiredLevel = ApprovalLevel.entries.firstOrNull { it.name == obj.text("requiredLevel") }
                 ?: return null,
@@ -380,6 +411,16 @@ class GovernanceApiClient(
      * the answer is a partial one and a screen that showed "granted" would be
      * lying about who has answered so far.
      */
+    /**
+     * Reads one approval, or nothing.
+     *
+     * Public so the contract test can prove what a partial body does: a
+     * missing field must refuse the whole row rather than be defaulted to
+     * zero, because a zero expiry reads as an approval that can never be
+     * answered and an empty fingerprint as one that can never be verified.
+     */
+    fun approvalParse(body: String): RemoteApproval? = approvalDocument(body)?.let(::approvalOf)
+
     private fun approvalDocument(body: String): JsonText? {
         val document = JsonText.parse(body) ?: return null
         if (document is JsonText.Obj) document.obj("approval")?.let { return it }

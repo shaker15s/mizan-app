@@ -6,6 +6,39 @@ identifiers, not promises.
 
 ## [Unreleased] — service lane, 2026-09-26
 
+### The approval surface, end to end
+
+- **The missing join.** The service had an approval surface and the app had a
+  governance screen describing the rules, and nothing connected them:
+  `GovernanceApiClient.approvals()` had no caller. `integration/api/ApprovalsBoard.kt`
+  is that join, as a value rather than a screen: it reads the queue and maps it
+  to one of four honest states — unread, loaded, refused-with-a-code, or
+  `Unconfigured` when the build has no service. An unread queue is never
+  rendered as an empty one, because "nothing needs you" is a claim.
+- **Standings computed from the service's facts.** Pending and named for you,
+  pending and named for someone else (with who), past the expiry the service
+  reported, granted, refused, invalidated, consumed — sorted with what needs you
+  first. An approval the service still calls `PENDING` whose expiry has passed
+  is shown as expired, and nobody is asked to sign for it.
+- **A fixed decision path.** Read the row → ask the service for a challenge
+  bound to that approval's fingerprint → sign the bytes with the device key →
+  grant. A build with no key refuses with `DEVICE_KEY_NOT_ENROLLED` rather than
+  sending an unsigned grant; a challenge the service refuses is reported with
+  the service's own code; a refusal reads the row first, so a client cannot
+  write into a trail it never read.
+- **`POST /v1/approvals/{id}/challenge`.** The challenge now hangs off the
+  approval itself: it is issued against the approval's fingerprint and the
+  execution it carries, for the device the caller names, so the queue screen
+  does not have to remember which execution a row belongs to. An approval
+  carries `executionId` on the wire, and a challenge for a decided approval is
+  409 `EXECUTION_ALREADY_RESOLVED`.
+- **`app/security/DeviceKeyStore.kt`.** A non-exportable Ed25519 key in the
+  Android keystore (P-256 fallback for older devices), generated once, never
+  silently rotated, with a per-install device id rather than a hardware
+  identifier. The private key never leaves the keystore; only a signature does.
+- The governance screen renders the live queue above the rules it already
+  described, with every label in both English and Arabic.
+
 ### Security CI and the release contract
 
 - **`tools/security_check.py`.** Gate 19 as a check rather than a wishlist. It
@@ -142,7 +175,7 @@ identifiers, not promises.
 - Odoo 19 over JSON-2 is implemented as the primary transport with a scripted
   transport proving the request shape and, more importantly, the difference
   between "the ERP refused" and "I do not know what the ERP did".
-- Tests: **463, passing: 463** (the JVM suite this environment can run).
+- Tests: **482, passing: 482** (the JVM suite this environment can run).
 
 ## [Unreleased] — 2026-09-26
 

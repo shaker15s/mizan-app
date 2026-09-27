@@ -25,6 +25,8 @@ class ApprovalRoutes(
     private val governance: GovernanceApi,
     private val stores: ServiceStores?,
     private val authenticate: (HttpExchange) -> ServiceSession?,
+    /** Enrolments and challenges. Null on a deployment with no durable store. */
+    private val deviceBinding: app.mizan.domain.security.DeviceBindingService? = null,
 ) {
 
 /**
@@ -99,6 +101,68 @@ fun handle(exchange: HttpExchange) = Http.serve(exchange) {
             return@serve
         }
         Http.respond(exchange, 200, governance.approvalJson(approval))
+        return@serve
+    }
+
+    /**
+     * A challenge to answer *this* approval with.
+     *
+     * The device challenge used to be reachable only from `/v1/devices`, which
+     * meant a client had to remember which execution an approval was about
+     * before it could ask for one. A queue of approvals is exactly the screen
+     * that cannot do that, so the binding is the approval's own: the challenge
+     * is issued against the approval's fingerprint and the execution it
+     * carries, for the device the caller names.
+     */
+    if (path.endsWith("/challenge") && method == "POST") {
+        val id = path.removeSuffix("/challenge").trim('/')
+        val approval = approvals.get(id, user)
+        if (approval == null) {
+            Http.respond(exchange, 404, Json.obj("messageCode" to Json.str("APPROVAL_UNKNOWN")))
+            return@serve
+        }
+        if (approval.state != ApprovalState.PENDING) {
+            Http.respond(exchange, 409, Json.obj("messageCode" to Json.str("EXECUTION_ALREADY_RESOLVED")))
+            return@serve
+        }
+        if (stores == null || deviceBinding == null) {
+            Http.respond(exchange, 503, Json.obj("messageCode" to Json.str("DEVICE_STORE_UNAVAILABLE")))
+            return@serve
+        }
+        val body = readJsonBody(exchange) ?: return@serve
+        val deviceId = body.text("deviceId")
+        if (deviceId.isNullOrBlank()) {
+            Http.respond(exchange, 422, Json.obj("messageCode" to Json.str("DEVICE_ID_REQUIRED")))
+            return@serve
+        }
+        val issued = deviceBinding.issueChallenge(
+            challengeId = "CHG-" + java.util.UUID.randomUUID().toString().replace("-", "").take(12),
+            nonce = java.util.UUID.randomUUID().toString().replace("-", ""),
+            deviceId = deviceId,
+            executionId = app.mizan.domain.model.ExecutionId(approval.executionId),
+            tenantId = approval.tenantId,
+            actorId = app.mizan.domain.model.ActorId(user.actorId),
+            proposalFingerprint = approval.proposalFingerprint,
+        )
+        if (issued == null) {
+            // The device is unknown, revoked, or belongs to someone else.
+            // None of those is a signature problem, so they are not reported
+            // as one: the caller has to fix the enrolment first.
+            Http.respond(exchange, 422, Json.obj("messageCode" to Json.str("DEVICE_NOT_ENROLLED")))
+            return@serve
+        }
+        Http.respond(
+            exchange,
+            201,
+            Json.obj(
+                "challengeId" to Json.str(issued.challengeId),
+                "deviceId" to Json.str(issued.deviceId),
+                "executionId" to Json.str(issued.executionId.value),
+                "proposalFingerprint" to Json.str(issued.proposalFingerprint),
+                "expiresAtMillis" to Json.num(issued.expiresAtMillis),
+                "messageToSign" to Json.str(String(deviceBinding.message(issued), Charsets.UTF_8)),
+            ),
+        )
         return@serve
     }
 
