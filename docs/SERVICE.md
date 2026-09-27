@@ -16,7 +16,36 @@ Phone                    :service                     ERP adapter
 ```
 
 The bundled ERP adapter is **in memory**. It is not Odoo, it does not call
-Odoo, and a green test here proves nothing about a customer's ERP.
+Odoo, and a green test here proves nothing about a customer's ERP. A real
+deployment points `ServiceConfig.connector` at `OdooJson2Connector`; the
+reference adapter is what makes the pipeline testable without a customer.
+
+## Where the state lives
+
+Every durable thing the service remembers is an append-only stream of JSON
+records that is replayed into an index at start-up, and `RecordLog` is the
+seam. Two deployments exist:
+
+| Deployment | How | What it gives |
+| --- | --- | --- |
+| A directory (`ServiceConfig.storeDirectory`) | one fsynced file per stream | durability, and a store that can be inspected with `cat` |
+| PostgreSQL (`ServiceConfig.database`) | one narrow table, `seq BIGSERIAL` + `stream` + `payload` | the same durability, and several service processes sharing it |
+
+The streams are `execution-journal`, `idempotency`, `sessions`, `receipts`,
+`devices`, `challenges`, `reconciliation`, `audit`, `approvals` and `outbox`.
+A migration between the two deployments is a read of one and a write of the
+other, because both store the same records.
+
+## The retry queue
+
+A read the ERP could not answer is written to the `outbox` stream with the
+person, the idempotency key and the arguments that produced it. The service
+drains it on a daemon timer (`ServiceConfig.outboxSweepMillis`, default 15s;
+`0` disables it for a deployment that runs a sweeper as its own process). A
+retry re-enters the authority, so it crosses policy, the journal and the read
+back like any other request; a write is never re-dispatched, and an entry that
+the ERP refuses for a reason that will not change is dead-lettered for a
+person rather than retried five times.
 
 ## Run it
 

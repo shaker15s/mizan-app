@@ -8,6 +8,20 @@ val apiBaseUrl = (System.getenv("WAKEEL_API_BASE_URL") ?: "")
     .replace("\\", "")
     .replace("\"", "")
 
+/**
+ * The authority's receipt key, pinned at build time.
+ *
+ * It is a build input and not a runtime fetch on purpose: a phone that
+ * downloads the key it verifies signatures with is verifying them with
+ * whatever the server sends, which is no verification at all.
+ */
+val receiptPublicKey = (System.getenv("WAKEEL_RECEIPT_PUBLIC_KEY") ?: "")
+    .replace("\\", "")
+    .replace("\"", "")
+val receiptKeyId = (System.getenv("WAKEEL_RECEIPT_KEY_ID") ?: "")
+    .replace("\\", "")
+    .replace("\"", "")
+
 android {
     namespace = "app.mizan"
     compileSdk {
@@ -44,6 +58,8 @@ android {
             buildConfigField("boolean", "DEMO_MODE", "true")
             buildConfigField("String", "WAKEEL_ENV", "\"demo\"")
             buildConfigField("String", "API_BASE_URL", "\"\"")
+            buildConfigField("String", "RECEIPT_PUBLIC_KEY", "\"\"")
+            buildConfigField("String", "RECEIPT_KEY_ID", "\"\"")
         }
         create("staging") {
             dimension = "channel"
@@ -51,12 +67,19 @@ android {
             buildConfigField("boolean", "DEMO_MODE", "false")
             buildConfigField("String", "WAKEEL_ENV", "\"staging\"")
             buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+            // The receipt authority key this build pins. Empty means the build
+            // has pinned nothing, and the app then says it cannot verify a
+            // receipt rather than showing a tick it cannot justify.
+            buildConfigField("String", "RECEIPT_PUBLIC_KEY", "\"$receiptPublicKey\"")
+            buildConfigField("String", "RECEIPT_KEY_ID", "\"$receiptKeyId\"")
         }
         create("production") {
             dimension = "channel"
             buildConfigField("boolean", "DEMO_MODE", "false")
             buildConfigField("String", "WAKEEL_ENV", "\"production\"")
             buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+            buildConfigField("String", "RECEIPT_PUBLIC_KEY", "\"$receiptPublicKey\"")
+            buildConfigField("String", "RECEIPT_KEY_ID", "\"$receiptKeyId\"")
         }
     }
 

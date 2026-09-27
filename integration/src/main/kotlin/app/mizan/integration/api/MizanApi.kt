@@ -1,5 +1,6 @@
 package app.mizan.integration.api
 
+import app.mizan.domain.authority.ApprovalReference
 import app.mizan.domain.authority.AuthorityOutcome
 import app.mizan.domain.error.AppError
 import app.mizan.domain.error.DispatchState
@@ -8,6 +9,8 @@ import app.mizan.domain.model.CanonicalValue
 import app.mizan.domain.model.ExecutionId
 import app.mizan.domain.model.Proposal
 import app.mizan.domain.model.VerificationKind
+import app.mizan.domain.authority.ReceiptEvidence
+import app.mizan.domain.receipt.ReceiptTrust
 import app.mizan.integration.http.Redactor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -25,7 +28,20 @@ class MizanApiClient(
     private val tokenProvider: () -> String?,
     private val http: OkHttpClient = defaultClient(),
 ) {
-    fun execute(proposal: Proposal, approverId: String): AuthorityOutcome {
+    /**
+     * Sends the execution, with the approval it claims when the ladder
+     * demanded one.
+     *
+     * An approval is a claim: the id, the fingerprint the service computed
+     * when it opened the approval, and -- for the levels that need it -- a
+     * signature from the device that answers for it. The service recomputes
+     * the fingerprint and refuses a claim it cannot verify.
+     */
+    fun execute(
+        proposal: Proposal,
+        approverId: String,
+        approval: ApprovalReference? = null,
+    ): AuthorityOutcome {
         if (!baseUrl.startsWith("https://")) {
             return AuthorityOutcome.Refused(
                 AppError.Configuration("API_URL_NOT_HTTPS", "service url rejected"),
@@ -37,7 +53,7 @@ class MizanApiClient(
                 AppError.Authentication("SESSION_MISSING", "no session token"),
             )
         }
-        val request = executionRequest(proposal, approverId, token)
+        val request = executionRequest(proposal, approverId, token, approval)
         return try {
             http.newCall(request).execute().use { response ->
                 val text = response.body?.string().orEmpty()
@@ -57,8 +73,13 @@ class MizanApiClient(
      * which asserts the path, the headers, and the argument names the
      * service expects. The URL is built once, here, and nowhere else.
      */
-    internal fun executionRequest(proposal: Proposal, approverId: String, token: String): Request {
-        val body = CanonicalJson.write(payload(proposal, approverId))
+    internal fun executionRequest(
+        proposal: Proposal,
+        approverId: String,
+        token: String,
+        approval: ApprovalReference? = null,
+    ): Request {
+        val body = CanonicalJson.write(payload(proposal, approverId, approval))
         return Request.Builder()
             .url(baseUrl.trimEnd('/') + "/v1/executions")
             .header("Authorization", "Bearer $token")
@@ -90,7 +111,18 @@ class MizanApiClient(
                 if (record.isNullOrBlank() || model.isNullOrBlank()) {
                     refused(AppError.Serialization("VERIFIED_WITHOUT_RECORD", "incomplete verified body"))
                 } else {
-                    AuthorityOutcome.Verified(remoteId, record, model, VerificationKind.READ_BACK)
+                    AuthorityOutcome.Verified(
+                        executionId = remoteId,
+                        erpRecordId = record,
+                        erpModel = model,
+                        verification = VerificationKind.READ_BACK,
+                        // Named, and explicitly not yet checked: a receipt id
+                        // is not a verification, and the device is the only
+                        // thing that can supply one.
+                        receipt = field(body, "receiptId")?.takeIf { it.isNotBlank() }?.let {
+                            ReceiptEvidence(it, ReceiptTrust.NOT_CHECKED, "RECEIPT_NOT_CHECKED")
+                        },
+                    )
                 }
             }
             "accepted" -> AuthorityOutcome.AcceptedUnverified(remoteId, "ACCEPTED_NOT_VERIFIED")
@@ -107,7 +139,11 @@ class MizanApiClient(
 
     private fun refused(error: AppError) = AuthorityOutcome.Refused(error)
 
-    private fun payload(proposal: Proposal, approverId: String): CanonicalValue.Obj = CanonicalValue.Obj(
+    private fun payload(
+        proposal: Proposal,
+        approverId: String,
+        approval: ApprovalReference?,
+    ): CanonicalValue.Obj = CanonicalValue.Obj(
         listOf(
             "approverId" to CanonicalValue.Str(approverId),
             "arguments" to proposal.args.canonical(),
@@ -118,6 +154,13 @@ class MizanApiClient(
             "tool" to CanonicalValue.Str(proposal.args.tool.wire),
             "toolVersion" to CanonicalValue.Str(proposal.args.tool.version),
             "traceId" to CanonicalValue.Str(proposal.traceId.value),
+        ) + listOfNotNull(
+            // Sent only when there is one, so a request without an approval is
+            // byte-for-byte what it always was.
+            approval?.let { "approvalId" to CanonicalValue.Str(it.approvalId) },
+            approval?.let { "proposalFingerprint" to CanonicalValue.Str(it.proposalFingerprint) },
+            approval?.deviceChallengeId?.let { "deviceChallengeId" to CanonicalValue.Str(it) },
+            approval?.deviceSignature?.let { "deviceSignature" to CanonicalValue.Str(it) },
         ),
     )
 

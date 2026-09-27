@@ -8,6 +8,40 @@ Version 1 tables (`execution_records`, `trust_receipts`, `audit_records`, `recon
 
 Orders, customers, and stock use a composite primary key of business id plus tenant, so two workspaces can cache the same ERP id.
 
+## The service's durable state
+
+The reference service keeps every durable record as an append-only stream of
+JSON, replayed into an index at start-up. The streams are
+`execution-journal`, `idempotency`, `sessions`, `receipts`, `devices`,
+`challenges`, `reconciliation`, `audit`, `approvals` and `outbox`.
+
+Two deployments implement the same `RecordLog` interface:
+
+* a directory (`ServiceConfig.storeDirectory`): one fsynced file per stream,
+  CRC-framed, torn-tail recovery, atomic compaction;
+* PostgreSQL (`ServiceConfig.database`): rows of one table —
+
+```sql
+CREATE TABLE IF NOT EXISTS mizan_records (
+  seq BIGSERIAL PRIMARY KEY,
+  stream TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  written_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS mizan_records_stream_seq_idx ON mizan_records (stream, seq);
+```
+
+The table is narrow on purpose: it is a log, not a schema, so a deployment
+upgrades the service without a migration and a person can read the state with
+`psql`. Anything that needs a column of its own (reporting, an audit export)
+is a view over this log rather than a second source of truth.
+
+The PostgreSQL path is tested against a database double — the schema, the
+statements, the ordering, the transaction boundaries, and two services sharing
+one database. PostgreSQL itself (driver, server, pool, replication, failover,
+backup) is not tested here, because there is no PostgreSQL in this
+environment. See `docs/PLAN_EXECUTION.md`.
+
 ## Tenant scope
 
 Every store method that a screen can reach takes a `TenantId`. Search requires at least two characters and stays inside that tenant. There is no default unscoped list.

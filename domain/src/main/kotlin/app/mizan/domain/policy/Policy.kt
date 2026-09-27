@@ -33,6 +33,9 @@ data class PolicyCatalog(
 ) {
     fun ladder(currency: String): ThresholdLadder? = ladders[currency.uppercase()]
 
+    fun with(ladder: ThresholdLadder): PolicyCatalog =
+        PolicyCatalog(ladders + (ladder.currency.uppercase() to ladder))
+
     companion object {
         /**
          * Demo defaults. The UI must say they are simulation thresholds.
@@ -56,6 +59,8 @@ data class PolicyRequest(
     val destructive: Boolean,
     val customerBlocked: Boolean,
     val exceedsCredit: Boolean,
+    /** The ceiling this actor may commit on their own, when the policy sets one. */
+    val actorLimitMinor: Long? = null,
 )
 
 data class PolicyDecision(
@@ -65,16 +70,42 @@ data class PolicyDecision(
     val ruleId: String,
     val reasonCode: String,
     val requiresSeparationOfDuties: Boolean,
+    /** The policy that produced this decision. Empty means "this build's defaults". */
+    val policyVersionId: String = "unversioned",
+    val policyHash: String = "",
+    val evaluatedAtMillis: Long = 0L,
+    /** Why the ladder was raised above the plain threshold, in order. */
+    val escalatedBy: List<String> = emptyList(),
 )
 
 /**
  * Deterministic evaluation. Presentation lives in the app, not here.
  * This result is a preview unless the active authority says otherwise.
+ *
+ * The evaluator is version-aware: a decision always names the policy version
+ * and the rule hash it was made under, so a later reader can tell whether the
+ * rules changed while an approval was pending.
  */
 class PolicyEvaluator(
     private val catalog: PolicyCatalog,
+    private val version: PolicyVersion = PolicyVersion.UNVERSIONED,
+    private val rules: List<ToolPolicyRule> = emptyList(),
+    private val clock: () -> Long = { System.currentTimeMillis() },
 ) {
     fun evaluate(request: PolicyRequest): PolicyDecision {
+        val base = evaluateThresholds(request)
+        val limited = applyActorLimit(base, request)
+        return limited.copy(
+            policyVersionId = version.id,
+            policyHash = PolicySnapshot.of(version, rules).rulesHash,
+            evaluatedAtMillis = clock(),
+        )
+    }
+
+    /** The full snapshot this evaluator decides under. */
+    fun snapshot(): PolicySnapshot = PolicySnapshot.of(version, rules)
+
+    private fun evaluateThresholds(request: PolicyRequest): PolicyDecision {
         val tool = request.tool
         if (request.actor.tenantId.value.isBlank()) {
             return deny("POL-TENANT", "TENANT_REQUIRED", ApprovalLevel.L5_MULTI_PARTY)
@@ -121,8 +152,8 @@ class PolicyEvaluator(
                 requiresSeparationOfDuties = false,
             )
         }
-        val ladder = catalog.ladder(amount.currency)
-        if (ladder == null) {
+        val thresholds = thresholdsFor(tool, amount)
+        if (thresholds == null) {
             return PolicyDecision(
                 allowed = true,
                 approval = ApprovalLevel.L3_MANAGER,
@@ -132,51 +163,94 @@ class PolicyEvaluator(
                 requiresSeparationOfDuties = true,
             )
         }
-        val creditBump = request.exceedsCredit
         val base = when {
-            amount.minorUnits <= ladder.l1MaxMinor -> level(
+            amount.minorUnits <= thresholds.l1 -> level(
                 ApprovalLevel.L1_USER_CONFIRMATION,
                 RiskTier.R1_LOW,
-                "POL-THRESHOLD-L1",
+                thresholds.ruleIdFor("L1"),
                 "THRESHOLD_L1",
                 sod = false,
             )
-            amount.minorUnits <= ladder.l2MaxMinor -> level(
+            amount.minorUnits <= thresholds.l2 -> level(
                 ApprovalLevel.L2_PRIVILEGED,
                 RiskTier.R2_MEDIUM,
-                "POL-THRESHOLD-L2",
+                thresholds.ruleIdFor("L2"),
                 "THRESHOLD_L2",
                 sod = false,
             )
-            amount.minorUnits <= ladder.l3MaxMinor -> level(
+            amount.minorUnits <= thresholds.l3 -> level(
                 ApprovalLevel.L3_MANAGER,
                 RiskTier.R3_HIGH,
-                "POL-THRESHOLD-L3",
+                thresholds.ruleIdFor("L3"),
                 "THRESHOLD_L3",
                 sod = true,
             )
             else -> level(
                 ApprovalLevel.L4_DUAL,
                 RiskTier.R4_CRITICAL,
-                "POL-THRESHOLD-L4",
+                thresholds.ruleIdFor("L4"),
                 "THRESHOLD_L4",
                 sod = true,
             )
         }
-        if (!creditBump) return base
-        val raised = if (base.approval.rank >= ApprovalLevel.L3_MANAGER.rank) {
-            base.approval
-        } else {
-            ApprovalLevel.L3_MANAGER
+        if (!request.exceedsCredit) return base
+        val raised = raiseToAtLeast(base, ApprovalLevel.L3_MANAGER, "POL-CREDIT-LIMIT", "CREDIT_LIMIT")
+        return raised.copy(escalatedBy = raised.escalatedBy + "CREDIT_LIMIT")
+    }
+
+    /**
+     * A tool-specific rule wins over the currency ladder. A rule whose
+     * currency does not match the amount's does not apply, and the currency
+     * ladder decides instead; if neither exists the request is escalated
+     * rather than quietly approved.
+     */
+    private fun thresholdsFor(tool: ToolName, amount: Money): Thresholds? {
+        val rule = rules.firstOrNull { it.appliesTo(tool, amount.currency) }
+        if (rule != null) {
+            return Thresholds(
+                l1 = rule.l1MaxMinor,
+                l2 = rule.l2MaxMinor,
+                l3 = rule.l3MaxMinor,
+                rulePrefix = "POL-${tool.wire.uppercase().replace('.', '-')}",
+            )
         }
-        val raisedRisk = if (base.riskTier.ordinal >= RiskTier.R3_HIGH.ordinal) base.riskTier else RiskTier.R3_HIGH
-        return base.copy(
-            approval = raised,
-            riskTier = raisedRisk,
-            ruleId = "POL-CREDIT-LIMIT",
-            reasonCode = "CREDIT_LIMIT",
+        val ladder = catalog.ladder(amount.currency) ?: return null
+        return Thresholds(ladder.l1MaxMinor, ladder.l2MaxMinor, ladder.l3MaxMinor, "POL-THRESHOLD")
+    }
+
+    private fun applyActorLimit(decision: PolicyDecision, request: PolicyRequest): PolicyDecision {
+        val limit = request.actorLimitMinor ?: return decision
+        val amount = request.amount ?: return decision
+        if (!decision.allowed || decision.approval.rank >= ApprovalLevel.L3_MANAGER.rank) return decision
+        if (amount.minorUnits <= limit) return decision
+        val raised = raiseToAtLeast(decision, ApprovalLevel.L3_MANAGER, "POL-ACTOR-LIMIT", "ACTOR_LIMIT_EXCEEDED")
+        return raised.copy(escalatedBy = raised.escalatedBy + "ACTOR_LIMIT")
+    }
+
+    private fun raiseToAtLeast(
+        decision: PolicyDecision,
+        minimum: ApprovalLevel,
+        ruleId: String,
+        reason: String,
+    ): PolicyDecision {
+        val approval = if (decision.approval.rank >= minimum.rank) decision.approval else minimum
+        val risk = if (decision.riskTier.ordinal >= RiskTier.R3_HIGH.ordinal) decision.riskTier else RiskTier.R3_HIGH
+        return decision.copy(
+            approval = approval,
+            riskTier = risk,
+            ruleId = ruleId,
+            reasonCode = reason,
             requiresSeparationOfDuties = true,
         )
+    }
+
+    private data class Thresholds(
+        val l1: Long,
+        val l2: Long,
+        val l3: Long,
+        val rulePrefix: String,
+    ) {
+        fun ruleIdFor(band: String): String = "$rulePrefix-$band"
     }
 
     private fun level(
