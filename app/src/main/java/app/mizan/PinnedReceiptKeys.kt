@@ -38,4 +38,14 @@ object PinnedReceiptKeys {
 
     /** True when a key is pinned, so a screen can say what it can and cannot do. */
     val configured: Boolean get() = pinned.isNotEmpty()
+
+    /**
+     * The key ids this build pinned, for a screen that reports what it checks
+     * against. The ids only: a public key is not a secret, but a settings
+     * screen that renders key material invites someone to copy it.
+     */
+    val keyIds: List<String> get() = pinned.map { it.keyId }
+
+    /** A one-line answer for the account screen, honest when nothing is pinned. */
+    val summary: String get() = if (pinned.isEmpty()) "" else pinned.joinToString(", ") { it.keyId }
 }

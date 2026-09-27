@@ -11,7 +11,7 @@ that the app compiles or that a write reached an ERP.
 
 | module | sources | tests | lines |
 | --- | --- | --- | --- |
-| :app | 39 | 0 | 11744 |
+| :app | 39 | 0 | 11774 |
 | :data | 8 | 0 | 1173 |
 | :design | 10 | 0 | 4267 |
 | :domain | 38 | 10 | 9212 |
@@ -27,7 +27,7 @@ Room indexes declared: 20; CREATE INDEX statements in the migration: 20.
 
 - 1277 lines: split this file — `app/src/main/java/app/mizan/feature/home/HistoricalErpActionLogsList.kt`
 - 1080 lines: split this file — `app/src/main/java/app/mizan/feature/agent/Agent.kt`
-- 989 lines: split this file — `app/src/main/java/app/mizan/feature/account/Account.kt`
+- 1006 lines: split this file — `app/src/main/java/app/mizan/feature/account/Account.kt`
 - 951 lines: split this file — `service/src/test/kotlin/app/mizan/service/GovernedExecutionTest.kt`
 - 875 lines: split this file — `design/src/main/kotlin/app/mizan/design/component/Components.kt`
 

@@ -246,7 +246,29 @@ a journal query for another tenant is refused), rate limiting per surface with
 body, and an audit chain that is hash-linked and verified on read.
 
 What is **missing**: MASVS review, Keystore-backed token protection, Play
-Integrity attestation and network security configuration (all Android-side).
+Integrity attestation (all Android-side, all needing a device or a Play
+account).
+
+Gate 19 is **security CI**, and that part is now real rather than listed.
+`tools/security_check.py` refuses a committed private key or vendor token, a
+manifest that allows cleartext / sets debuggable / turns backups on / declares a
+component without an exported state, a cleartext exemption for a non-loopback
+host, a credential in a log line, plain `SharedPreferences` in a file that
+handles a credential, a hardcoded non-loopback host in client code, a governed
+route that never calls `authenticate()`, a snapshot dependency, and a
+documented workflow that skips the repository's own checks.
+`tools/release_check.py` covers gate 20's tree-side half: the production flavor
+is not a demo build, the release build type does not fall back to the debug
+key, minification and shrinking are on, the version must move forward, no
+signing artifact is committed, and the release document states what happens to
+the R8 mapping file and how a rollback works. Both were verified against
+planted violations (a private key and a debug-signed release) before being
+trusted, and both run in the documented CI.
+
+The checks are static, and that is the honest limit: they cover a git tree, not
+a running device. No Play Integrity verdict, no certificate pinning, no proof
+that a keystore is hardware-backed exists in this environment, and the app does
+not claim any of them.
 
 The audit chain is now **sealed**: with `receiptKeyPair` configured, every row
 is signed with the authority's Ed25519 key (`AuditSealer`), `GET /v1/audit`

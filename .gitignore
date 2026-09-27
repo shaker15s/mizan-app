@@ -18,6 +18,17 @@ local.properties
 .env
 debug.keystore
 
+# Signing material. A keystore that is committed is a keystore that has leaked;
+# it can never be rotated by the people who would need to.
+*.jks
+*.keystore
+*.p12
+keystore.properties
+
+# Build outputs that carry the R8 mapping or a stack trace with names in it.
+*.map
+mapping.txt
+
 # Python tooling (tools/ is dependency free and needs no virtualenv)
 __pycache__/
 *.pyc

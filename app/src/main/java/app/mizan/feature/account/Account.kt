@@ -829,11 +829,28 @@ fun ConnectionRoute(graph: AppGraph, onBack: () -> Unit) {
                 .padding(Space.lg),
             verticalArrangement = Arrangement.spacedBy(Space.sm),
         ) {
-            MizanKeyValue("Authority Endpoint", if (graph.demoMode) "Local Mizan Mock Authority" else "https://authority.mizan.internal")
+            // Every line here is something the app actually knows. The screen
+            // used to name a host nobody configured, a protocol the service
+            // does not speak (it is HTTP/JSON, not gRPC), a 24-hour lease that
+            // is really a 30-minute session, and a fingerprint derived from a
+            // hash code. Those are not cosmetic: a screen that states facts it
+            // does not have is the failure this product exists to refuse.
+            MizanKeyValue(
+                "Authority Endpoint",
+                if (graph.demoMode) {
+                    "Local simulation (no network)"
+                } else {
+                    graph.apiBaseUrl.ifBlank { "Not configured" }
+                },
+            )
             MizanKeyValue("Tenant Instance", session?.tenant?.displayName ?: "Unconnected")
-            MizanKeyValue("Active Protocol", "gRPC / mTLS + Biometric Attestation")
-            MizanKeyValue("Lease Status", if (session != null) "Active 24h Signed Token" else "Inactive")
-            MizanKeyValue("Authority Fingerprint", "SHA256:mz_ath_${session?.tenant?.id.hashCode().toString(16)}", mono = true)
+            MizanKeyValue("Transport", if (graph.demoMode) "In-process" else "HTTPS / JSON")
+            MizanKeyValue("Session Expiry", session?.expiresAt?.let { expiry -> expiry.toString() } ?: "No session")
+            MizanKeyValue(
+                "Receipt Keys Pinned",
+                graph.receiptKeyId.ifBlank { "None pinned in this build" },
+                mono = true,
+            )
         }
     }
 }

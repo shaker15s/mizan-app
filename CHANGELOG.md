@@ -6,6 +6,38 @@ identifiers, not promises.
 
 ## [Unreleased] — service lane, 2026-09-26
 
+### Security CI and the release contract
+
+- **`tools/security_check.py`.** Gate 19 as a check rather than a wishlist. It
+  refuses a committed private key, cloud key or vendor token; a manifest that
+  allows cleartext, sets `android:debuggable`, turns backups on, or declares a
+  component without `android:exported`; a cleartext exemption for a host other
+  than loopback; a credential in a log line; plain `SharedPreferences` in a
+  file that also handles a credential; a hardcoded non-loopback host in client
+  code; a governed service route that never calls `authenticate()`; a snapshot
+  dependency or a version below the supported floor. `--strict` fails on
+  warnings. It was verified against a planted private key and host before being
+  trusted.
+- **`tools/release_check.py`.** The tree-side half of gate 20: the production
+  flavor is not a demo build and carries no application-id suffix, the release
+  build type does not fall back to the debug signing config, minification and
+  resource shrinking are on, `versionCode`/`versionName` are literals that must
+  move forward, no signing artifact is committed, and `docs/RELEASE.md` says
+  what happens to the R8 mapping file and how a rollback works. `--env`
+  additionally requires the signing and release variables and refuses a
+  non-https authority or a half-pinned receipt key.
+- **The account screen stopped inventing facts.** It named a host nobody
+  configured, a protocol the service does not speak (it is HTTP/JSON, not
+  gRPC), a 24-hour lease where the session is 30 minutes, and a fingerprint
+  derived from a `hashCode()`. It now shows the configured endpoint, the real
+  session expiry, the transport in use, and the receipt key ids this build
+  actually pinned -- and says "Not configured" / "None pinned" when that is the
+  truth.
+- `.gitignore` now excludes signing material (`*.jks`, `*.keystore`, `*.p12`,
+  `keystore.properties`) and R8 mapping files, and `docs/RELEASE.md` documents
+  the exact `WAKEEL_*` variable names -- it had a differently spelled one,
+  which would have produced a build that looks configured and talks to nothing.
+
 ### The legacy ERP adapter
 
 - **`service/erp/OdooLegacyWire.kt`.** The XML-RPC wire format, hand-written:

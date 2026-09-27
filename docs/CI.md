@@ -43,6 +43,25 @@ jobs:
           unzip -l gradle/wrapper/gradle-wrapper.jar | grep -q org/gradle/wrapper/GradleWrapperMain.class
           grep -q '^distributionUrl=https\\://services.gradle.org/' gradle/wrapper/gradle-wrapper.properties
 
+  security:
+    name: Security checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Secrets, manifest, credentials and governed routes
+        # Static, and honest about it: it refuses a committed private key or a
+        # hardcoded host, checks that the manifest allows no cleartext and every
+        # component declares android:exported, that no credential reaches a log
+        # line, and that every governed service route calls authenticate().
+        # It cannot prove MASVS compliance or hardware-backed keys -- those
+        # need a device, and docs/SECURITY.md says so.
+        run: python3 tools/security_check.py --strict
+      - name: Release pipeline contract
+        run: python3 tools/release_check.py
+
   jvm:
     name: JVM modules
     runs-on: ubuntu-latest
@@ -109,6 +128,7 @@ What it does on every push and pull request:
 | job | what it runs |
 | --- | --- |
 | `static` | `tools/repo_check.py --no-write`, `tools/check_contrast.py`, `tools/render_brand.py --check`, and a check that the committed wrapper is a real wrapper |
+| `security` | `tools/security_check.py --strict` (secrets, manifest, credentials, logging, governed routes, dependency floors) and `tools/release_check.py` (flavor, signing, versioning, mapping, rollback) |
 | `jvm` | `:domain:test :integration:test :service:test`, then the service HTTP suite, and uploads the reports |
 | `android` | `:app:assembleDemoDebug :app:assembleStagingDebug :app:assembleProductionRelease` and lint on `:app`, `:data`, `:design` |
 
@@ -117,7 +137,7 @@ build is unsigned unless `KEYSTORE_PATH`, `STORE_PASSWORD`, `KEY_ALIAS`, and
 `KEY_PASSWORD` are set in the environment, which the build treats as optional.
 
 Without Gradle, `python3 tools/jvm_check.py` compiles `:domain`, `:service` and
-`:integration` and runs their 447 tests with a JDK and kotlinc alone, and
+`:integration` and runs their 463 tests with a JDK and kotlinc alone, and
 `python3 tools/syntax_check.py` parses every Kotlin file with the real parser.
 They cover the invariants, the governed pipeline, the ERP boundary and the
 syntax; they cannot cover the UI.

@@ -47,6 +47,9 @@ class AppGraph(context: Context) {
     val environment = BuildConfig.WAKEEL_ENV
     val apiBaseUrl: String = BuildConfig.API_BASE_URL.ifBlank { preferences.serviceUrlOverride }
 
+    /** The receipt key ids this build pinned, empty when it pinned none. */
+    val receiptKeyId: String get() = app.mizan.PinnedReceiptKeys.summary
+
     val executions: ExecutionStore
     val receipts: ReceiptStore
     val audit: AuditStore
