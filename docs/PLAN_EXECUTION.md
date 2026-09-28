@@ -25,7 +25,7 @@ words, and this file is written to survive that standard.
 | Modules that compile and run here | `:domain`, `:service`, `:integration` |
 | Modules that cannot be built here | `:app`, `:design`, `:data` — they need the Android SDK, AGP and Compose, and Maven Central and Google Maven are unreachable from this sandbox |
 | Test command | `JAVA_HOME=... KOTLINC_HOME=... python3 tools/jvm_check.py` |
-| Tests | 482, all passing (domain contracts, service pipeline over a real HTTP listener, the outbox and its sweeper, the durable journal across a restart, the PostgreSQL record log against a database double, the ERP boundary with a scripted transport) |
+| Tests | 521, all passing (domain contracts, service pipeline over a real HTTP listener, the outbox and its sweeper, the durable journal across a restart, the PostgreSQL record log against a database double, the ERP boundary with a scripted transport) |
 
 Anything marked **proven** below is proven by that command. Anything that needs
 an Android device, a Gradle build, a Postgres server or a real Odoo instance is
@@ -224,6 +224,47 @@ service**.
 **Not done here:** the other ten screens, and the visual and adaptive work of
 Phase 6 and 7, which need a device. The approvals section is rendered inside the
 governance screen and its state machine is covered by tests; the pixels are not.
+
+### The testing matrix — fuzz and concurrency
+
+The plan names both categories explicitly ("دي مهمة جدًا للـparser … Concurrency
+Testing ده ناقص في مشاريع كتير") and states the rule that makes the first one a
+requirement rather than a nice-to-have: *never guess on malformed high-impact
+input*.
+
+* **Fuzz, on both sides of the model boundary.** `FuzzInterpreterTest` runs
+  seeded corpora — Arabic, mixed numerals, punctuation, emoji, URLs, direction
+  marks, zero-width joiners, 200,000-character inputs, combining marks, and
+  injection phrases — through the interpreter, asserting properties rather than
+  examples: no exception, deterministic answers, idempotent normalisation, a
+  code on every refusal, and never a ready order whose amount was not in the
+  text. `FuzzStructuredOutputTest` does the same to the model's own answer:
+  truncated JSON, two documents concatenated, a markdown fence, nulls, wrong
+  types, unknown tools, 2,000-level nesting, 500 KB payloads, and injection
+  inside the arguments.
+* **Both found real defects on the first run.** The Arabic thousands separator
+  (U+066C) was not normalised to ASCII, so `١٥٬٠٠٠` parsed as *15* — a wrong
+  order, which is worse than a failed parse, and exactly the failure mode the
+  parser's own documentation claims to prevent. And the model boundary asked for
+  the *currency* when the amount it had been given was the word "كثير": the
+  "what is missing" list disagreed with the "is this complete" decision. Both
+  are fixed, and the second is fixed at the root — the same function now decides
+  both, and a stated zero is refused as firmly as a missing one.
+* **Concurrency.** `ConcurrencyTest` covers the plan's scenarios one by one:
+  two people answering the same approval at once, one approval and one
+  idempotency key under concurrent use, an ERP answer that lands after the
+  client gave up, a session that expires mid-write, a tenant that changes under
+  a session, a policy that moves under an approval, and a restart after the
+  write. The race that matters here does not look like an error: the last writer
+  wins and a dual approval records one signature while reading as complete.
+  `ApprovalDesk` now serialises that sequence per approval through `KeyedLocks`,
+  a primitive with its own tests (mutual exclusion, no leak, no deadlock
+  between two keys taken in two orders).
+* **What is not covered:** the locks are per process. Two replicas behind one
+  PostgreSQL — Phase 13 — need the database to carry the invariant, as a
+  conditional update or a row lock. That is written down in `docs/SERVICE.md`
+  as an open item rather than implied by the locks. Transport faults at the
+  ERP boundary (timeouts, 5xx, 429, schema drift, auth expiry) are next.
 
 ### Phase 6 and 7 — the half of localisation and accessibility that is static
 

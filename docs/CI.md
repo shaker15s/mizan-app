@@ -138,7 +138,7 @@ build is unsigned unless `KEYSTORE_PATH`, `STORE_PASSWORD`, `KEY_ALIAS`, and
 `KEY_PASSWORD` are set in the environment, which the build treats as optional.
 
 Without Gradle, `python3 tools/jvm_check.py` compiles `:domain`, `:service` and
-`:integration` and runs their 482 tests with a JDK and kotlinc alone, and
+`:integration` and runs their 521 tests with a JDK and kotlinc alone, and
 `python3 tools/syntax_check.py` parses every Kotlin file with the real parser.
 They cover the invariants, the governed pipeline, the ERP boundary and the
 syntax; they cannot cover the UI. The `l10n` job is the exception that proves

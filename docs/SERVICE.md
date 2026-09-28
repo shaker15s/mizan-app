@@ -157,6 +157,46 @@ Every decision is appended to a per-tenant hash chain authored by the service
 (`IntegrityClass.SERVER_AUTHORED`). That chain proves the service's own history
 is internally consistent. It is not an external witness and not a legal record.
 
+## Concurrency
+
+The listener runs a fixed pool of workers, so two requests are handled at the
+same time, and the service has three read-judge-write sequences where that
+matters:
+
+| sequence | what it decides | what protects it |
+| --- | --- | --- |
+| `ServiceAuthority.decide` | whether an execution may run, and what its idempotency key already means | one monitor per authority |
+| `ApprovalDesk.decide` | whether an answer is legal, and what the record says afterwards | `KeyedLocks` per approval id |
+| `ApprovalStore.save` / `ExecutionLedger.record` | the write itself | the store, per call |
+
+The distinction matters more than it looks. A store synchronized *per call* is
+correct for a map and insufficient for a decision: an approval is read, judged
+and written across three calls, and two answers that interleave inside that
+sequence each read the same "before" and each write their own "after". The last
+writer wins -- which loses an approver's signature from a dual approval while
+the result still reads as complete. `KeyedLocks` serialises exactly that
+sequence, per approval, so answering one tenant's approval does not block
+another's, and it releases and forgets the lock when the section ends rather
+than keeping one per request for the life of the process.
+
+**What this does not cover.** The locks are per process. Two replicas behind
+the same PostgreSQL -- Phase 13 of the plan -- are two processes, and neither
+sees the other's monitor: the same approval can be granted twice and the same
+idempotency key dispatched twice. Making that safe needs the database to carry
+the invariant, either as a conditional update (`UPDATE approvals SET state =
+'CONSUMED' WHERE id = ? AND state = 'GRANTED'`, then act on the affected row
+count) or as a row lock inside the transaction that reads the journal. That
+work is not done, and it is listed as an open item rather than implied by the
+locks above. What is tested here is single-process concurrency, which is what
+this deployment is.
+
+`ConcurrencyTest` covers the plan's scenarios: two approvals answered at once,
+one approval and one idempotency key under concurrent use, a late ERP answer
+after the client gave up, a session that expires mid-write, a tenant that
+changes under a session, a policy that moves under an approval, and a restart
+after a write. `KeyedLocksTest` covers the lock itself, including that it does
+not leak and cannot deadlock when two callers take two keys in two orders.
+
 ## Tests
 
 ```bash
@@ -167,3 +207,6 @@ is internally consistent. It is not an external witness and not a legal record.
 sign-in, throttling, verified writes, idempotent replay, key reuse, separation
 of duties, auditor refusal, tenant isolation, the ambiguous path, the invoice
 and payment chain, cancellation, the audit chain, and the health endpoint.
+`ConcurrencyTest` starts its own service per test, some with a store that takes
+as long to append as a durable one, which is what makes a race reproducible
+instead of a coin flip.

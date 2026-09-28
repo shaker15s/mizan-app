@@ -343,13 +343,24 @@ object StructuredOutput {
         ToolName.UNKNOWN -> null
     }
 
-    private fun moneyOf(args: JsonText.Obj): Money? {
-        val currency = args.text("currency") ?: return null
-        // A model writes 2500 as a number, as a string, or as 250000 minor
-        // units. All three are read; a missing one is not read as zero.
+    /**
+     * The amount a model stated, in minor units, or null when it stated none.
+     *
+     * A model writes 2500 as a number, as a string, as an Arabic numeral, or as
+     * 250000 minor units. All of those are read. A missing one is not read as
+     * zero, and neither is a stated zero: an order for nothing is not an order,
+     * and a payment of nothing is not a payment. The refusal happens here,
+     * once, so that "is this complete" and "what is missing" cannot disagree.
+     */
+    private fun minorAmountOf(args: JsonText.Obj): Long? {
         val minor = args.whole("amountMinor")
             ?: decimal(args, "amount")?.let { Math.round(it * 100.0) }
-        if (minor == null) return null
+        return minor?.takeIf { it > 0 }
+    }
+
+    private fun moneyOf(args: JsonText.Obj): Money? {
+        val currency = args.text("currency") ?: return null
+        val minor = minorAmountOf(args) ?: return null
         return runCatching { Money(minor, currency) }.getOrNull()
     }
 
@@ -374,16 +385,17 @@ object StructuredOutput {
             ToolName.CREATE_INVOICE -> need("orderId", MissingField.ORDER_ID)
             ToolName.REGISTER_PAYMENT -> {
                 need("invoiceId", MissingField.INVOICE_ID)
-                if (args.text("amount").isNullOrBlank() && args.whole("amountMinor") == null) {
-                    missing += MissingField.AMOUNT
-                }
+                // Asked in the same terms the readiness check uses. A field
+                // that is present but unreadable is missing, and telling the
+                // person to supply the currency when the amount is the word
+                // "lots" sends them to the wrong field.
+                if (minorAmountOf(args) == null) missing += MissingField.AMOUNT
+                if (args.text("currency").isNullOrBlank()) missing += MissingField.CURRENCY
             }
             ToolName.CREATE_DRAFT_ORDER -> {
                 need("customerName", MissingField.CUSTOMER)
                 need("itemsSummary", MissingField.ITEMS)
-                if (args.text("amount").isNullOrBlank() && args.whole("amountMinor") == null) {
-                    missing += MissingField.AMOUNT
-                }
+                if (minorAmountOf(args) == null) missing += MissingField.AMOUNT
                 if (args.text("currency").isNullOrBlank()) missing += MissingField.CURRENCY
             }
             ToolName.SALES_SUMMARY, ToolName.UNKNOWN -> Unit

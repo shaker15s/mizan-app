@@ -14,6 +14,7 @@ import app.mizan.domain.policy.SeparationOfDuties
 import app.mizan.domain.policy.SodCode
 import app.mizan.domain.security.DeviceBindingService
 import app.mizan.service.authority.ServiceAuthority
+import app.mizan.service.concurrency.KeyedLocks
 import app.mizan.service.protocol.ExecutionRequest
 import app.mizan.service.security.ServiceUser
 import app.mizan.service.store.ServiceStores
@@ -47,6 +48,18 @@ class ApprovalDesk(
     private val requireDeviceProof: Boolean,
     private val clock: () -> Long = { System.currentTimeMillis() },
     private val window: ApprovalWindow = ApprovalWindow(),
+    /**
+     * Serialises the read-judge-write of one approval.
+     *
+     * An answer is a decision, not a field update: the ledger's state, the
+     * separation-of-duties check and the expiry are judged from a read, and
+     * then written. Two answers that interleave inside that sequence each read
+     * the same "before" and each write their own "after", and the last writer
+     * wins -- which loses an approver's answer from a dual approval while the
+     * result still reads as complete. Keyed rather than global because
+     * answering one tenant's approval has no business blocking another's.
+     */
+    private val locks: KeyedLocks = KeyedLocks(),
 ) {
 
     sealed interface Result {
@@ -126,6 +139,17 @@ class ApprovalDesk(
      * would not be a dual approval.
      */
     fun decide(
+        approvalId: String,
+        user: ServiceUser,
+        granted: Boolean,
+        reasonCode: String?,
+        deviceChallengeId: String?,
+        deviceSignature: String?,
+    ): Result = locks.withLock(KeyedLocks.approval(approvalId)) {
+        decideLocked(approvalId, user, granted, reasonCode, deviceChallengeId, deviceSignature)
+    }
+
+    private fun decideLocked(
         approvalId: String,
         user: ServiceUser,
         granted: Boolean,

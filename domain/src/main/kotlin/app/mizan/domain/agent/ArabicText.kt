@@ -16,6 +16,8 @@ object ArabicText {
         '\u0665' to '5', '\u0666' to '6', '\u0667' to '7', '\u0668' to '8', '\u0669' to '9',
         '\u06F0' to '0', '\u06F1' to '1', '\u06F2' to '2', '\u06F3' to '3', '\u06F4' to '4',
         '\u06F5' to '5', '\u06F6' to '6', '\u06F7' to '7', '\u06F8' to '8', '\u06F9' to '9',
+        // Separators, not digits: U+066C thousands, U+066B decimal, U+060C comma.
+        '\u066C' to ',', '\u066B' to '.', '\u060C' to ',',
     )
 
     private val DIACRITICS = Regex("[\u064B-\u065F\u0670\u06D6-\u06ED]")
@@ -27,7 +29,18 @@ object ArabicText {
         "company", "co", "co.", "ltd", "ltd.", "llc", "inc", "inc.", "corp", "gmbh",
     )
 
-    /** Digits to ASCII, so one parser handles ١٠ and 10 and ۱۰. */
+    /**
+     * Digits -- and the separators inside them -- to ASCII, so one parser
+     * handles ١٠ and 10 and ۱۰.
+     *
+     * The separators travel with the digits because a number is not a string
+     * of digit characters: "15٬000" is fifteen thousand, and a parser that
+     * normalises the digits but not the separator reads it as fifteen. That is
+     * not a failed parse, it is a wrong order, which is why the Arabic
+     * thousands separator (U+066C), the Arabic decimal separator (U+066B) and
+     * the Arabic comma (U+060C) are mapped here rather than being left to the
+     * caller.
+     */
     fun normalizeDigits(text: String): String = buildString(text.length) {
         for (ch in text) append(DIGIT_MAP[ch] ?: ch)
     }

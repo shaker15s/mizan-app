@@ -6,6 +6,44 @@ identifiers, not promises.
 
 ## [Unreleased] — service lane, 2026-09-26
 
+### Fuzzing and concurrency, and the two defects they found
+
+- **Fuzz suites on both sides of the model boundary.** The plan asks for fuzzing
+  and states the rule that makes it a requirement: never guess on malformed
+  high-impact input. `FuzzInterpreterTest` runs seeded corpora — Arabic, mixed
+  numerals, punctuation, emoji, URLs, direction marks, zero-width joiners,
+  200,000-character inputs, combining marks, injection phrases — and asserts
+  properties rather than examples: nothing throws, the same input always gets
+  the same answer, normalisation is idempotent, every refusal carries a code,
+  and no answer is "ready" with an amount the person never stated.
+  `FuzzStructuredOutputTest` does the same to the model's answer: truncated
+  JSON, two documents concatenated, a markdown fence, nulls, wrong types,
+  unknown tools, 2,000 levels of nesting, 500 KB payloads and injection inside
+  the arguments.
+- **The Arabic thousands separator parsed as a truncation.** `١٥٬٠٠٠` (U+066C)
+  was not normalised to ASCII with the digits, so it read as *15*: not a failed
+  parse but a wrong order, and exactly the failure the parser's own doc comment
+  says it exists to prevent. U+066C, U+066B and U+060C now travel with the
+  digits, and a fractional amount is refused rather than truncated.
+- **The boundary asked for the wrong missing field.** Given an unreadable amount
+  (`"amount": "كثير"`, `null`, `""`, or a stated zero) the model boundary
+  reported the *currency* as missing, sending the person to the wrong field.
+  "What is missing" and "is this complete" are now decided by the same function,
+  and a stated zero is refused as firmly as a missing one.
+- **Concurrency.** `ConcurrencyTest` covers the plan's scenarios: two people
+  answering one approval at once, one approval and one idempotency key under
+  concurrent use, an ERP answer that lands after the client gave up, a session
+  that expires mid-write, a tenant that changes under a session, a policy that
+  moves under an approval, and a restart after the write. `ApprovalDesk` now
+  serialises its read-judge-write per approval through `KeyedLocks` — keyed
+  rather than global, so one tenant's approval cannot block another's, and it
+  releases and forgets the lock rather than keeping one per request.
+  `KeyedLocksTest` covers the primitive's own properties: mutual exclusion, no
+  leak, and no deadlock between two keys taken in two orders.
+- **What this does not cover, said plainly:** the locks are per process. Two
+  replicas behind one PostgreSQL need the database to carry the invariant — a
+  conditional update or a row lock — and `docs/SERVICE.md` lists that as open.
+
 ### Localisation and accessibility, as gates rather than intentions
 
 - **193 user-facing literals moved out of Kotlin.** Gates 13 and 15 read as
@@ -215,7 +253,7 @@ identifiers, not promises.
 - Odoo 19 over JSON-2 is implemented as the primary transport with a scripted
   transport proving the request shape and, more importantly, the difference
   between "the ERP refused" and "I do not know what the ERP did".
-- Tests: **482, passing: 482** (the JVM suite this environment can run).
+- Tests: **521, passing: 521** (the JVM suite this environment can run).
 
 ## [Unreleased] — 2026-09-26
 

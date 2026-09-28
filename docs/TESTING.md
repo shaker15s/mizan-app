@@ -5,7 +5,7 @@ Tests exist, and the three JVM modules now run them:
 ```bash
 python3 tools/bootstrap_toolchain.py   # provisions a JDK and a Kotlin compiler
 JAVA_HOME=<toolchain>/jdk/jdk4py/java-runtime KOTLINC_HOME=<toolchain>/kotlinc \
-  python3 tools/jvm_check.py           # 482 tests, all passing
+  python3 tools/jvm_check.py           # 521 tests, all passing
 ```
 
 The Android modules still have not been assembled: no Android SDK and no
@@ -36,6 +36,32 @@ Every claim below therefore separates what runs from what is merely written.
 | `service/.../JournalDurabilityTest.kt` | A second service over the same directory: a read's record and a verified write's record (with its receipt) are still there, the same key replays the same answer without a second ERP call, and a definite failure is re-evaluated rather than blocked |
 | `service/.../PostgresStoreTest.kt` | The SQL deployment: the schema it creates, every column the statements name exists in the DDL, reads come back in sequence order, a compaction is one transaction that rolls back whole on failure, and a whole service runs on the SQL path while a second process reads its journal and replays its key |
 | `domain/.../RecoveryAttentionAndFreshnessTest.kt` | An expired lease never resends, unknown dispatch is treated as sent, a live lease and a terminal execution are left alone, attention ordering and its failure cap, proof freshness windows and expiry, risk classification |
+
+## Fuzzing and concurrency
+
+Two categories the plan singles out, now with suites of their own:
+
+- **Fuzz** (`FuzzInterpreterTest`, `FuzzStructuredOutputTest`). Seeded
+  generators over Arabic, mixed numerals, punctuation, emoji, URLs, direction
+  marks, zero-width joiners, 200,000-character inputs, malformed JSON, 2,000
+  levels of nesting and prompt injection. The assertions are properties rather
+  than examples: nothing throws, the same input always gets the same answer,
+  normalisation is idempotent, a refusal always carries a code, and the plan's
+  rule holds -- *never guess on malformed high-impact input*. Concretely: an
+  answer that omits the amount produces a question, never an order for zero,
+  and a field that is present but unreadable counts as missing.
+- **Concurrency** (`ConcurrencyTest`, `KeyedLocksTest`). Two approvals answered
+  at once, one approval and one idempotency key under concurrent use, a late ERP
+  answer after the client timed out, a session that expires mid-write, a tenant
+  that changes under a session, a policy that moves under an approval, a restart
+  after a write -- plus the lock primitive's own properties: mutual exclusion,
+  no leak, no deadlock between two keys taken in two orders.
+
+Both found real defects on the first run, which is the point of writing them
+before believing the code: the Arabic thousands separator (U+066C) was not
+normalised, so `١٥٬٠٠٠` parsed as 15 -- a wrong order rather than a failed one --
+and the model boundary asked for the *currency* when the amount it had been
+given was unreadable, sending the person to the wrong field.
 
 ## What is not covered
 
