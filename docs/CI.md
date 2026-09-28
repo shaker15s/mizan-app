@@ -1,153 +1,89 @@
 # Continuous integration
 
-The sandbox token that produced this tree is not allowed to push files under
-`.github/workflows/`, so the workflow is stored here instead of installed.
+The workflow is a real file in this repository, at **`.github/ci/ci.yml`**, and
+it is installed into the place GitHub reads with one command:
 
-To enable it, copy the block below to `.github/workflows/ci.yml`:
-
-```yaml
-name: CI
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-  workflow_dispatch:
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
-# Least privilege. Jobs ask for more only where they need it.
-permissions:
-  contents: read
-
-jobs:
-  static:
-    name: Static checks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Repository health check
-        run: python3 tools/repo_check.py --no-write
-      - name: Every preset meets WCAG AA
-        run: python3 tools/check_contrast.py
-      - name: Launcher icons are present and correctly sized
-        run: python3 tools/render_brand.py --check
-      - name: Gradle wrapper is a real wrapper
-        run: |
-          test -f gradle/wrapper/gradle-wrapper.jar
-          unzip -l gradle/wrapper/gradle-wrapper.jar | grep -q org/gradle/wrapper/GradleWrapperMain.class
-          grep -q '^distributionUrl=https\\://services.gradle.org/' gradle/wrapper/gradle-wrapper.properties
-
-  security:
-    name: Security checks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Secrets, manifest, credentials and governed routes
-        # Static, and honest about it: it refuses a committed private key or a
-        # hardcoded host, checks that the manifest allows no cleartext and every
-        # component declares android:exported, that no credential reaches a log
-        # line, and that every governed service route calls authenticate().
-        # It cannot prove MASVS compliance or hardware-backed keys -- those
-        # need a device, and docs/SECURITY.md says so.
-        run: python3 tools/security_check.py --strict
-      - name: Release pipeline contract
-        run: python3 tools/release_check.py
-
-  jvm:
-    name: JVM modules
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-      - uses: gradle/actions/setup-gradle@v4
-      - name: Domain, integration and service tests
-        run: ./gradlew :domain:test :integration:test :service:test --stacktrace
-      - name: Reference service smoke test
-        run: ./gradlew :service:test --tests '*MizanServiceHttpTest*' --stacktrace
-      - name: The same suite without Gradle
-        # The plan's portability check: the JVM modules must be provable with a
-        # JDK and a Kotlin compiler alone, so a machine that cannot resolve
-        # Maven Central is not a machine that cannot verify this repository.
-        run: python3 tools/jvm_check.py
-      - name: The same suite with a self-provisioned toolchain
-        # No setup-java, no network to Maven: the bootstrap fetches a JDK and a
-        # Kotlin compiler, unpacks them, and jvm_check runs against them.
-        run: |
-          python3 tools/bootstrap_toolchain.py --check || python3 tools/bootstrap_toolchain.py
-          JAVA_HOME="$MIZAN_TOOLCHAIN_DIR/jdk/jdk4py/java-runtime"             KOTLINC_HOME="$MIZAN_TOOLCHAIN_DIR/kotlinc" python3 tools/jvm_check.py
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: jvm-test-results
-          path: |
-            domain/build/reports/tests
-            integration/build/reports/tests
-            service/build/reports/tests
-          if-no-files-found: ignore
-
-  android:
-    name: Android build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-      - uses: android-actions/setup-android@v3
-      - uses: gradle/actions/setup-gradle@v4
-      - name: Assemble the demo and production channels
-        run: |
-          ./gradlew :app:assembleDemoDebug :app:assembleStagingDebug :app:assembleProductionRelease --stacktrace
-      - name: Lint
-        run: ./gradlew :app:lintDemoDebug :data:lintDebug :design:lintDebug --stacktrace
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-build-outputs
-          path: |
-            app/build/outputs/apk
-            app/build/reports/lint-results-demoDebug.html
-          if-no-files-found: ignore
+```bash
+python3 tools/install_ci.py          # writes .github/workflows/ci.yml
+python3 tools/install_ci.py --check  # fails when the two have drifted apart
 ```
 
-What it does on every push and pull request:
+## Why it is not already at `.github/workflows/ci.yml`
+
+The automation identity that produced this tree may not push there. GitHub
+refuses the whole push, whatever else it contains:
+
+```
+! [remote rejected] refusing to allow a GitHub App to create or update
+workflow `.github/workflows/ci.yml` without `workflows` permission
+```
+
+That is a permission on the token, not a problem with the file. Everything
+else -- the workflow content, the checks it runs, the installer, and a check
+that the installed copy is current -- is committed and verifiable from a plain
+checkout. One command by someone with repository rights turns it on. Until
+then this file is honest about what it is: a pipeline that no runner has
+executed, whose contents are nonetheless checked here by
+`tools/ci_check.py`.
+
+`tools/ci_check.py` is what keeps the workflow and this document from drifting
+apart. It reads the workflow structurally -- job names, every `run:` step
+including the multi-line ones -- and fails when:
+
+* a step calls a `tools/*.py` that does not exist;
+* a tool that ships a `--selftest` is invoked without one, which would mean the
+  planted violations that prove the check can fail are never exercised;
+* a gate command the plan requires is never invoked;
+* this document lists a job the workflow does not have, or the workflow has a
+  job this document does not list;
+* the installable copy and the installed copy have drifted.
+
+It found one real instance of the third kind when it was written: this document
+described an `l10n` job that the inline workflow block did not contain. The
+documented gate did not exist.
+
+## What runs on every push and pull request
 
 | job | what it runs |
 | --- | --- |
-| `static` | `tools/repo_check.py --no-write`, `tools/check_contrast.py`, `tools/render_brand.py --check`, and a check that the committed wrapper is a real wrapper |
-| `l10n` | `tools/strings_check.py --strict --selftest` (every `R.string` defined, both locales in step, no hardcoded text, touch targets, text floor) and `tools/extract_strings.py --selftest --dry-run`, which fails if the tree has slipped back to literal text |
+| `static` | `tools/repo_check.py --no-write`, `tools/ci_check.py --strict --selftest`, `tools/install_ci.py --check`, `tools/check_contrast.py`, `tools/render_brand.py --check`, and a check that the committed Gradle wrapper is a real wrapper |
+| `l10n` | `tools/strings_check.py --strict --selftest` (every `R.string` defined, both locales in step, no hardcoded text, touch targets, text floor) and `tools/extract_strings.py --selftest`, which fails if the tree has slipped back to literal text |
 | `security` | `tools/security_check.py --strict` (secrets, manifest, credentials, logging, governed routes, dependency floors) and `tools/release_check.py` (flavor, signing, versioning, mapping, rollback) |
-| `jvm` | `:domain:test :integration:test :service:test`, then the service HTTP suite, and uploads the reports |
+| `codeql` | CodeQL `security-and-quality` over `java-kotlin`, after compiling `:domain`, `:service`, `:integration` and `:app` so the analysis sees code and not only syntax |
+| `dependencies` | `actions/dependency-review-action` on pull requests, failing at `high` |
+| `jvm` | `:domain:test :integration:test :service:test`, then `tools/jvm_check.py` (the same suite with no Gradle), then `tools/syntax_check.py` over every Kotlin file, and the test reports as artifacts |
+| `toolchain` | `tools/bootstrap_toolchain.py` and `tools/jvm_check.py` with no `setup-java`, no Maven and no Gradle: the fallback, proved |
 | `android` | `:app:assembleDemoDebug :app:assembleStagingDebug :app:assembleProductionRelease` and lint on `:app`, `:data`, `:design` |
+
+Two jobs exist because of what this repository could not prove in the sandbox
+that wrote it. `codeql` is gate 19 of the plan, static analysis that needed a
+runner and a scanner; `toolchain` is the sandbox's own limitation turned into a
+job, so that "it compiles with a JDK and a compiler and nothing else" is
+checked on every push rather than asserted.
 
 The Android job needs `android-actions/setup-android` for the SDK. The release
 build is unsigned unless `KEYSTORE_PATH`, `STORE_PASSWORD`, `KEY_ALIAS`, and
-`KEY_PASSWORD` are set in the environment, which the build treats as optional.
+`KEY_PASSWORD` are set in the environment, which the build treats as optional;
+`tools/release_check.py` is what fails when a signed release is asked for and
+the material is missing.
 
 Without Gradle, `python3 tools/jvm_check.py` compiles `:domain`, `:service` and
-`:integration` and runs their 521 tests with a JDK and kotlinc alone, and
+`:integration` and runs their 540 tests with a JDK and kotlinc alone, and
 `python3 tools/syntax_check.py` parses every Kotlin file with the real parser.
-They cover the invariants, the governed pipeline, the ERP boundary and the
-syntax; they cannot cover the UI. The `l10n` job is the exception that proves
-how much of the UI *is* checkable without one: strings, resources, touch
-targets and text sizes are all in the tree, not on the screen. See
-`docs/ACCESSIBILITY.md` for what remains a device claim.
+They cover the invariants, the governed pipeline, the ERP boundary, the fuzz
+and concurrency suites, and the syntax; they cannot cover the UI. The `l10n`
+job is the exception that proves how much of the UI *is* checkable without a
+device: strings, resources, touch targets and text sizes are all in the tree,
+not on the screen. See `docs/ACCESSIBILITY.md` for what remains a device claim.
 
 `python3 tools/bootstrap_toolchain.py` provisions that JDK and compiler on a
 machine that has neither, from the only index it can reach, so the fallback
 works in a locked-down environment as well as on a normal runner.
 
-Until a machine with a JDK runs this, CI is a plan, not a green check.
+## What is still not proven
+
+Every job here is written and reviewed; none has run on GitHub's runners from
+this environment. The two that cannot be verified anywhere but a runner are
+`codeql` and `android`. The honesty line stands: until a machine with the
+Android SDK runs the last job, the APK, the screenshots, the macrobenchmark and
+the baseline profile are claims about this repository, not results from it.

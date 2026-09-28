@@ -6,6 +6,37 @@ identifiers, not promises.
 
 ## [Unreleased] — service lane, 2026-09-26
 
+### The CI workflow became a file, and a check that it stays honest
+
+The plan's complaint was specific: the repository documents CI, but the
+workflow is not installed under `.github/workflows/`, so nothing runs. The
+second half of that was true here — a token without `workflows` permission
+cannot push a workflow file, and GitHub refuses the push outright. So the
+workflow is now a real file at `.github/ci/ci.yml`, installed by
+`tools/install_ci.py` in one command by anyone with repository rights, and
+`.github/workflows/` is generated and ignored rather than committed twice.
+
+Eight jobs: `static`, `l10n`, `security`, `codeql`, `dependencies`, `jvm`,
+`toolchain`, `android`. Two of them exist because of what this sandbox could
+not do: `codeql` is the plan's security-CI gate, and `toolchain` proves the
+suite runs with a JDK and a Kotlin compiler and no Gradle at all — the
+sandbox's limitation turned into a job instead of a footnote.
+
+`tools/ci_check.py` keeps the pipeline and the documentation from drifting. It
+reads the workflow structurally — job names and every `run:` step — and fails
+when a step calls a tool that does not exist, when a tool that ships a
+`--selftest` is invoked without one (so the planted violations that prove the
+check *can* fail are never exercised), when a gate the plan requires is never
+invoked, when the documentation and the workflow disagree about which jobs
+exist, or when the installed copy differs from the installable one.
+
+It found a real instance of that last-but-second on its first run: `docs/CI.md`
+described an `l10n` job, complete with a table row explaining what it checks,
+and the workflow it published inline did not contain it. The documented gate
+did not exist. `tools/ci_check.py --selftest` now plants that case, along with
+a missing tool, an unrun self-test, an undocumented job and a missing gate, and
+requires the checker to catch all five.
+
 ### Fuzzing and concurrency, and the two defects they found
 
 - **Fuzz suites on both sides of the model boundary.** The plan asks for fuzzing

@@ -1,0 +1,196 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "arena/**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege. Jobs ask for more only where they need it.
+permissions:
+  contents: read
+
+jobs:
+  static:
+    name: Static checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Repository health check
+        run: python3 tools/repo_check.py --no-write
+      - name: The workflow and the docs describe the same gates
+        run: python3 tools/ci_check.py --strict --selftest
+      - name: The installed workflow is the current one
+        # The installable copy lives at .github/ci/ci.yml because the identity
+        # that wrote this repository may not push under .github/workflows/.
+        # This step fails when the two drift apart.
+        run: |
+          python3 tools/install_ci.py --check
+          python3 tools/install_ci.py --selftest
+      - name: Every preset meets WCAG AA
+        run: python3 tools/check_contrast.py
+      - name: Launcher icons are present and correctly sized
+        run: python3 tools/render_brand.py --check
+      - name: Gradle wrapper is a real wrapper
+        run: |
+          test -f gradle/wrapper/gradle-wrapper.jar
+          unzip -l gradle/wrapper/gradle-wrapper.jar | grep -q org/gradle/wrapper/GradleWrapperMain.class
+          grep -q '^distributionUrl=https\://services.gradle.org/' gradle/wrapper/gradle-wrapper.properties
+
+  l10n:
+    name: Localisation and accessibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Strings, both locales, touch targets and text floor
+        # Every R.string is defined, both locales are in step, no user-facing
+        # text is hardcoded in Kotlin, no clickable is under 48dp, no text is
+        # under 11sp. Static, and it says so: it checks the tree, not the
+        # screen. docs/ACCESSIBILITY.md lists what needs a device.
+        run: python3 tools/strings_check.py --strict --selftest
+      - name: The tree has not slipped back to literal text
+        run: python3 tools/extract_strings.py --selftest
+
+  security:
+    name: Security checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Secrets, manifest, credentials and governed routes
+        # Static, and honest about it: it refuses a committed private key or a
+        # hardcoded host, checks that the manifest allows no cleartext and every
+        # component declares android:exported, that no credential reaches a log
+        # line, and that every governed service route calls authenticate().
+        # It cannot prove MASVS compliance or hardware-backed keys -- those
+        # need a device, and docs/SECURITY.md says so.
+        run: python3 tools/security_check.py --strict
+      - name: Release pipeline contract
+        run: python3 tools/release_check.py
+
+  codeql:
+    name: Static analysis (CodeQL)
+    runs-on: ubuntu-latest
+    # The security gate this sandbox could not run. It needs to write its
+    # findings as code scanning results, so it asks for that and nothing else.
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: java-kotlin
+          queries: security-and-quality
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build what CodeQL will analyse
+        # The Android modules need the SDK; the JVM modules do not. Both are
+        # built so the analysis sees compiled code rather than only syntax.
+        run: |
+          ./gradlew :domain:compileKotlin :service:compileKotlin :integration:compileKotlin --stacktrace
+          ./gradlew :app:compileDemoDebugKotlin --stacktrace
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:java-kotlin"
+
+  dependencies:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+
+  jvm:
+    name: JVM modules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Domain, integration and service tests
+        run: ./gradlew :domain:test :integration:test :service:test --stacktrace
+      - name: The same suite without Gradle
+        # The portability check: the JVM modules must be provable with a JDK and
+        # a Kotlin compiler alone, so a machine that cannot resolve Maven
+        # Central is not a machine that cannot verify this repository.
+        run: python3 tools/jvm_check.py
+      - name: Every Kotlin file parses, including the Android ones
+        run: python3 tools/syntax_check.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jvm-test-results
+          path: |
+            domain/build/reports/tests
+            integration/build/reports/tests
+            service/build/reports/tests
+          if-no-files-found: ignore
+
+  toolchain:
+    name: Self-provisioned toolchain
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: No setup-java, no Maven, no Gradle
+        # The bootstrap fetches a JDK and a Kotlin compiler, unpacks them, and
+        # runs the suite against them. This is the job that proves the fallback
+        # works on a machine that has neither -- which is the machine the
+        # sandbox that produced this tree actually was.
+        run: |
+          python3 tools/bootstrap_toolchain.py --check || python3 tools/bootstrap_toolchain.py
+          JAVA_HOME="$MIZAN_TOOLCHAIN_DIR/jdk/jdk4py/java-runtime" \
+            KOTLINC_HOME="$MIZAN_TOOLCHAIN_DIR/kotlinc" \
+            python3 tools/jvm_check.py
+
+  android:
+    name: Android build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Assemble the demo and production channels
+        run: |
+          ./gradlew :app:assembleDemoDebug :app:assembleStagingDebug :app:assembleProductionRelease --stacktrace
+      - name: Lint
+        run: ./gradlew :app:lintDemoDebug :data:lintDebug :design:lintDebug --stacktrace
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-outputs
+          path: |
+            app/build/outputs/apk
+            app/build/reports/lint-results-demoDebug.html
+          if-no-files-found: ignore

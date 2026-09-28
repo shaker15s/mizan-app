@@ -25,7 +25,7 @@ words, and this file is written to survive that standard.
 | Modules that compile and run here | `:domain`, `:service`, `:integration` |
 | Modules that cannot be built here | `:app`, `:design`, `:data` — they need the Android SDK, AGP and Compose, and Maven Central and Google Maven are unreachable from this sandbox |
 | Test command | `JAVA_HOME=... KOTLINC_HOME=... python3 tools/jvm_check.py` |
-| Tests | 521, all passing (domain contracts, service pipeline over a real HTTP listener, the outbox and its sweeper, the durable journal across a restart, the PostgreSQL record log against a database double, the ERP boundary with a scripted transport) |
+| Tests | 540, all passing (domain contracts, service pipeline over a real HTTP listener, the outbox and its sweeper, the durable journal across a restart, the PostgreSQL record log against a database double, the ERP boundary with a scripted transport) |
 
 Anything marked **proven** below is proven by that command. Anything that needs
 an Android device, a Gradle build, a Postgres server or a real Odoo instance is
@@ -440,8 +440,8 @@ leaves `sweepLeaseMillis` at zero and keeps the old behaviour.
 | # | Gate | State |
 | --- | --- | --- |
 | 1 | Real Odoo JSON-2 connector | **written**; wire behaviour proven against a scripted ERP, never against a customer's Odoo |
-| 2 | Durable production service | **proven** for the file-backed stores; Postgres **missing** |
-| 3 | PostgreSQL | **missing** |
+| 2 | Durable production service | **proven** for the file-backed stores and for the PostgreSQL record log (the whole service runs on SQL, and another process reads its work); the *multi-replica* invariant is **open** and documented |
+| 3 | PostgreSQL | **written, not run against a server**: `JdbcDatabase`, the log schema, compaction in one transaction and a database double in tests; no PostgreSQL server exists in this environment |
 | 4 | Durable idempotency | **proven** |
 | 5 | Durable execution journal | **proven** |
 | 6 | Real approval identity | **proven** (approval objects validated against proposal revision, fingerprint and policy version) |
@@ -451,14 +451,14 @@ leaves `sweepLeaseMillis` at zero and keeps the old behaviour.
 | 10 | Proper reconciliation | **proven** |
 | 11 | Passkeys / Credential Manager | **missing** |
 | 12 | Keystore-based token protection | **written** on the Android side (existing code), unbuildable here |
-| 13 | Full Arabic localisation | **missing** (the Arabic domain logic and text handling exist and are tested; the resource strings and RTL pass are not done) |
-| 14 | Adaptive phone/tablet/foldable UX | **missing** |
-| 15 | Real accessibility audit | **missing** |
+| 13 | Full Arabic localisation | **proven in the tree, static only**: both locales in step, every `R.string` defined, no user-facing literal left in Kotlin, RTL keys present — checked by `tools/strings_check.py`, never seen on a screen |
+| 14 | Adaptive phone/tablet/foldable UX | **missing** (needs a device or a preview renderer) |
+| 15 | Real accessibility audit | **partly static**: contrast, touch targets, text floor and content descriptions are checked mechanically; a real audit with a screen reader and TalkBack is **missing** |
 | 16 | Screenshot regression suite | **missing** |
 | 17 | Macrobenchmark | **missing** |
 | 18 | Baseline Profile | **missing** |
-| 19 | Security CI | **missing** |
-| 20 | Real production release pipeline | **missing** |
+| 19 | Security CI | **written, not run by this environment**: the workflow runs `tools/security_check.py --strict`, `tools/release_check.py` and CodeQL `security-and-quality` over `java-kotlin`; a runner has never executed it |
+| 20 | Real production release pipeline | **partly**: `tools/release_check.py` enforces the contract (flavors, signing material, versioning, mapping, rollback) and the workflow builds all three channels; signing, upload and rollout need repository secrets |
 
 ## Red lines
 
@@ -474,11 +474,19 @@ The plan names a few things that must never become true. Current state:
 
 ## What the next slice of work is
 
-1. The approval screen: `GovernanceApiClient` speaks the whole approval
-   surface already, and nothing in `:app` calls it yet — a person still cannot
-   open, read or answer an approval from the phone.
-2. Wire device enrolment and the challenge into that same screen, so a grant
-   that the ladder demands a device proof for can actually be granted.
-3. The Postgres stores, behind the same interfaces, with the append-only log
-   kept as the reference implementation and as the test double.
-4. The remaining gates above, in the order the plan gives them.
+1. **The multi-replica invariant.** `KeyedLocks` serialises a read-judge-write
+   inside one process. Two replicas need the database to carry it: a
+   conditional update (`UPDATE approvals SET state = 'CONSUMED' WHERE id = ?
+   AND state = 'GRANTED'`, then act on the affected row count) or a row lock in
+   the transaction that reads the journal. The interface is in place; the SQL is
+   not written, and `docs/SERVICE.md` says so where a reader will look.
+2. **Device enrolment on the phone.** The approval screen exists and the
+   service hands out challenges; enrolling a device key and signing one from
+   the UI is the step that makes a device-bound grant possible on a real phone.
+   It cannot be compiled here.
+3. **The gates that need a machine this environment is not**: Android build,
+   screenshots, macrobenchmark, baseline profile, a screen-reader audit, a real
+   Odoo, a real PostgreSQL.
+4. **The rest of the plan's phases**, in the priority order it gives: the P2
+   device integrations, then the P3 analytics, workflows and documents, then the
+   P4 enterprise and scale work.

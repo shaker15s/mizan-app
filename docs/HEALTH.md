@@ -16,9 +16,9 @@ that the app compiles or that a write reached an ERP.
 | :design | 10 | 0 | 4287 |
 | :domain | 38 | 11 | 9629 |
 | :integration | 14 | 9 | 4450 |
-| :service | 43 | 19 | 18014 |
+| :service | 43 | 20 | 18360 |
 
-Test functions declared: 521.
+Test functions declared: 540.
 Room indexes declared: 20; CREATE INDEX statements in the migration: 20.
 
 ## Findings
