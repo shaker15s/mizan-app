@@ -54,7 +54,12 @@ fun JsonValue.Obj.wholeOrNumericText(name: String): Long? = when (val value = fi
 object Json {
 
     fun parse(text: String): JsonValue {
-        val reader = Reader(text)
+        // A byte order mark is insignificant by RFC 8259 section 8.1, and real
+        // senders add it: a proxied ERP response, an exported file, a Windows
+        // tool that wrote the body. Refusing it would report valid JSON as
+        // malformed and stop a read for a reason the ERP did not state.
+        val body = text.removePrefix("\uFEFF")
+        val reader = Reader(body)
         val value = reader.readValue()
         reader.skipWhitespace()
         if (!reader.atEnd()) {
