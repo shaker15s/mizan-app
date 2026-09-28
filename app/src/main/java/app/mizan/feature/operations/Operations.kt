@@ -99,6 +99,9 @@ class OperationsViewModel(graph: AppGraph) : ViewModel() {
 
 @Composable
 fun OperationsRoute(graph: AppGraph, expanded: Boolean) {
+    val opsChooseAnyOperationFromTheExecutionListTo = stringResource(R.string.ops_choose_any_operation_from_the_execution_list_to)
+    val opsSelectAnExecutionReceipt = stringResource(R.string.ops_select_an_execution_receipt)
+
     val vm: OperationsViewModel = viewModel(factory = simpleFactory { OperationsViewModel(graph) })
     val records by vm.records.collectAsStateWithLifecycle()
     val colors = LocalMizanColors.current
@@ -189,8 +192,8 @@ fun OperationsRoute(graph: AppGraph, expanded: Boolean) {
                     OperationDetailCard(current) { selectedId = null }
                 } else {
                     MizanEmptyState(
-                        title = "Select an Execution Receipt",
-                        body = "Choose any operation from the execution list to inspect its governance lease, cryptographic verification proof, and audit metadata.",
+                        title = opsSelectAnExecutionReceipt,
+                        body = opsChooseAnyOperationFromTheExecutionListTo,
                     )
                 }
             }
@@ -235,6 +238,12 @@ private fun OperationsHeroStats(
     pending: Int,
     faults: Int,
 ) {
+    val homePending = stringResource(R.string.home_pending)
+    val homeVerified = stringResource(R.string.home_verified)
+    val opsErpExecutionAuthority = stringResource(R.string.ops_erp_execution_authority)
+    val opsRealTimeLeaseAndIdempotentExecutionTracking = stringResource(R.string.ops_real_time_lease_and_idempotent_execution_tracking)
+    val opsTotalRun = stringResource(R.string.ops_total_run)
+
     val colors = LocalMizanColors.current
 
     Column(
@@ -279,13 +288,13 @@ private fun OperationsHeroStats(
                 }
                 Column {
                     Text(
-                        text = "ERP Execution Authority",
+                        text = opsErpExecutionAuthority,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colors.textPrimary,
                     )
                     Text(
-                        text = "Real-time lease and idempotent execution tracking",
+                        text = opsRealTimeLeaseAndIdempotentExecutionTracking,
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.textSecondary,
                     )
@@ -303,19 +312,19 @@ private fun OperationsHeroStats(
             horizontalArrangement = Arrangement.spacedBy(Space.sm),
         ) {
             OperationsStatChip(
-                label = "Total Run",
+                label = opsTotalRun,
                 value = "$total",
                 dotColor = colors.accent,
                 modifier = Modifier.weight(1f),
             )
             OperationsStatChip(
-                label = "Verified",
+                label = homeVerified,
                 value = "$verified",
                 dotColor = Color(0xFF10B981),
                 modifier = Modifier.weight(1f),
             )
             OperationsStatChip(
-                label = "Pending",
+                label = homePending,
                 value = "$pending",
                 dotColor = colors.warning,
                 modifier = Modifier.weight(1f),
@@ -359,10 +368,13 @@ private fun OperationsReceiptsList(
     selectedId: String?,
     onSelect: (String) -> Unit,
 ) {
+    val opsNoExecutionRecordsMatchTheSelectedFilterCategory = stringResource(R.string.ops_no_execution_records_match_the_selected_filter_category)
+    val opsNoMatchingOperations = stringResource(R.string.ops_no_matching_operations)
+
     if (records.isEmpty()) {
         MizanEmptyState(
-            title = "No Matching Operations",
-            body = "No execution records match the selected filter category.",
+            title = opsNoMatchingOperations,
+            body = opsNoExecutionRecordsMatchTheSelectedFilterCategory,
         )
     } else {
         Column(verticalArrangement = Arrangement.spacedBy(Space.sm)) {
@@ -398,6 +410,8 @@ private fun OperationsReceiptsList(
 
 @Composable
 private fun OperationDetailCard(record: ExecutionRecord, onClose: () -> Unit) {
+    val opsOperationInspector = stringResource(R.string.ops_operation_inspector)
+
     val colors = LocalMizanColors.current
     val clipboard = LocalClipboardManager.current
     val haptic = LocalHapticFeedback.current
@@ -439,7 +453,7 @@ private fun OperationDetailCard(record: ExecutionRecord, onClose: () -> Unit) {
                 }
                 Column {
                     Text(
-                        text = "Operation Inspector",
+                        text = opsOperationInspector,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colors.textPrimary,

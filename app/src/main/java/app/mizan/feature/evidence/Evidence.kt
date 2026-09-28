@@ -121,6 +121,9 @@ class EvidenceViewModel(private val graph: AppGraph) : ViewModel() {
 
 @Composable
 fun EvidenceRoute(graph: AppGraph, expanded: Boolean) {
+    val evidenceChooseAnyCryptographicExecutionReceiptFromTheLedger = stringResource(R.string.evidence_choose_any_cryptographic_execution_receipt_from_the_ledger)
+    val evidenceSelectATrustReceipt = stringResource(R.string.evidence_select_a_trust_receipt)
+
     val vm: EvidenceViewModel = viewModel(factory = simpleFactory { EvidenceViewModel(graph) })
     val receipts by vm.receipts.collectAsStateWithLifecycle()
     val colors = LocalMizanColors.current
@@ -178,8 +181,8 @@ fun EvidenceRoute(graph: AppGraph, expanded: Boolean) {
                     ReceiptDetailCard(selected) { openReceiptId = null }
                 } else {
                     MizanEmptyState(
-                        title = "Select a Trust Receipt",
-                        body = "Choose any cryptographic execution receipt from the ledger to inspect its full Merkle payload, signature stamp, and ERP binding.",
+                        title = evidenceSelectATrustReceipt,
+                        body = evidenceChooseAnyCryptographicExecutionReceiptFromTheLedger,
                     )
                 }
             }
@@ -223,6 +226,13 @@ private fun EvidenceHeaderAndVerification(
     graph: AppGraph,
     receiptCount: Int,
 ) {
+    val evidenceChainIntegritySeal = stringResource(R.string.evidence_chain_integrity_seal)
+    val evidenceIntegrityStatus = stringResource(R.string.evidence_integrity_status)
+    val evidenceLedgerHeight = stringResource(R.string.evidence_ledger_height)
+    val evidenceTamperEvidentSha256CryptographicChain = stringResource(R.string.evidence_tamper_evident_sha_256_cryptographic_chain)
+    val evidenceTamperSimulationTest = stringResource(R.string.evidence_tamper_simulation_test)
+    val evidenceVerifiesCryptographicContinuityOfAllReceiptsAgainstThe = stringResource(R.string.evidence_verifies_cryptographic_continuity_of_all_receipts_against_the)
+
     val colors = LocalMizanColors.current
 
     // Screen Hero Banner
@@ -275,7 +285,7 @@ private fun EvidenceHeaderAndVerification(
                 MizanStatusBadge("Merkle Root", StatusTone.Accent)
             }
             Text(
-                text = "Tamper-Evident SHA-256 Cryptographic Chain",
+                text = evidenceTamperEvidentSha256CryptographicChain,
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.textSecondary,
             )
@@ -309,13 +319,13 @@ private fun EvidenceHeaderAndVerification(
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = "Chain Integrity & Seal",
+                    text = evidenceChainIntegritySeal,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = colors.textPrimary,
                 )
                 Text(
-                    text = "Verifies cryptographic continuity of all receipts against the Merkle tree",
+                    text = evidenceVerifiesCryptographicContinuityOfAllReceiptsAgainstThe,
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.textSecondary,
                 )
@@ -334,13 +344,13 @@ private fun EvidenceHeaderAndVerification(
             horizontalArrangement = Arrangement.spacedBy(Space.sm),
         ) {
             EvidenceMetricPill(
-                label = "Ledger Height",
+                label = evidenceLedgerHeight,
                 value = "$receiptCount Blocks",
                 icon = Icons.Outlined.ReceiptLong,
                 modifier = Modifier.weight(1f),
             )
             EvidenceMetricPill(
-                label = "Integrity Status",
+                label = evidenceIntegrityStatus,
                 value = if (vm.report?.intact == false) "Tampered" else "100% Intact",
                 icon = Icons.Outlined.Shield,
                 modifier = Modifier.weight(1f),
@@ -406,7 +416,7 @@ private fun EvidenceHeaderAndVerification(
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = "Tamper Simulation Test",
+                        text = evidenceTamperSimulationTest,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = colors.warning,
@@ -485,6 +495,8 @@ private fun EvidenceReceiptsList(
 
 @Composable
 private fun ReceiptDetailCard(receipt: TrustReceipt, onClose: () -> Unit) {
+    val evidenceReceiptInspector = stringResource(R.string.evidence_receipt_inspector)
+
     val colors = LocalMizanColors.current
     Column(
         modifier = Modifier
@@ -521,7 +533,7 @@ private fun ReceiptDetailCard(receipt: TrustReceipt, onClose: () -> Unit) {
                     Icon(Icons.Outlined.Shield, contentDescription = null, tint = colors.accent, modifier = Modifier.size(18.dp))
                 }
                 Text(
-                    text = "Receipt Inspector",
+                    text = evidenceReceiptInspector,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = colors.textPrimary,

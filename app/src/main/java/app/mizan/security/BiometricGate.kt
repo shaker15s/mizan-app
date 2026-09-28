@@ -167,6 +167,9 @@ fun BiometricAuthModal(
     modifier: Modifier = Modifier,
     isSimulated: Boolean = false,
 ) {
+    val securityHardwareAttestation = stringResource(R.string.security_hardware_attestation)
+    val securityTouchSensor = stringResource(R.string.security_touch_sensor)
+
     val colors = LocalMizanColors.current
     Dialog(onDismissRequest = onDismiss) {
         Box(
@@ -195,7 +198,7 @@ fun BiometricAuthModal(
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Fingerprint,
-                        contentDescription = "Touch Sensor",
+                        contentDescription = securityTouchSensor,
                         tint = colors.accent,
                         modifier = Modifier.size(42.dp),
                     )
@@ -238,7 +241,7 @@ fun BiometricAuthModal(
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        text = "Hardware Attestation · $operationId",
+                        text = securityHardwareAttestation.replace("{1}", operationId),
                         style = MaterialTheme.typography.labelSmall.copy(fontFamily = MizanMono),
                         color = colors.textSecondary,
                     )

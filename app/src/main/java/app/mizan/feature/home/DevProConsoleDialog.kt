@@ -73,6 +73,8 @@ import app.mizan.graph.AppGraph
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.util.UUID
+import androidx.compose.ui.res.stringResource
+import app.mizan.R
 
 @Composable
 fun DevProConsoleDialog(
@@ -80,6 +82,17 @@ fun DevProConsoleDialog(
     onDismiss: () -> Unit,
     onLedgerMutated: () -> Unit,
 ) {
+    val homeClose = stringResource(R.string.home_close)
+    val homeDeveloperTelemetryOverlay = stringResource(R.string.home_developer_telemetry_overlay)
+    val homeExposeRawHashesAndNetworkTimings = stringResource(R.string.home_expose_raw_hashes_and_network_timings)
+    val homeHiddenDeveloperTelemetryStressTools = stringResource(R.string.home_hidden_developer_telemetry_stress_tools)
+    val homeInject4HighFidelityVerifiedErpTransactionLogs = stringResource(R.string.home_inject_4_high_fidelity_verified_erp_transaction_logs)
+    val homeInjected4VerifiedTransactionsSuccessfully = stringResource(R.string.home_injected_4_verified_transactions_successfully)
+    val homeSha256MerkleLedgerActive = stringResource(R.string.home_sha_256_merkle_ledger_active)
+    val homeStressSimulationSeed = stringResource(R.string.home_stress_simulation_seed)
+    val homeWakeelHybridScaleEngine = stringResource(R.string.home_wakeel_hybrid_scale_engine)
+    val homeWakeelProMasterConsole = stringResource(R.string.home_wakeel_pro_master_console)
+
     val colors = LocalMizanColors.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -112,13 +125,13 @@ fun DevProConsoleDialog(
                 }
                 Column {
                     Text(
-                        text = "Wakeel Pro Master Console",
+                        text = homeWakeelProMasterConsole,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colors.textPrimary,
                     )
                     Text(
-                        text = "Hidden developer telemetry & stress tools",
+                        text = homeHiddenDeveloperTelemetryStressTools,
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.textSecondary,
                     )
@@ -146,13 +159,13 @@ fun DevProConsoleDialog(
                     WakeelMascot(size = 54.dp, state = MascotState.IDLE_BALANCED)
                     Column(modifier = Modifier.padding(end = Space.md)) {
                         Text(
-                            text = "Wakeel Hybrid Scale Engine",
+                            text = homeWakeelHybridScaleEngine,
                             style = MaterialTheme.typography.labelSmall,
                             color = colors.accent,
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            text = "SHA-256 Merkle Ledger Active",
+                            text = homeSha256MerkleLedgerActive,
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                             color = colors.textSecondary,
                         )
@@ -171,13 +184,13 @@ fun DevProConsoleDialog(
                 ) {
                     Column {
                         Text(
-                            text = "Developer Telemetry Overlay",
+                            text = homeDeveloperTelemetryOverlay,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = colors.textPrimary,
                         )
                         Text(
-                            text = "Expose raw hashes and network timings",
+                            text = homeExposeRawHashesAndNetworkTimings,
                             style = MaterialTheme.typography.bodySmall,
                             color = colors.textSecondary,
                         )
@@ -202,13 +215,13 @@ fun DevProConsoleDialog(
                     verticalArrangement = Arrangement.spacedBy(Space.xs),
                 ) {
                     Text(
-                        text = "Stress Simulation Seed:",
+                        text = homeStressSimulationSeed,
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.accent,
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        text = "Inject 4 high-fidelity verified ERP transaction logs into the local ledger with valid SHA-256 hashes.",
+                        text = homeInject4HighFidelityVerifiedErpTransactionLogs,
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.textSecondary,
                     )
@@ -294,7 +307,7 @@ fun DevProConsoleDialog(
                                 }
 
                                 isSeeding = false
-                                Toast.makeText(context, "Injected 4 verified transactions successfully", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, homeInjected4VerifiedTransactionsSuccessfully, Toast.LENGTH_SHORT).show()
                                 onLedgerMutated()
                                 onDismiss()
                             }
@@ -306,7 +319,7 @@ fun DevProConsoleDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close", color = colors.accent, fontWeight = FontWeight.Bold)
+                Text(homeClose, color = colors.accent, fontWeight = FontWeight.Bold)
             }
         },
     )

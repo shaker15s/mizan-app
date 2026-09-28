@@ -74,6 +74,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.mizan.design.theme.LocalMizanColors
 import app.mizan.design.token.Space
+import androidx.compose.ui.res.stringResource
+import app.mizan.design.R
 
 /**
  * Visual Progress Indicator showing ERP request success rates with Apple-glass aesthetics.
@@ -91,6 +93,11 @@ fun ErpSuccessProgressGauge(
     subtitle: String = "Live audit verification score across tenant instances",
     onInspectClick: (() -> Unit)? = null,
 ) {
+    val designBlockedFailed = stringResource(R.string.design_blocked_failed)
+    val designPendingAction = stringResource(R.string.design_pending_action)
+    val designTotalRequests = stringResource(R.string.design_total_requests)
+    val designVerifiedSafe = stringResource(R.string.design_verified_safe)
+
     val colors = LocalMizanColors.current
     var animatedProgress by remember { mutableFloatStateOf(0f) }
 
@@ -178,7 +185,7 @@ fun ErpSuccessProgressGauge(
                     Spacer(Modifier.width(5.dp))
                     Text(
                         text = "REAL-TIME",
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                         fontWeight = FontWeight.SemiBold,
                         color = colors.accent,
                     )
@@ -248,7 +255,7 @@ fun ErpSuccessProgressGauge(
                     )
                     Text(
                         text = "HEALTH",
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                         fontWeight = FontWeight.SemiBold,
                         color = colors.textTertiary,
                     )
@@ -261,23 +268,23 @@ fun ErpSuccessProgressGauge(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 StatPill(
-                    label = "Total Requests",
+                    label = designTotalRequests,
                     value = "$totalRequests",
                     dotColor = colors.accent,
                 )
                 StatPill(
-                    label = "Verified Safe",
+                    label = designVerifiedSafe,
                     value = "$verifiedCount",
                     dotColor = Color(0xFF10B981),
                 )
                 StatPill(
-                    label = "Pending Action",
+                    label = designPendingAction,
                     value = "$pendingCount",
                     dotColor = colors.warning,
                 )
                 if (failureCount > 0) {
                     StatPill(
-                        label = "Blocked / Failed",
+                        label = designBlockedFailed,
                         value = "$failureCount",
                         dotColor = colors.danger,
                     )
@@ -335,6 +342,11 @@ fun AuditTrailReceiptCard(
     isSimulation: Boolean = false,
     onClick: (() -> Unit)? = null,
 ) {
+    val designCopyTraceId = stringResource(R.string.design_copy_trace_id)
+    val designErpSystemKey = stringResource(R.string.design_erp_system_key)
+    val designPolicyEngine = stringResource(R.string.design_policy_engine)
+    val designTraceId = stringResource(R.string.design_trace_id)
+
     val colors = LocalMizanColors.current
     var expanded by remember { mutableStateOf(false) }
     var copied by remember { mutableStateOf(false) }
@@ -462,7 +474,7 @@ fun AuditTrailReceiptCard(
                             Spacer(Modifier.width(3.dp))
                             Text(
                                 text = "ATTESTED",
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                                 fontWeight = FontWeight.SemiBold,
                                 color = colors.accent,
                             )
@@ -478,7 +490,7 @@ fun AuditTrailReceiptCard(
                     ) {
                         Text(
                             text = "SIMULATION",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                             fontWeight = FontWeight.SemiBold,
                             color = colors.warning,
                         )
@@ -510,12 +522,12 @@ fun AuditTrailReceiptCard(
             ) {
                 policyRule?.let {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Policy Engine", style = MaterialTheme.typography.labelSmall, color = colors.textTertiary)
+                        Text(designPolicyEngine, style = MaterialTheme.typography.labelSmall, color = colors.textTertiary)
                         Text(it, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
                     }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Trace ID", style = MaterialTheme.typography.labelSmall, color = colors.textTertiary)
+                    Text(designTraceId, style = MaterialTheme.typography.labelSmall, color = colors.textTertiary)
                     Row(
                         modifier = Modifier
                             .clip(ShapePill)
@@ -529,13 +541,13 @@ fun AuditTrailReceiptCard(
                     ) {
                         Text(
                             text = if (copied) "COPIED!" else traceId.take(16) + "…",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                             color = colors.accent,
                         )
                         Spacer(Modifier.width(4.dp))
                         Icon(
                             Icons.Outlined.ContentCopy,
-                            contentDescription = "Copy trace ID",
+                            contentDescription = designCopyTraceId,
                             tint = colors.accent,
                             modifier = Modifier.size(10.dp),
                         )
@@ -543,7 +555,7 @@ fun AuditTrailReceiptCard(
                 }
                 erpRecordId?.let {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("ERP System Key", style = MaterialTheme.typography.labelSmall, color = colors.textTertiary)
+                        Text(designErpSystemKey, style = MaterialTheme.typography.labelSmall, color = colors.textTertiary)
                         Text(it, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = colors.accent)
                     }
                 }

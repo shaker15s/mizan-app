@@ -100,6 +100,8 @@ import app.mizan.ui.phaseLabel
 import app.mizan.ui.toolLabel
 import java.time.Duration
 import java.time.Instant
+import androidx.compose.ui.res.stringResource
+import app.mizan.R
 
 enum class ActionLogStatusFilter(val label: String) {
     ALL("All"),
@@ -131,6 +133,37 @@ fun HistoricalErpActionLogsList(
     workspaceName: String = "Wakeel Workspace",
     onInspectEvidence: (() -> Unit)? = null,
 ) {
+    val homeClearSearch = stringResource(R.string.home_clear_search)
+    val homeClose = stringResource(R.string.home_close)
+    val homeCommands = stringResource(R.string.home_commands)
+    val homeCsvLedgerGeneratedSuccessfully = stringResource(R.string.home_csv_ledger_generated_successfully)
+    val homeCsvReportGenerated = stringResource(R.string.home_csv_report_generated)
+    val homeCsvStructuredLedger = stringResource(R.string.home_csv_structured_ledger)
+    val homeDate = stringResource(R.string.home_date)
+    val homeExportAuditReport = stringResource(R.string.home_export_audit_report)
+    val homeExportError = stringResource(R.string.home_export_error)
+    val homeExportReport = stringResource(R.string.home_export_report)
+    val homeExportReportAction = stringResource(R.string.home_export_report_action)
+    val homeFilterByDate = stringResource(R.string.home_filter_by_date)
+    val homeFilterByStatus = stringResource(R.string.home_filter_by_status)
+    val homeFormalA4DocumentWithLedgerSealsTimestampsCryptographic = stringResource(R.string.home_formal_a4_document_with_ledger_seals_timestamps_cryptographic)
+    val homeGenerateAndShareAnOfficialComplianceAuditReport = stringResource(R.string.home_generate_and_share_an_official_compliance_audit_report)
+    val homeHistoricalErpActionLogs = stringResource(R.string.home_historical_erp_action_logs)
+    val homeLedgerIntegrity = stringResource(R.string.home_ledger_integrity)
+    val homeOptionWithCount = stringResource(R.string.home_option_with_count)
+    val homePdfAuditComplianceReport = stringResource(R.string.home_pdf_audit_compliance_report)
+    val homePdfReportGenerated = stringResource(R.string.home_pdf_report_generated)
+    val homePdfReportGeneratedSuccessfully = stringResource(R.string.home_pdf_report_generated_successfully)
+    val homeReadOnly = stringResource(R.string.home_read_only)
+    val homeReadOnlyAuditTrailCryptographicallyVerified = stringResource(R.string.home_read_only_audit_trail_cryptographically_verified)
+    val homeResetAll = stringResource(R.string.home_reset_all)
+    val homeRfc4180SpreadsheetExportForExcelSheetsOr = stringResource(R.string.home_rfc_4180_spreadsheet_export_for_excel_sheets_or)
+    val homeSearchByKeywordCommandIdIntentHashOr = stringResource(R.string.home_search_by_keyword_command_id_intent_hash_or)
+    val homeSelectOrDeselectAll = stringResource(R.string.home_select_or_deselect_all)
+    val homeStatus = stringResource(R.string.home_status)
+    val homeVerified = stringResource(R.string.home_verified)
+    val searchTitle = stringResource(R.string.search_title)
+
     val colors = LocalMizanColors.current
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
@@ -250,13 +283,13 @@ fun HistoricalErpActionLogsList(
                 }
                 Column {
                     Text(
-                        text = "Historical ERP Action Logs",
+                        text = homeHistoricalErpActionLogs,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colors.textPrimary,
                     )
                     Text(
-                        text = "Read-Only Audit Trail · Cryptographically Verified",
+                        text = homeReadOnlyAuditTrailCryptographicallyVerified,
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                         color = colors.textSecondary,
                     )
@@ -273,14 +306,14 @@ fun HistoricalErpActionLogsList(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Lock,
-                    contentDescription = "Read-Only",
+                    contentDescription = homeReadOnly,
                     tint = colors.accent,
                     modifier = Modifier.size(11.dp),
                 )
                 Text(
                     text = "READ-ONLY",
                     style = MaterialTheme.typography.labelSmall.copy(
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.5.sp,
                     ),
@@ -300,11 +333,11 @@ fun HistoricalErpActionLogsList(
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            SummaryItem(label = "Commands", value = "${logs.size}", color = colors.textPrimary)
+            SummaryItem(label = homeCommands, value = "${logs.size}", color = colors.textPrimary)
             Box(Modifier.width(1.dp).height(20.dp).background(colors.borderStrong))
-            SummaryItem(label = "Verified", value = "$verifiedCount", color = Color(0xFF10B981))
+            SummaryItem(label = homeVerified, value = "$verifiedCount", color = Color(0xFF10B981))
             Box(Modifier.width(1.dp).height(20.dp).background(colors.borderStrong))
-            SummaryItem(label = "Ledger Integrity", value = "100%", color = colors.accent)
+            SummaryItem(label = homeLedgerIntegrity, value = "100%", color = colors.accent)
         }
 
         // ==========================================
@@ -326,7 +359,7 @@ fun HistoricalErpActionLogsList(
                     .testTag("action_logs_search_input"),
                 placeholder = {
                     Text(
-                        "Search by keyword, command ID, intent, hash, or ERP record...",
+                        homeSearchByKeywordCommandIdIntentHashOr,
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.textTertiary,
                     )
@@ -334,7 +367,7 @@ fun HistoricalErpActionLogsList(
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Search,
-                        contentDescription = "Search",
+                        contentDescription = searchTitle,
                         tint = colors.textSecondary,
                         modifier = Modifier.size(18.dp),
                     )
@@ -343,11 +376,13 @@ fun HistoricalErpActionLogsList(
                     if (searchQuery.isNotEmpty()) {
                         IconButton(
                             onClick = { searchQuery = "" },
-                            modifier = Modifier.size(28.dp),
+                            // The icon stays 18dp; the surface is the 48dp
+                            // touch target Material asks for.
+                            modifier = Modifier.size(48.dp),
                         ) {
                             Icon(
                                 Icons.Outlined.Clear,
-                                contentDescription = "Clear search",
+                                contentDescription = homeClearSearch,
                                 tint = colors.textSecondary,
                                 modifier = Modifier.size(16.dp),
                             )
@@ -375,12 +410,12 @@ fun HistoricalErpActionLogsList(
             ) {
                 Icon(
                     Icons.Outlined.FilterList,
-                    contentDescription = "Filter by status",
+                    contentDescription = homeFilterByStatus,
                     tint = colors.textTertiary,
                     modifier = Modifier.size(16.dp),
                 )
                 Text(
-                    text = "Status:",
+                    text = homeStatus,
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.textSecondary,
                     fontWeight = FontWeight.SemiBold,
@@ -395,7 +430,7 @@ fun HistoricalErpActionLogsList(
                         ActionLogStatusFilter.FAULTS -> faultCount
                     }
                     FilterChipPill(
-                        label = "${option.label} ($countBadge)",
+                        label = homeOptionWithCount.replace("{1}", option.label).replace("{2}", countBadge),
                         isSelected = isSelected,
                         onClick = { selectedStatus = option },
                     )
@@ -412,12 +447,12 @@ fun HistoricalErpActionLogsList(
             ) {
                 Icon(
                     Icons.Outlined.DateRange,
-                    contentDescription = "Filter by date",
+                    contentDescription = homeFilterByDate,
                     tint = colors.textTertiary,
                     modifier = Modifier.size(16.dp),
                 )
                 Text(
-                    text = "Date:",
+                    text = homeDate,
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.textSecondary,
                     fontWeight = FontWeight.SemiBold,
@@ -439,7 +474,7 @@ fun HistoricalErpActionLogsList(
                         },
                     ) {
                         Text(
-                            text = "Reset All",
+                            text = homeResetAll,
                             style = MaterialTheme.typography.labelSmall,
                             color = colors.accent,
                         )
@@ -477,11 +512,11 @@ fun HistoricalErpActionLogsList(
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         } catch (_: Throwable) {}
                     },
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(48.dp),
                 ) {
                     Icon(
                         imageVector = if (allFilteredSelected) Icons.Outlined.Deselect else Icons.Outlined.SelectAll,
-                        contentDescription = "Select or deselect all",
+                        contentDescription = homeSelectOrDeselectAll,
                         tint = colors.accent,
                         modifier = Modifier.size(18.dp),
                     )
@@ -520,12 +555,12 @@ fun HistoricalErpActionLogsList(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Share,
-                    contentDescription = "Export report",
+                    contentDescription = homeExportReport,
                     tint = colors.accent,
                     modifier = Modifier.size(13.dp),
                 )
                 Text(
-                    text = "Export Report",
+                    text = homeExportReportAction,
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = 11.sp,
@@ -614,7 +649,7 @@ fun HistoricalErpActionLogsList(
                         )
                     }
                     Text(
-                        text = "Export Audit Report",
+                        text = homeExportAuditReport,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colors.textPrimary,
@@ -624,7 +659,7 @@ fun HistoricalErpActionLogsList(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Generate and share an official compliance audit report containing ${targetLogs.size} ERP transaction action logs with verified cryptographic hashes (SHA-256).",
+                        text = homeGenerateAndShareAnOfficialComplianceAuditReport.replace("{1}", targetLogs.size),
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.textSecondary,
                     )
@@ -634,8 +669,8 @@ fun HistoricalErpActionLogsList(
                     // Option A: PDF Compliance Document
                     ExportOptionCard(
                         icon = Icons.Outlined.PictureAsPdf,
-                        title = "PDF Audit Compliance Report",
-                        subtitle = "Formal A4 document with ledger seals, timestamps & cryptographic hashes",
+                        title = homePdfAuditComplianceReport,
+                        subtitle = homeFormalA4DocumentWithLedgerSealsTimestampsCryptographic,
                         badge = "Formal Report",
                         color = Color(0xFFEF4444),
                         onClick = {
@@ -646,7 +681,7 @@ fun HistoricalErpActionLogsList(
                                     logs = targetLogs,
                                     workspaceName = workspaceName,
                                 )
-                                Toast.makeText(context, "PDF Report generated successfully", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, homePdfReportGeneratedSuccessfully, Toast.LENGTH_SHORT).show()
                                 ErpActionLogsExporter.shareReport(
                                     context = context,
                                     file = file,
@@ -654,7 +689,7 @@ fun HistoricalErpActionLogsList(
                                     chooserTitle = "Share PDF ERP Audit Report",
                                 )
                             } catch (e: Exception) {
-                                Toast.makeText(context, "Export error: ${e.message}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, homeExportError.replace("{1}", e.message), Toast.LENGTH_LONG).show()
                             } finally {
                                 isExporting = false
                                 showExportDialog = false
@@ -665,8 +700,8 @@ fun HistoricalErpActionLogsList(
                     // Option B: CSV Spreadsheet
                     ExportOptionCard(
                         icon = Icons.Outlined.TableChart,
-                        title = "CSV Structured Ledger",
-                        subtitle = "RFC 4180 spreadsheet export for Excel, sheets, or enterprise SIEM systems",
+                        title = homeCsvStructuredLedger,
+                        subtitle = homeRfc4180SpreadsheetExportForExcelSheetsOr,
                         badge = "Spreadsheet",
                         color = Color(0xFF10B981),
                         onClick = {
@@ -676,7 +711,7 @@ fun HistoricalErpActionLogsList(
                                     context = context,
                                     logs = targetLogs,
                                 )
-                                Toast.makeText(context, "CSV Ledger generated successfully", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, homeCsvLedgerGeneratedSuccessfully, Toast.LENGTH_SHORT).show()
                                 ErpActionLogsExporter.shareReport(
                                     context = context,
                                     file = file,
@@ -684,7 +719,7 @@ fun HistoricalErpActionLogsList(
                                     chooserTitle = "Share CSV ERP Audit Ledger",
                                 )
                             } catch (e: Exception) {
-                                Toast.makeText(context, "Export error: ${e.message}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, homeExportError.replace("{1}", e.message), Toast.LENGTH_LONG).show()
                             } finally {
                                 isExporting = false
                                 showExportDialog = false
@@ -699,7 +734,7 @@ fun HistoricalErpActionLogsList(
                     onClick = { showExportDialog = false },
                     enabled = !isExporting,
                 ) {
-                    Text("Close", color = colors.textSecondary)
+                    Text(homeClose, color = colors.textSecondary)
                 }
             },
         )
@@ -719,10 +754,10 @@ fun HistoricalErpActionLogsList(
                         logs = listOf(targetLog),
                         workspaceName = workspaceName,
                     )
-                    Toast.makeText(context, "PDF Report generated", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, homePdfReportGenerated, Toast.LENGTH_SHORT).show()
                     ErpActionLogsExporter.shareReport(context, file, "application/pdf")
                 } catch (t: Throwable) {
-                    Toast.makeText(context, "Export error: ${t.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, homeExportError.replace("{1}", t.message), Toast.LENGTH_SHORT).show()
                 }
             },
             onExportCsv = {
@@ -731,10 +766,10 @@ fun HistoricalErpActionLogsList(
                         context = context,
                         logs = listOf(targetLog),
                     )
-                    Toast.makeText(context, "CSV Report generated", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, homeCsvReportGenerated, Toast.LENGTH_SHORT).show()
                     ErpActionLogsExporter.shareReport(context, file, "text/csv")
                 } catch (t: Throwable) {
-                    Toast.makeText(context, "Export error: ${t.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, homeExportError.replace("{1}", t.message), Toast.LENGTH_SHORT).show()
                 }
             },
         )
@@ -801,6 +836,8 @@ private fun ExportOptionCard(
     color: Color,
     onClick: () -> Unit,
 ) {
+    val homeShare = stringResource(R.string.home_share)
+
     val colors = LocalMizanColors.current
     Row(
         modifier = Modifier
@@ -835,14 +872,14 @@ private fun ExportOptionCard(
             }
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.5.sp),
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                 color = colors.textSecondary,
             )
         }
 
         Icon(
             Icons.Outlined.Share,
-            contentDescription = "Share",
+            contentDescription = homeShare,
             tint = colors.accent,
             modifier = Modifier.size(16.dp),
         )
@@ -866,6 +903,19 @@ private fun HistoricalErpActionLogCard(
     onToggleExpand: () -> Unit,
     onInspectStatus: () -> Unit = {},
 ) {
+    val designJoinedValue4 = stringResource(R.string.joined_value)
+    val homeCopyHash = stringResource(R.string.home_copy_hash)
+    val homeCopyVerificationHash = stringResource(R.string.home_copy_verification_hash)
+    val homeCryptographicExecutionTrace = stringResource(R.string.home_cryptographic_execution_trace)
+    val homeErpBinding = stringResource(R.string.home_erp_binding)
+    val homeImmutableErpActionLogStoredOnDeviceUnder = stringResource(R.string.home_immutable_erp_action_log_stored_on_device_under)
+    val homeInspectFullTransactionStatusProofs = stringResource(R.string.home_inspect_full_transaction_status_proofs)
+    val homeOperator = stringResource(R.string.home_operator)
+    val homeSha256 = stringResource(R.string.home_sha_256)
+    val homeTimestamp = stringResource(R.string.home_timestamp)
+    val homeVerificationHash = stringResource(R.string.home_verification_hash)
+    val homeVerificationHashCopied = stringResource(R.string.home_verification_hash_copied)
+
     val colors = LocalMizanColors.current
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
@@ -1027,7 +1077,7 @@ private fun HistoricalErpActionLogCard(
                     text = statusLabel,
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
-                        fontSize = 10.5.sp,
+                        fontSize = 11.sp,
                     ),
                     color = when (statusTone) {
                         StatusTone.Success -> Color(0xFF10B981)
@@ -1056,13 +1106,13 @@ private fun HistoricalErpActionLogCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Operator: ${log.actorName} (${log.actorRole})",
+                text = homeOperator.replace("{1}", log.actorName).replace("{2}", log.actorRole),
                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
                 color = colors.textSecondary,
             )
             if (log.erpRecordId != null) {
                 Text(
-                    text = "ERP Binding: ${log.erpRecordId}",
+                    text = homeErpBinding.replace("{1}", log.erpRecordId),
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontSize = 11.5.sp,
                         fontFamily = FontFamily.Monospace,
@@ -1091,12 +1141,12 @@ private fun HistoricalErpActionLogCard(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Shield,
-                    contentDescription = "Verification Hash",
+                    contentDescription = homeVerificationHash,
                     tint = colors.accent,
                     modifier = Modifier.size(14.dp),
                 )
                 Text(
-                    text = "SHA-256: ${log.shortHash}",
+                    text = homeSha256.replace("{1}", log.shortHash),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontFamily = FontFamily.Monospace,
                         fontSize = 11.sp,
@@ -1119,7 +1169,7 @@ private fun HistoricalErpActionLogCard(
                             try {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             } catch (_: Throwable) {}
-                            Toast.makeText(context, "Verification Hash copied!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, homeVerificationHashCopied, Toast.LENGTH_SHORT).show()
                         },
                     )
                     .padding(horizontal = 8.dp, vertical = 4.dp),
@@ -1128,13 +1178,13 @@ private fun HistoricalErpActionLogCard(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.ContentCopy,
-                    contentDescription = "Copy Verification Hash",
+                    contentDescription = homeCopyVerificationHash,
                     tint = colors.accent,
                     modifier = Modifier.size(11.dp),
                 )
                 Text(
-                    text = "Copy Hash",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                    text = homeCopyHash,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                     color = colors.accent,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -1153,12 +1203,12 @@ private fun HistoricalErpActionLogCard(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Schedule,
-                    contentDescription = "Timestamp",
+                    contentDescription = homeTimestamp,
                     tint = colors.textTertiary,
                     modifier = Modifier.size(13.dp),
                 )
                 Text(
-                    text = "${log.formattedTimestamp} · ${log.relativeTime}",
+                    text = designJoinedValue4.replace("{1}", log.formattedTimestamp).replace("{2}", log.relativeTime),
                     style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
                     color = colors.textTertiary,
                 )
@@ -1199,7 +1249,7 @@ private fun HistoricalErpActionLogCard(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Text(
-                    text = "Cryptographic Execution Trace",
+                    text = homeCryptographicExecutionTrace,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = colors.accent,
@@ -1240,7 +1290,7 @@ private fun HistoricalErpActionLogCard(
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        text = "Inspect Full Transaction Status & Proofs",
+                        text = homeInspectFullTransactionStatusProofs,
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         color = colors.accent,
                     )
@@ -1248,8 +1298,8 @@ private fun HistoricalErpActionLogCard(
 
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Immutable ERP action log stored on device under local and authority cryptographic governance.",
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.5.sp),
+                    text = homeImmutableErpActionLogStoredOnDeviceUnder,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                     color = colors.textTertiary,
                 )
             }
@@ -1269,7 +1319,7 @@ private fun SummaryItem(label: String, value: String, color: Color) {
         )
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
             color = colors.textSecondary,
         )
     }

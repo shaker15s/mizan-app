@@ -97,6 +97,8 @@ import app.mizan.domain.execution.ExecutionPhase
 import app.mizan.domain.model.HistoricalErpActionLog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import app.mizan.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -132,6 +134,26 @@ fun TransactionStatusContent(
     onExportPdf: () -> Unit,
     onExportCsv: () -> Unit,
 ) {
+    val cdBack = stringResource(R.string.cd_back)
+    val homeAuditLedgerProperties = stringResource(R.string.home_audit_ledger_properties)
+    val homeCopyHash = stringResource(R.string.home_copy_hash)
+    val homeCryptographicAuthoritySeal = stringResource(R.string.home_cryptographic_authority_seal)
+    val homeCryptographicVerificationHash = stringResource(R.string.home_cryptographic_verification_hash)
+    val homeDualApproverRulesAndCryptographicAuthorizationEnforced = stringResource(R.string.home_dual_approver_rules_and_cryptographic_authorization_enforced)
+    val homeErp = stringResource(R.string.home_erp)
+    val homeErpDispatchReceipt = stringResource(R.string.home_erp_dispatch_receipt)
+    val homeExportCsv = stringResource(R.string.home_export_csv)
+    val homeExportPdf = stringResource(R.string.home_export_pdf)
+    val homeFullHashCopiedToClipboard = stringResource(R.string.home_full_hash_copied_to_clipboard)
+    val homeIntegrityValidMatchesLocalLedgerDigest = stringResource(R.string.home_integrity_valid_matches_local_ledger_digest)
+    val homeLimitsCreditBoundariesAndRiskTierValidated = stringResource(R.string.home_limits_credit_boundaries_and_risk_tier_validated)
+    val homeNaturalLanguageIntentSchema = stringResource(R.string.home_natural_language_intent_schema)
+    val homeParsedIntoStrictToolArgumentsWithoutTokenHallucination = stringResource(R.string.home_parsed_into_strict_tool_arguments_without_token_hallucination)
+    val homePolicyFinancialRiskGate = stringResource(R.string.home_policy_financial_risk_gate)
+    val homeSeparationOfDutiesSodBiometrics = stringResource(R.string.home_separation_of_duties_sod_biometrics)
+    val homeSha256DigestLinkedIntoAppendOnlyLocal = stringResource(R.string.home_sha_256_digest_linked_into_append_only_local)
+    val homeTransactionVerificationStages = stringResource(R.string.home_transaction_verification_stages)
+
     val colors = LocalMizanColors.current
     val haptic = LocalHapticFeedback.current
     val clipboard = LocalClipboardManager.current
@@ -170,7 +192,7 @@ fun TransactionStatusContent(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = cdBack,
                         tint = colors.textPrimary,
                     )
                 }
@@ -240,7 +262,7 @@ fun TransactionStatusContent(
                                 .padding(horizontal = Space.md, vertical = Space.xs),
                         ) {
                             Text(
-                                text = "ERP: $erpId",
+                                text = homeErp.replace("{1}", erpId),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = colors.accent,
                                 fontFamily = MizanMono,
@@ -268,7 +290,7 @@ fun TransactionStatusContent(
                 verticalArrangement = Arrangement.spacedBy(Space.md),
             ) {
                 Text(
-                    text = "Transaction Verification Stages",
+                    text = homeTransactionVerificationStages,
                     style = MaterialTheme.typography.titleMedium,
                     color = colors.textPrimary,
                     fontWeight = FontWeight.SemiBold,
@@ -276,31 +298,31 @@ fun TransactionStatusContent(
 
                 LifecycleStepRow(
                     stepNumber = "1",
-                    title = "Natural Language Intent & Schema",
-                    description = "Parsed into strict tool arguments without token hallucination",
+                    title = homeNaturalLanguageIntentSchema,
+                    description = homeParsedIntoStrictToolArgumentsWithoutTokenHallucination,
                     status = StepStatus.COMPLETED,
                 )
                 LifecycleStepRow(
                     stepNumber = "2",
-                    title = "Policy & Financial Risk Gate",
-                    description = "Limits, credit boundaries, and risk tier validated",
+                    title = homePolicyFinancialRiskGate,
+                    description = homeLimitsCreditBoundariesAndRiskTierValidated,
                     status = StepStatus.COMPLETED,
                 )
                 LifecycleStepRow(
                     stepNumber = "3",
-                    title = "Separation-of-Duties (SoD) & Biometrics",
-                    description = "Dual-approver rules and cryptographic authorization enforced",
+                    title = homeSeparationOfDutiesSodBiometrics,
+                    description = homeDualApproverRulesAndCryptographicAuthorizationEnforced,
                     status = StepStatus.COMPLETED,
                 )
                 LifecycleStepRow(
                     stepNumber = "4",
-                    title = "Cryptographic Authority Seal",
-                    description = "SHA-256 digest linked into append-only local ledger",
+                    title = homeCryptographicAuthoritySeal,
+                    description = homeSha256DigestLinkedIntoAppendOnlyLocal,
                     status = if (log.phase == ExecutionPhase.VERIFIED) StepStatus.COMPLETED else StepStatus.IN_PROGRESS,
                 )
                 LifecycleStepRow(
                     stepNumber = "5",
-                    title = "ERP Dispatch & Receipt",
+                    title = homeErpDispatchReceipt,
                     description = log.erpRecordId?.let { "Committed to ERP record $it" } ?: "Committed to governed ledger",
                     status = if (log.phase == ExecutionPhase.VERIFIED) StepStatus.COMPLETED else StepStatus.PENDING,
                     isLast = true,
@@ -335,7 +357,7 @@ fun TransactionStatusContent(
                             modifier = Modifier.size(20.dp),
                         )
                         Text(
-                            text = "Cryptographic Verification Hash",
+                            text = homeCryptographicVerificationHash,
                             style = MaterialTheme.typography.titleSmall,
                             color = colors.textPrimary,
                             fontWeight = FontWeight.SemiBold,
@@ -346,13 +368,13 @@ fun TransactionStatusContent(
                         onClick = {
                             clipboard.setText(AnnotatedString(log.verificationHash))
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            Toast.makeText(context, "Full hash copied to clipboard", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, homeFullHashCopiedToClipboard, Toast.LENGTH_SHORT).show()
                         },
-                        modifier = Modifier.size(32.dp),
+                        modifier = Modifier.size(48.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.ContentCopy,
-                            contentDescription = "Copy Hash",
+                            contentDescription = homeCopyHash,
                             tint = colors.accent,
                             modifier = Modifier.size(16.dp),
                         )
@@ -387,7 +409,7 @@ fun TransactionStatusContent(
                             delay(600)
                             isVerifyingHash = false
                             hashVerifiedSuccess = true
-                            Toast.makeText(context, "Integrity Valid: Matches local ledger digest!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, homeIntegrityValidMatchesLocalLedgerDigest, Toast.LENGTH_SHORT).show()
                         }
                     },
                     modifier = Modifier.fillMaxWidth().testTag("verify_hash_integrity_button"),
@@ -405,7 +427,7 @@ fun TransactionStatusContent(
                 verticalArrangement = Arrangement.spacedBy(Space.sm),
             ) {
                 Text(
-                    text = "Audit Ledger Properties",
+                    text = homeAuditLedgerProperties,
                     style = MaterialTheme.typography.titleSmall,
                     color = colors.textPrimary,
                     fontWeight = FontWeight.SemiBold,
@@ -428,12 +450,12 @@ fun TransactionStatusContent(
                 horizontalArrangement = Arrangement.spacedBy(Space.md),
             ) {
                 MizanSecondaryButton(
-                    text = "Export PDF",
+                    text = homeExportPdf,
                     onClick = onExportPdf,
                     modifier = Modifier.weight(1f).testTag("status_export_pdf_button"),
                 )
                 MizanSecondaryButton(
-                    text = "Export CSV",
+                    text = homeExportCsv,
                     onClick = onExportCsv,
                     modifier = Modifier.weight(1f).testTag("status_export_csv_button"),
                 )

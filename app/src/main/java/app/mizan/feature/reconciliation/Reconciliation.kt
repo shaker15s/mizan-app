@@ -252,6 +252,9 @@ private fun CaseDetailCard(
     onResolve: (ReconciliationCase, HumanMatch, String?, String?) -> Unit,
     onClose: () -> Unit,
 ) {
+    val reconCandidateErpTransactionMatch = stringResource(R.string.recon_candidate_erp_transaction_match)
+    val reconResolveAmbiguity = stringResource(R.string.recon_resolve_ambiguity)
+
     val colors = LocalMizanColors.current
     var note by remember(case.id) { mutableStateOf("") }
     var chosen by remember(case.id) { mutableStateOf(case.candidateRecordIds.singleOrNull()) }
@@ -282,7 +285,7 @@ private fun CaseDetailCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Resolve Ambiguity",
+                text = reconResolveAmbiguity,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = colors.textPrimary,
@@ -307,7 +310,7 @@ private fun CaseDetailCard(
                     val isCandidateSelected = id == chosen
                     CraftSelectableCard(
                         title = id,
-                        subtitle = "Candidate ERP Transaction Match",
+                        subtitle = reconCandidateErpTransactionMatch,
                         icon = Icons.Outlined.ReceiptLong,
                         selected = isCandidateSelected,
                         onSelect = { chosen = id },

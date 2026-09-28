@@ -105,6 +105,25 @@ fun AccountRoute(
     onPreferencesChanged: () -> Unit,
     onSignedOut: () -> Unit,
 ) {
+    val accountActiveErpThresholdPolicies = stringResource(R.string.account_active_erp_threshold_policies)
+    val accountActorId = stringResource(R.string.account_actor_id)
+    val accountAuditMerkle = stringResource(R.string.account_audit_merkle)
+    val accountAuthorityEndpointConnectionState = stringResource(R.string.account_authority_endpoint_connection_state)
+    val accountAuthorityLink = stringResource(R.string.account_authority_link)
+    val accountBiometrics = stringResource(R.string.account_biometrics)
+    val accountColorThemeAccentPresets = stringResource(R.string.account_color_theme_accent_presets)
+    val accountCopyKey = stringResource(R.string.account_copy_key)
+    val accountHardwareAttestationZeroSecretStorage = stringResource(R.string.account_hardware_attestation_zero_secret_storage)
+    val accountHardwareKey = stringResource(R.string.account_hardware_key)
+    val accountLedgerValidationStressTransactionInjectorDiagnostics = stringResource(R.string.account_ledger_validation_stress_transaction_injector_diagnostics)
+    val accountMinimizeTransitionsAndTactileEffects = stringResource(R.string.account_minimize_transitions_and_tactile_effects)
+    val accountRequireFingerprintFaceAuthBeforeCommittingFinancialActions = stringResource(R.string.account_require_fingerprint_face_auth_before_committing_financial_actions)
+    val accountSpecializedErpSystemPrompt = stringResource(R.string.account_specialized_erp_system_prompt)
+    val accountTriggersHumanReconciliationWorkflowForVerification = stringResource(R.string.account_triggers_human_reconciliation_workflow_for_verification)
+    val accountTunedTokenLimitsCustomSchemaSpeedTier = stringResource(R.string.account_tuned_token_limits_custom_schema_speed_tier)
+    val accountWakeelProConsoleStressTelemetry = stringResource(R.string.account_wakeel_pro_console_stress_telemetry)
+    val reauthTitle = stringResource(R.string.reauth_title)
+
     val colors = LocalMizanColors.current
     val haptic = LocalHapticFeedback.current
     val clipboard = LocalClipboardManager.current
@@ -201,7 +220,7 @@ fun AccountRoute(
                             color = colors.textSecondary,
                         )
                         Text(
-                            text = "Actor ID: ${currentSession.actor.id.value.take(12)}...",
+                            text = accountActorId.replace("{1}", currentSession.actor.id.value.take(12)),
                             style = MaterialTheme.typography.labelSmall,
                             fontFamily = app.mizan.design.theme.MizanMono,
                             color = colors.textTertiary,
@@ -240,7 +259,7 @@ fun AccountRoute(
                     }
                     Icon(
                         imageVector = if (copiedFingerprint) Icons.Outlined.CheckCircle else Icons.Outlined.ContentCopy,
-                        contentDescription = "Copy key",
+                        contentDescription = accountCopyKey,
                         tint = if (copiedFingerprint) colors.accent else colors.textTertiary,
                         modifier = Modifier.size(14.dp),
                     )
@@ -256,14 +275,14 @@ fun AccountRoute(
         ) {
             TrustGridTile(
                 icon = Icons.Outlined.Fingerprint,
-                title = "Biometrics",
+                title = accountBiometrics,
                 status = "Active & Enrolled",
                 tone = StatusTone.Success,
                 modifier = Modifier.weight(1f),
             )
             TrustGridTile(
                 icon = Icons.Outlined.Shield,
-                title = "Hardware Key",
+                title = accountHardwareKey,
                 status = "StrongBox Level",
                 tone = StatusTone.Accent,
                 modifier = Modifier.weight(1f),
@@ -275,14 +294,14 @@ fun AccountRoute(
         ) {
             TrustGridTile(
                 icon = Icons.Outlined.Lock,
-                title = "Audit Merkle",
+                title = accountAuditMerkle,
                 status = "Chain Verified",
                 tone = StatusTone.Success,
                 modifier = Modifier.weight(1f),
             )
             TrustGridTile(
                 icon = Icons.Outlined.Hub,
-                title = "Authority Link",
+                title = accountAuthorityLink,
                 status = if (graph.demoMode) "Local Simulation" else "Encrypted mTLS",
                 tone = if (graph.demoMode) StatusTone.Warning else StatusTone.Success,
                 modifier = Modifier.weight(1f),
@@ -306,7 +325,7 @@ fun AccountRoute(
             SettingNavRow(
                 icon = Icons.Outlined.Shield,
                 title = stringResource(R.string.account_security),
-                subtitle = "Hardware attestation & zero-secret storage",
+                subtitle = accountHardwareAttestationZeroSecretStorage,
                 onClick = { onOpen("security") },
             )
             HorizontalDivider(
@@ -317,7 +336,7 @@ fun AccountRoute(
             SettingNavRow(
                 icon = Icons.Outlined.Hub,
                 title = stringResource(R.string.account_connection),
-                subtitle = "Authority endpoint connection state",
+                subtitle = accountAuthorityEndpointConnectionState,
                 onClick = { onOpen("connection") },
             )
             HorizontalDivider(
@@ -328,7 +347,7 @@ fun AccountRoute(
             SettingNavRow(
                 icon = Icons.Outlined.Gavel,
                 title = stringResource(R.string.account_rules),
-                subtitle = "Active ERP threshold policies",
+                subtitle = accountActiveErpThresholdPolicies,
                 onClick = { onOpen("governance") },
             )
         }
@@ -357,7 +376,7 @@ fun AccountRoute(
 
         // Palette Preset Selection
         Text(
-            text = "Color Theme & Accent Presets",
+            text = accountColorThemeAccentPresets,
             style = MaterialTheme.typography.labelSmall,
             color = colors.textSecondary,
             fontWeight = FontWeight.SemiBold,
@@ -417,8 +436,8 @@ fun AccountRoute(
         ) {
             SettingNavRow(
                 icon = Icons.Outlined.AutoAwesome,
-                title = "Specialized ERP System Prompt",
-                subtitle = "Tuned token limits, custom schema & speed tier (${graph.preferences.aiModelSpeedTier})",
+                title = accountSpecializedErpSystemPrompt,
+                subtitle = accountTunedTokenLimitsCustomSchemaSpeedTier.replace("{1}", graph.preferences.aiModelSpeedTier),
                 onClick = { showPromptCustomizer = true },
             )
             HorizontalDivider(
@@ -428,8 +447,8 @@ fun AccountRoute(
             )
             SettingNavRow(
                 icon = Icons.Outlined.Terminal,
-                title = "Wakeel Pro Console & Stress Telemetry",
-                subtitle = "Ledger validation, stress transaction injector & diagnostics",
+                title = accountWakeelProConsoleStressTelemetry,
+                subtitle = accountLedgerValidationStressTransactionInjectorDiagnostics,
                 onClick = { showProConsole = true },
             )
         }
@@ -451,13 +470,13 @@ fun AccountRoute(
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        "Biometric Authorization",
+                        reauthTitle,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = colors.textPrimary,
                     )
                     Text(
-                        "Require fingerprint / face auth before committing financial actions",
+                        accountRequireFingerprintFaceAuthBeforeCommittingFinancialActions,
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.textSecondary,
                     )
@@ -521,7 +540,7 @@ fun AccountRoute(
                         color = colors.textPrimary,
                     )
                     Text(
-                        "Minimize transitions and tactile effects",
+                        accountMinimizeTransitionsAndTactileEffects,
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.textSecondary,
                     )
@@ -581,7 +600,7 @@ fun AccountRoute(
                             color = colors.textPrimary,
                         )
                         Text(
-                            "Triggers human reconciliation workflow for verification",
+                            accountTriggersHumanReconciliationWorkflowForVerification,
                             style = MaterialTheme.typography.bodySmall,
                             color = colors.textSecondary,
                         )
@@ -768,6 +787,9 @@ private fun SettingNavRow(
 
 @Composable
 fun ConnectionRoute(graph: AppGraph, onBack: () -> Unit) {
+    val accountAuthorityConnectionTopologyMtlsState = stringResource(R.string.account_authority_connection_topology_mtls_state)
+    val cdBack = stringResource(R.string.cd_back)
+
     val colors = LocalMizanColors.current
     val session = graph.session.session.value
 
@@ -785,7 +807,7 @@ fun ConnectionRoute(graph: AppGraph, onBack: () -> Unit) {
                 .padding(vertical = Space.xs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = colors.accent, modifier = Modifier.size(20.dp))
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = cdBack, tint = colors.accent, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(6.dp))
             Text(stringResource(R.string.cd_back), style = MaterialTheme.typography.labelLarge, color = colors.accent)
         }
@@ -815,7 +837,7 @@ fun ConnectionRoute(graph: AppGraph, onBack: () -> Unit) {
                     color = colors.textPrimary,
                 )
                 Text(
-                    text = "Authority Connection Topology & mTLS State",
+                    text = accountAuthorityConnectionTopologyMtlsState,
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.textSecondary,
                 )
@@ -857,6 +879,9 @@ fun ConnectionRoute(graph: AppGraph, onBack: () -> Unit) {
 
 @Composable
 fun SecurityRoute(graph: AppGraph, onBack: () -> Unit) {
+    val accountHardwareSecurityArchitectureAttestation = stringResource(R.string.account_hardware_security_architecture_attestation)
+    val cdBack2 = stringResource(R.string.cd_back)
+
     val colors = LocalMizanColors.current
     val signedIn = graph.session.session.value != null
 
@@ -874,7 +899,7 @@ fun SecurityRoute(graph: AppGraph, onBack: () -> Unit) {
                 .padding(vertical = Space.xs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = colors.accent, modifier = Modifier.size(20.dp))
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = cdBack2, tint = colors.accent, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(6.dp))
             Text(stringResource(R.string.cd_back), style = MaterialTheme.typography.labelLarge, color = colors.accent)
         }
@@ -905,7 +930,7 @@ fun SecurityRoute(graph: AppGraph, onBack: () -> Unit) {
                     color = colors.textPrimary,
                 )
                 Text(
-                    text = "Hardware Security Architecture & Attestation",
+                    text = accountHardwareSecurityArchitectureAttestation,
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.textSecondary,
                 )
@@ -989,7 +1014,7 @@ private fun ThemePresetTile(
             )
             Text(
                 text = name,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                 color = if (selected) colors.textPrimary else colors.textSecondary,
                 maxLines = 1,

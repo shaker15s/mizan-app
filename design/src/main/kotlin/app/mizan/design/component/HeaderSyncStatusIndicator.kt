@@ -50,6 +50,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.mizan.design.theme.LocalMizanColors
+import androidx.compose.ui.res.stringResource
+import app.mizan.design.R
 
 /**
  * Visual sync-status indicator in the header that displays 'Online' or 'Last synced: [Time]'
@@ -63,6 +65,8 @@ fun HeaderSyncStatusIndicator(
     isSyncing: Boolean = false,
     onClick: (() -> Unit)? = null,
 ) {
+    val designSyncToggleOrRefresh = stringResource(R.string.design_sync_toggle_or_refresh)
+
     val colors = LocalMizanColors.current
     val haptic = LocalHapticFeedback.current
 
@@ -178,7 +182,7 @@ fun HeaderSyncStatusIndicator(
         if (onClick != null && !isSyncing) {
             Icon(
                 imageVector = if (isOnline) Icons.Outlined.CloudDone else Icons.Outlined.Sync,
-                contentDescription = "Sync toggle or refresh",
+                contentDescription = designSyncToggleOrRefresh,
                 tint = if (isOnline) activeColor else colors.textTertiary,
                 modifier = Modifier.size(12.dp),
             )

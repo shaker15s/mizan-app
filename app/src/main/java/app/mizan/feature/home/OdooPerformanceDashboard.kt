@@ -82,6 +82,8 @@ import app.mizan.design.theme.MizanMono
 import app.mizan.design.token.Space
 import app.mizan.domain.execution.ExecutionPhase
 import app.mizan.domain.model.ExecutionRecord
+import androidx.compose.ui.res.stringResource
+import app.mizan.R
 
 /**
  * Data Model for Odoo ERP Module telemetry items.
@@ -109,6 +111,9 @@ fun OdooPerformanceDashboardCard(
     onInspectSuccessRate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val homeLiveRpcExecutionMetricsAuthorizationStatus = stringResource(R.string.home_live_rpc_execution_metrics_authorization_status)
+    val homeOdooErpPerformanceIntelligence = stringResource(R.string.home_odoo_erp_performance_intelligence)
+
     val colors = LocalMizanColors.current
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabOptions = listOf("Overview", "Odoo Modules", "Telemetry")
@@ -207,13 +212,13 @@ fun OdooPerformanceDashboardCard(
                 }
                 Column {
                     Text(
-                        text = "Odoo ERP Performance Intelligence",
+                        text = homeOdooErpPerformanceIntelligence,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colors.textPrimary,
                     )
                     Text(
-                        text = "Live RPC execution metrics & authorization status",
+                        text = homeLiveRpcExecutionMetricsAuthorizationStatus,
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.textSecondary,
                     )
@@ -277,6 +282,11 @@ private fun OdooSuccessRateDonutCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val homeOdooRpc = stringResource(R.string.home_odoo_rpc)
+    val homeProgressPercent = stringResource(R.string.home_progress_percent)
+    val homeSuccessRate = stringResource(R.string.home_success_rate)
+    val homeTarget95Sla = stringResource(R.string.home_target_95_sla)
+
     val colors = LocalMizanColors.current
     var animatedProgress by remember { mutableFloatStateOf(0f) }
 
@@ -306,7 +316,7 @@ private fun OdooSuccessRateDonutCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Success Rate",
+                text = homeSuccessRate,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = colors.textPrimary,
@@ -353,21 +363,21 @@ private fun OdooSuccessRateDonutCard(
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "${(progressAnim * 100).toInt()}%",
+                    text = homeProgressPercent.replace("{1}", (progressAnim * 100).toInt()),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = colors.textPrimary,
                 )
                 Text(
-                    text = "Odoo RPC",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                    text = homeOdooRpc,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                     color = colors.textTertiary,
                 )
             }
         }
 
         Text(
-            text = "Target: >95% SLA",
+            text = homeTarget95Sla,
             style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
             color = colors.textSecondary,
         )
@@ -383,6 +393,9 @@ private fun OdooPendingAuthorizationsCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val homePendingApprovals = stringResource(R.string.home_pending_approvals)
+    val homeReviewTasks = stringResource(R.string.home_review_tasks)
+
     val colors = LocalMizanColors.current
     val hasPending = pendingCount > 0
 
@@ -408,7 +421,7 @@ private fun OdooPendingAuthorizationsCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Pending Approvals",
+                    text = homePendingApprovals,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = colors.textPrimary,
@@ -459,7 +472,7 @@ private fun OdooPendingAuthorizationsCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Review Tasks",
+                text = homeReviewTasks,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = if (hasPending) colors.warning else colors.accent,
@@ -479,6 +492,9 @@ private fun OdooPendingAuthorizationsCard(
  */
 @Composable
 private fun OdooModuleActivityBarChart(modules: List<OdooModuleMetric>) {
+    val homeModuleExecutionDistribution = stringResource(R.string.home_module_execution_distribution)
+    val homeVolumeRpcLatency = stringResource(R.string.home_volume_rpc_latency)
+
     val colors = LocalMizanColors.current
     val maxRequests = modules.maxOfOrNull { it.totalRequests }?.coerceAtLeast(1) ?: 1
 
@@ -492,13 +508,13 @@ private fun OdooModuleActivityBarChart(modules: List<OdooModuleMetric>) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Module Execution Distribution",
+                text = homeModuleExecutionDistribution,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = colors.textPrimary,
             )
             Text(
-                text = "Volume & RPC Latency",
+                text = homeVolumeRpcLatency,
                 style = MaterialTheme.typography.labelSmall,
                 color = colors.textTertiary,
             )
@@ -559,6 +575,13 @@ private fun OdooModuleActivityBarChart(modules: List<OdooModuleMetric>) {
  */
 @Composable
 private fun OdooRpcTelemetryGrid() {
+    val home992Sub200ms = stringResource(R.string.home_99_2_sub_200ms)
+    val homeAvgRoundtrip = stringResource(R.string.home_avg_roundtrip)
+    val homeIdempotency = stringResource(R.string.home_idempotency)
+    val homeOdooProtocol = stringResource(R.string.home_odoo_protocol)
+    val homeV17EnterpriseGateway = stringResource(R.string.home_v17_enterprise_gateway)
+    val homeZeroDuplicateTrans = stringResource(R.string.home_zero_duplicate_trans)
+
     val colors = LocalMizanColors.current
 
     Row(
@@ -566,23 +589,23 @@ private fun OdooRpcTelemetryGrid() {
         horizontalArrangement = Arrangement.spacedBy(Space.sm),
     ) {
         TelemetryTile(
-            title = "Odoo Protocol",
+            title = homeOdooProtocol,
             value = "XML-RPC / mTLS",
-            detail = "v17 Enterprise Gateway",
+            detail = homeV17EnterpriseGateway,
             icon = Icons.Outlined.Hub,
             modifier = Modifier.weight(1f),
         )
         TelemetryTile(
-            title = "Avg Roundtrip",
+            title = homeAvgRoundtrip,
             value = "135 ms",
-            detail = "99.2% Sub-200ms",
+            detail = home992Sub200ms,
             icon = Icons.Outlined.Speed,
             modifier = Modifier.weight(1f),
         )
         TelemetryTile(
-            title = "Idempotency",
+            title = homeIdempotency,
             value = "100% Guarded",
-            detail = "Zero Duplicate Trans",
+            detail = homeZeroDuplicateTrans,
             icon = Icons.Outlined.Security,
             modifier = Modifier.weight(1f),
         )
@@ -607,8 +630,8 @@ private fun TelemetryTile(
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Icon(icon, contentDescription = null, tint = colors.accent, modifier = Modifier.size(16.dp))
-        Text(title, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = colors.textTertiary)
+        Text(title, style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp), color = colors.textTertiary)
         Text(value, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-        Text(detail, style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = colors.textSecondary)
+        Text(detail, style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp), color = colors.textSecondary)
     }
 }

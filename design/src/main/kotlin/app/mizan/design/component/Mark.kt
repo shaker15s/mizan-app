@@ -39,6 +39,8 @@ import app.mizan.design.motion.mizanGlow
 import app.mizan.design.theme.LocalMizanColors
 import app.mizan.design.theme.LocalReducedMotion
 import app.mizan.design.token.Space
+import androidx.compose.ui.res.stringResource
+import app.mizan.design.R
 
 /**
  * The Wakeel mark: the و of وكيل, wired to the two nodes of the ERP it acts on.
@@ -59,6 +61,8 @@ fun WakeelMark(
     gradient: Boolean = true,
     animated: Boolean = true,
 ) {
+    val appName = stringResource(R.string.app_name)
+
     val colors = LocalMizanColors.current
     val reduced = LocalReducedMotion.current
     val brush: Brush = if (gradient) colors.accentBrush() else SolidColor(colors.accent)
@@ -86,7 +90,7 @@ fun WakeelMark(
     Canvas(
         modifier = modifier
             .size(size)
-            .semantics { contentDescription = "Wakeel" },
+            .semantics { contentDescription = appName },
     ) {
         val u = size.toPx() / 64f
         drawWakeelMark(brush = brush, nodeBrush = nodeBrush, unit = u, pulse = pulse)

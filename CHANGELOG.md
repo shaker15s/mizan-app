@@ -6,6 +6,46 @@ identifiers, not promises.
 
 ## [Unreleased] — service lane, 2026-09-26
 
+### Localisation and accessibility, as gates rather than intentions
+
+- **193 user-facing literals moved out of Kotlin.** Gates 13 and 15 read as
+  device work, so they had not been started; most of both is a property of the
+  tree. `tools/extract_strings.py` hoists every sentence out of the composable
+  that held it — into a `val` at the top of its body, because `stringResource`
+  is a composable call and the literals also sit inside event lambdas — and
+  writes the English and Arabic resources itself. Interpolations survive as
+  positional placeholders (`{1}`) so a translator can move them, and the
+  substitution is plain Kotlin rather than a format directive, so a per-cent
+  sign in a sentence cannot become one.
+- **It is idempotent, which is how "done" is defined here.** Running it again
+  finds nothing; `tools/strings_check.py` now fails on any new literal, so the
+  count cannot drift back up.
+- **The tool's own dedupe was keyed on the wrong thing, and the fix is a
+  check.** Four copies of `Export error: {1}` and four of `{1} · {2}` became
+  eight resources because the deduplication looked at the literal instead of
+  the template — two files writing the same sentence with different
+  interpolations are one sentence. Both tools now key on the template, the
+  eight collapsed into two, and `strings_check` warns when a name differs from
+  another only by a numeric suffix and carries the same text, so the mistake
+  cannot come back quietly.
+- **A real build break, found without a compiler.** `R.string.cancel` was
+  referenced by the biometric gate in two files and defined nowhere. Only a
+  device build would have caught it.
+- **The static half of the accessibility audit is a gate.**
+  `tools/strings_check.py` requires every referenced resource to exist, the two
+  locales to format identically, no hardcoded text, a 48dp touch target on the
+  clickable's own modifier chain (not on the icon inside it), an 11sp text
+  floor, `sp` over `dp`, RTL support and no orientation lock. Three undersized
+  controls and fifteen sub-11sp labels were fixed as a result.
+- **What it does not claim is written down.** Screen-reader order, rendered
+  contrast, font scale at 2.0, RTL mirroring, tablet/foldable rearrangement and
+  WCAG conformance need a device and are listed as open in
+  `docs/ACCESSIBILITY.md`. An audit that overstates its coverage is worse than
+  no audit.
+- Both tools ship `--selftest`, and each self-test fails unless the checks fire
+  on planted violations: a check that has never failed is a check nobody should
+  believe.
+
 ### The approval surface, end to end
 
 - **The missing join.** The service had an approval surface and the app had a

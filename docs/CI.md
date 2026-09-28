@@ -128,6 +128,7 @@ What it does on every push and pull request:
 | job | what it runs |
 | --- | --- |
 | `static` | `tools/repo_check.py --no-write`, `tools/check_contrast.py`, `tools/render_brand.py --check`, and a check that the committed wrapper is a real wrapper |
+| `l10n` | `tools/strings_check.py --strict --selftest` (every `R.string` defined, both locales in step, no hardcoded text, touch targets, text floor) and `tools/extract_strings.py --selftest --dry-run`, which fails if the tree has slipped back to literal text |
 | `security` | `tools/security_check.py --strict` (secrets, manifest, credentials, logging, governed routes, dependency floors) and `tools/release_check.py` (flavor, signing, versioning, mapping, rollback) |
 | `jvm` | `:domain:test :integration:test :service:test`, then the service HTTP suite, and uploads the reports |
 | `android` | `:app:assembleDemoDebug :app:assembleStagingDebug :app:assembleProductionRelease` and lint on `:app`, `:data`, `:design` |
@@ -137,10 +138,13 @@ build is unsigned unless `KEYSTORE_PATH`, `STORE_PASSWORD`, `KEY_ALIAS`, and
 `KEY_PASSWORD` are set in the environment, which the build treats as optional.
 
 Without Gradle, `python3 tools/jvm_check.py` compiles `:domain`, `:service` and
-`:integration` and runs their 463 tests with a JDK and kotlinc alone, and
+`:integration` and runs their 482 tests with a JDK and kotlinc alone, and
 `python3 tools/syntax_check.py` parses every Kotlin file with the real parser.
 They cover the invariants, the governed pipeline, the ERP boundary and the
-syntax; they cannot cover the UI.
+syntax; they cannot cover the UI. The `l10n` job is the exception that proves
+how much of the UI *is* checkable without one: strings, resources, touch
+targets and text sizes are all in the tree, not on the screen. See
+`docs/ACCESSIBILITY.md` for what remains a device claim.
 
 `python3 tools/bootstrap_toolchain.py` provisions that JDK and compiler on a
 machine that has neither, from the only index it can reach, so the fallback

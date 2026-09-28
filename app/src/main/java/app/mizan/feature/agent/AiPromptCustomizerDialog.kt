@@ -51,6 +51,8 @@ import app.mizan.design.theme.MizanMono
 import app.mizan.design.token.Space
 import app.mizan.design.motion.mizanTap
 import app.mizan.prefs.UserPreferences
+import androidx.compose.ui.res.stringResource
+import app.mizan.R
 
 @Composable
 fun AiPromptCustomizerDialog(
@@ -58,6 +60,21 @@ fun AiPromptCustomizerDialog(
     onDismiss: () -> Unit,
     onSaved: () -> Unit,
 ) {
+    val agentAiSystemPromptHarness = stringResource(R.string.agent_ai_system_prompt_harness)
+    val agentBalanced = stringResource(R.string.agent_balanced)
+    val agentCancel = stringResource(R.string.agent_cancel)
+    val agentConciseTurbo = stringResource(R.string.agent_concise_turbo)
+    val agentFastTuned0ms = stringResource(R.string.agent_fast_tuned_0ms)
+    val agentHarnessExecutionMode = stringResource(R.string.agent_harness_execution_mode)
+    val agentQuickPresets = stringResource(R.string.agent_quick_presets)
+    val agentSaveApply = stringResource(R.string.agent_save_apply)
+    val agentSovereignGov = stringResource(R.string.agent_sovereign_gov)
+    val agentSpecializedErpModelTuning = stringResource(R.string.agent_specialized_erp_model_tuning)
+    val agentSystemPromptDefinition = stringResource(R.string.agent_system_prompt_definition)
+    val agentSystemPromptUpdatedSuccessfully = stringResource(R.string.agent_system_prompt_updated_successfully)
+    val agentTokenFootprint = stringResource(R.string.agent_token_footprint)
+    val agentTokensUltraLean = stringResource(R.string.agent_tokens_ultra_lean)
+
     val colors = LocalMizanColors.current
     val context = LocalContext.current
 
@@ -94,13 +111,13 @@ fun AiPromptCustomizerDialog(
                 }
                 Column {
                     Text(
-                        text = "AI System Prompt & Harness",
+                        text = agentAiSystemPromptHarness,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colors.textPrimary,
                     )
                     Text(
-                        text = "Specialized ERP model tuning",
+                        text = agentSpecializedErpModelTuning,
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.textSecondary,
                     )
@@ -135,14 +152,14 @@ fun AiPromptCustomizerDialog(
                             modifier = Modifier.size(14.dp),
                         )
                         Text(
-                            text = "Token Footprint:",
+                            text = agentTokenFootprint,
                             style = MaterialTheme.typography.labelSmall,
                             color = colors.accent,
                             fontWeight = FontWeight.SemiBold,
                         )
                     }
                     Text(
-                        text = "~$estimatedTokens tokens (Ultra-lean)",
+                        text = agentTokensUltraLean.replace("{1}", estimatedTokens),
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.accent,
                         fontFamily = MizanMono,
@@ -152,7 +169,7 @@ fun AiPromptCustomizerDialog(
 
                 // Preset selector pills
                 Text(
-                    text = "Quick Presets:",
+                    text = agentQuickPresets,
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.textSecondary,
                     fontWeight = FontWeight.SemiBold,
@@ -163,7 +180,7 @@ fun AiPromptCustomizerDialog(
                     horizontalArrangement = Arrangement.spacedBy(Space.xs),
                 ) {
                     PromptPresetPill(
-                        label = "Concise Turbo",
+                        label = agentConciseTurbo,
                         active = currentPrompt == MizanAiHarness.SYSTEM_PROMPT_CONCISE_ERP,
                         onClick = {
                             currentPrompt = MizanAiHarness.SYSTEM_PROMPT_CONCISE_ERP
@@ -172,7 +189,7 @@ fun AiPromptCustomizerDialog(
                         modifier = Modifier.weight(1f),
                     )
                     PromptPresetPill(
-                        label = "Sovereign Gov",
+                        label = agentSovereignGov,
                         active = currentPrompt == MizanAiHarness.SYSTEM_PROMPT_GOVERNED,
                         onClick = {
                             currentPrompt = MizanAiHarness.SYSTEM_PROMPT_GOVERNED
@@ -184,7 +201,7 @@ fun AiPromptCustomizerDialog(
 
                 // Prompt Editor Text Box
                 Text(
-                    text = "System Prompt Definition:",
+                    text = agentSystemPromptDefinition,
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.textSecondary,
                     fontWeight = FontWeight.SemiBold,
@@ -217,7 +234,7 @@ fun AiPromptCustomizerDialog(
 
                 // AI Speed Tier selector
                 Text(
-                    text = "Harness Execution Mode:",
+                    text = agentHarnessExecutionMode,
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.textSecondary,
                     fontWeight = FontWeight.SemiBold,
@@ -228,13 +245,13 @@ fun AiPromptCustomizerDialog(
                     horizontalArrangement = Arrangement.spacedBy(Space.xs),
                 ) {
                     SpeedTierPill(
-                        label = "Fast-Tuned (0ms)",
+                        label = agentFastTuned0ms,
                         selected = selectedTier == "fast_tuned",
                         onClick = { selectedTier = "fast_tuned" },
                         modifier = Modifier.weight(1f),
                     )
                     SpeedTierPill(
-                        label = "Balanced",
+                        label = agentBalanced,
                         selected = selectedTier == "balanced",
                         onClick = { selectedTier = "balanced" },
                         modifier = Modifier.weight(1f),
@@ -244,11 +261,11 @@ fun AiPromptCustomizerDialog(
         },
         confirmButton = {
             MizanPrimaryButton(
-                text = "Save & Apply",
+                text = agentSaveApply,
                 onClick = {
                     preferences.customSystemPrompt = currentPrompt
                     preferences.aiModelSpeedTier = selectedTier
-                    Toast.makeText(context, "System prompt updated successfully", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, agentSystemPromptUpdatedSuccessfully, Toast.LENGTH_SHORT).show()
                     onSaved()
                     onDismiss()
                 },
@@ -257,7 +274,7 @@ fun AiPromptCustomizerDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = colors.textSecondary)
+                Text(agentCancel, color = colors.textSecondary)
             }
         },
     )

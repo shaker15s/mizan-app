@@ -101,6 +101,13 @@ fun BiometricGateScreen(
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val designJoinedValue4 = stringResource(R.string.joined_value)
+    val securityAuthenticateWithBiometrics = stringResource(R.string.security_authenticate_with_biometrics)
+    val securityAuthorizeViaSimulatedSecureEnclave = stringResource(R.string.security_authorize_via_simulated_secure_enclave)
+    val securityBiometricErpAuthorization = stringResource(R.string.security_biometric_erp_authorization)
+    val securityHardwareAttestationRequiredToDecryptOdooTenantRecords = stringResource(R.string.security_hardware_attestation_required_to_decrypt_odoo_tenant_records)
+    val securitySignOutOrSwitchAgent = stringResource(R.string.security_sign_out_or_switch_agent)
+
     val colors = LocalMizanColors.current
     val haptic = LocalHapticFeedback.current
     val roleTitle = roleLabel(session.actor.role)
@@ -263,7 +270,7 @@ fun BiometricGateScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Fingerprint,
-                        contentDescription = "Authenticate with Biometrics",
+                        contentDescription = securityAuthenticateWithBiometrics,
                         tint = colors.accent,
                         modifier = Modifier.size(38.dp),
                     )
@@ -273,7 +280,7 @@ fun BiometricGateScreen(
             // Title & Subtitle
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "Biometric ERP Authorization",
+                    text = securityBiometricErpAuthorization,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = colors.textPrimary,
@@ -281,7 +288,7 @@ fun BiometricGateScreen(
                 )
                 Spacer(Modifier.height(Space.xs))
                 Text(
-                    text = "Hardware attestation required to decrypt Odoo tenant records & execution leases.",
+                    text = securityHardwareAttestationRequiredToDecryptOdooTenantRecords,
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.textSecondary,
                     textAlign = TextAlign.Center,
@@ -314,7 +321,7 @@ fun BiometricGateScreen(
                         color = colors.textPrimary,
                     )
                     Text(
-                        text = "${session.tenant.displayName} · $roleTitle",
+                        text = designJoinedValue4.replace("{1}", session.tenant.displayName).replace("{2}", roleTitle),
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.textSecondary,
                     )
@@ -352,7 +359,7 @@ fun BiometricGateScreen(
             // Simulated fallback or emergency hardware bypass
             if (isSimulation || bioAvailability != BiometricAvailability.Available) {
                 MizanGhostButton(
-                    text = "Authorize via Simulated Secure Enclave",
+                    text = securityAuthorizeViaSimulatedSecureEnclave,
                     onClick = {
                         try {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -374,7 +381,7 @@ fun BiometricGateScreen(
             ) {
                 Icon(Icons.Outlined.Logout, contentDescription = null, tint = colors.textTertiary, modifier = Modifier.size(14.dp))
                 Text(
-                    text = "Sign out or Switch Agent",
+                    text = securitySignOutOrSwitchAgent,
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.textTertiary,
                 )

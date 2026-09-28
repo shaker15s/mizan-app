@@ -272,6 +272,8 @@ private fun OnboardingStep2Workspace(
     selected: Int,
     onSelect: (Int) -> Unit,
 ) {
+    val authHardwareGovernanceDualApprovalRulesActive = stringResource(R.string.auth_hardware_governance_dual_approval_rules_active)
+
     val colors = LocalMizanColors.current
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -331,7 +333,7 @@ private fun OnboardingStep2Workspace(
             )
             Spacer(Modifier.width(Space.md))
             Text(
-                text = "Hardware Governance · Dual Approval Rules Active",
+                text = authHardwareGovernanceDualApprovalRulesActive,
                 style = MaterialTheme.typography.labelMedium,
                 color = colors.textSecondary,
             )
@@ -344,6 +346,9 @@ private fun OnboardingStep3Biometrics(
     verified: Boolean,
     onVerify: () -> Unit,
 ) {
+    val authAndroidKeystoreStrongboxTeeHardwareAttestation = stringResource(R.string.auth_android_keystore_strongbox_tee_hardware_attestation)
+    val authFingerprintSensor = stringResource(R.string.auth_fingerprint_sensor)
+
     val colors = LocalMizanColors.current
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -399,7 +404,7 @@ private fun OnboardingStep3Biometrics(
             ) {
                 Icon(
                     imageVector = if (verified) Icons.Outlined.CheckCircle else Icons.Outlined.Fingerprint,
-                    contentDescription = "Fingerprint Sensor",
+                    contentDescription = authFingerprintSensor,
                     tint = if (verified) colors.onAccent else colors.accent,
                     modifier = Modifier.size(46.dp),
                 )
@@ -440,7 +445,7 @@ private fun OnboardingStep3Biometrics(
             )
             Spacer(Modifier.width(6.dp))
             Text(
-                text = "Android Keystore · StrongBox / TEE Hardware Attestation",
+                text = authAndroidKeystoreStrongboxTeeHardwareAttestation,
                 style = MaterialTheme.typography.labelSmall.copy(fontFamily = MizanMono),
                 color = colors.textSecondary,
             )
@@ -453,6 +458,9 @@ private fun OnboardingStep3Biometrics(
  */
 @Composable
 fun SignInRoute(graph: AppGraph, onSignedIn: () -> Unit) {
+    val authDemoSimulation = stringResource(R.string.auth_demo_simulation)
+    val authEnterpriseRemote = stringResource(R.string.auth_enterprise_remote)
+
     var mode by remember { mutableStateOf(if (graph.demoMode) 0 else 1) }
     val colors = LocalMizanColors.current
 
@@ -506,7 +514,7 @@ fun SignInRoute(graph: AppGraph, onSignedIn: () -> Unit) {
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "Demo Simulation",
+                        text = authDemoSimulation,
                         style = MaterialTheme.typography.labelMedium,
                         color = if (mode == 0) colors.onAccent else colors.textSecondary,
                         fontWeight = if (mode == 0) FontWeight.SemiBold else FontWeight.Normal,
@@ -521,7 +529,7 @@ fun SignInRoute(graph: AppGraph, onSignedIn: () -> Unit) {
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "Enterprise Remote",
+                        text = authEnterpriseRemote,
                         style = MaterialTheme.typography.labelMedium,
                         color = if (mode == 1) colors.onAccent else colors.textSecondary,
                         fontWeight = if (mode == 1) FontWeight.SemiBold else FontWeight.Normal,

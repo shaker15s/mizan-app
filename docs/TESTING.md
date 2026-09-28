@@ -50,6 +50,11 @@ Every claim below therefore separates what runs from what is merely written.
 - Screenshot tests. The old greeting screenshot was removed with `com.example`. No new golden was captured, because nothing was rendered.
 - Instrumented UI tests. The old `ExampleInstrumentedTest` was removed. No replacement was run.
 - Performance. No baseline profile, no macrobenchmark, no startup number other than a local elapsed timestamp the device can show in Account. That number is not a benchmark.
+- Accessibility and localisation beyond what is static. `tools/strings_check.py`
+  covers defined resources, paired locales, hardcoded text, touch targets and
+  the text floor. Screen-reader order, rendered contrast, font scale at 2.0 and
+  RTL mirroring still need a device; `docs/ACCESSIBILITY.md` lists them as open
+  rather than covered.
 
 ## How to run, once a toolchain exists
 
@@ -58,6 +63,8 @@ Every claim below therefore separates what runs from what is merely written.
 ./gradlew :app:assembleDemoDebug :app:assembleStagingDebug :app:assembleProductionRelease
 ./gradlew :app:lintDemoDebug :data:lintDebug :design:lintDebug
 python3 tools/repo_check.py        # static, needs no toolchain
+python3 tools/strings_check.py     # resources, prose, touch targets, text floor
+python3 tools/security_check.py    # secrets, manifest, credentials, floors
 ```
 
 The service tests bind to `127.0.0.1` on port 0, so they do not need a fixed

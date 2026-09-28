@@ -221,10 +221,38 @@ service**.
   remember which execution a row belongs to. An approval now carries its
   `executionId` on the wire.
 
-**Not done here:** the other ten screens, and the visual/adaptive/accessibility
-work of Phase 6 and 7, which need a device. The approvals section is rendered
-inside the governance screen and its state machine is covered by tests; the
-pixels are not.
+**Not done here:** the other ten screens, and the visual and adaptive work of
+Phase 6 and 7, which need a device. The approvals section is rendered inside the
+governance screen and its state machine is covered by tests; the pixels are not.
+
+### Phase 6 and 7 — the half of localisation and accessibility that is static
+
+Gates 13 and 15 read as device work and were therefore not started. That was
+the wrong reading of them. Whether a sentence is hardcoded in Kotlin, whether
+every referenced resource exists, whether a button is 48dp and whether text
+sits above a readable floor are properties of the tree, and the tree is exactly
+what this environment has.
+
+* **Gate 13, full Arabic localisation: done as far as static analysis can take
+  it.** 193 literals across 17 files were moved out of Kotlin and into the
+  resources, with the interpolations preserved as positional placeholders so a
+  translator can move them. Both locales are in step and are checked every run;
+  a literal is now an error, so the count cannot drift back up. The extraction
+  is idempotent — running it again finds nothing — which is how "done" is
+  defined here rather than by a one-off sweep.
+* It also found a genuine build break: `R.string.cancel` was referenced by the
+  biometric gate and defined nowhere. No compiler here could have said so.
+* **Gate 15, accessibility: the static half is real, the device half is
+  listed.** `tools/strings_check.py` enforces defined resources, paired
+  locales, no hardcoded text, a 48dp touch target on every clickable surface,
+  an 11sp text floor, `sp` over `dp`, RTL support and no orientation lock. Three
+  undersized controls and fifteen sub-11sp labels were fixed. What is
+  deliberately *not* claimed — screen-reader order, rendered contrast, font
+  scale at 2.0, RTL mirroring, tablet/foldable rearrangement, WCAG conformance
+  — is written down in `docs/ACCESSIBILITY.md` rather than implied.
+* The tooling ships with self-tests (`--selftest`) proving the checks fire on
+  planted violations, because a check that has never failed is a check nobody
+  should trust.
 
 ### Phase 7 — design system 2.0
 **Not started** beyond the tokens that already existed.

@@ -456,6 +456,9 @@ private fun AgentTopBar(
     onClear: () -> Unit,
     canClear: Boolean,
 ) {
+    val agentNewChat = stringResource(R.string.agent_new_chat)
+    val appName = stringResource(R.string.app_name)
+
     val colors = LocalMizanColors.current
     Row(
         modifier = Modifier
@@ -484,7 +487,7 @@ private fun AgentTopBar(
             Spacer(Modifier.width(Space.sm))
             Column {
                 Text(
-                    text = "Wakeel",
+                    text = appName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = colors.textPrimary,
@@ -510,7 +513,7 @@ private fun AgentTopBar(
             IconButton(onClick = onClear) {
                 Icon(
                     imageVector = Icons.Outlined.AddComment,
-                    contentDescription = "New Chat",
+                    contentDescription = agentNewChat,
                     tint = colors.textSecondary,
                 )
             }
@@ -522,6 +525,10 @@ private fun AgentTopBar(
 private fun AgentEmptyHero(
     onSelectPrompt: (String) -> Unit,
 ) {
+    val agentCheckInventory = stringResource(R.string.agent_check_inventory)
+    val agentCreateDraftOrder = stringResource(R.string.agent_create_draft_order)
+    val appName2 = stringResource(R.string.app_name)
+
     val colors = LocalMizanColors.current
     Column(
         modifier = Modifier
@@ -537,7 +544,7 @@ private fun AgentEmptyHero(
         Spacer(Modifier.height(Space.md))
 
         Text(
-            text = "Wakeel",
+            text = appName2,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
             color = colors.textPrimary,
@@ -567,13 +574,13 @@ private fun AgentEmptyHero(
 
             PromptChip(
                 icon = Icons.Outlined.Inventory2,
-                title = "Check Inventory",
+                title = agentCheckInventory,
                 subtitle = stockExample,
                 onClick = { onSelectPrompt(stockExample) },
             )
             PromptChip(
                 icon = Icons.Outlined.ReceiptLong,
-                title = "Create Draft Order",
+                title = agentCreateDraftOrder,
                 subtitle = draftExample,
                 onClick = { onSelectPrompt(draftExample) },
             )
@@ -714,6 +721,10 @@ private fun ProposalBlock(
     onReview: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val agentBiometricSecurity = stringResource(R.string.agent_biometric_security)
+    val agentInitiatedBy = stringResource(R.string.agent_initiated_by)
+    val designJoinedValue4 = stringResource(R.string.joined_value)
+
     val colors = LocalMizanColors.current
     val destructive = proposal.args.tool.destructive
 
@@ -755,7 +766,7 @@ private fun ProposalBlock(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Outlined.Fingerprint,
-                        contentDescription = "Biometric Security",
+                        contentDescription = agentBiometricSecurity,
                         tint = colors.accent,
                         modifier = Modifier.size(14.dp),
                     )
@@ -779,14 +790,14 @@ private fun ProposalBlock(
 
             (proposal.args as? CreateDraftOrderArgs)?.let { args ->
                 Text(
-                    text = "${args.customerName} · ${args.itemsSummary}",
+                    text = designJoinedValue4.replace("{1}", args.customerName).replace("{2}", args.itemsSummary),
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.textSecondary,
                 )
             }
 
             Text(
-                text = "Initiated by ${proposal.initiator.displayName} · ${reasonLabel(proposal.policy.reasonCode)}",
+                text = agentInitiatedBy.replace("{1}", proposal.initiator.displayName).replace("{2}", reasonLabel(proposal.policy.reasonCode)),
                 style = MaterialTheme.typography.labelSmall,
                 color = colors.textTertiary,
             )
@@ -942,6 +953,10 @@ private fun ChatGPTFloatingDock(
     showSuggestions: Boolean,
     onSelectSuggestion: (String) -> Unit,
 ) {
+    val agentCheckStock = stringResource(R.string.agent_check_stock)
+    val agentDraftOrder = stringResource(R.string.agent_draft_order)
+    val agentSend = stringResource(R.string.agent_send)
+
     val colors = LocalMizanColors.current
     val canSend = input.isNotBlank() && !busy
 
@@ -964,14 +979,14 @@ private fun ChatGPTFloatingDock(
                 item {
                     CompactChip(
                         icon = Icons.Outlined.Inventory2,
-                        text = "Check Stock",
+                        text = agentCheckStock,
                         onClick = { onSelectSuggestion(stockExample) },
                     )
                 }
                 item {
                     CompactChip(
                         icon = Icons.Outlined.ReceiptLong,
-                        text = "Draft Order",
+                        text = agentDraftOrder,
                         onClick = { onSelectSuggestion(draftExample) },
                     )
                 }
@@ -1046,7 +1061,7 @@ private fun ChatGPTFloatingDock(
                 } else {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Send",
+                        contentDescription = agentSend,
                         tint = if (canSend) colors.onAccent else colors.textTertiary,
                         modifier = Modifier.size(16.dp),
                     )

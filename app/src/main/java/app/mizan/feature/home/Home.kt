@@ -232,6 +232,15 @@ fun HomeRoute(
     onOpen: (String) -> Unit,
     onLockSession: (() -> Unit)? = null,
 ) {
+    val accountSystem = stringResource(R.string.account_system)
+    val designJoinedValue4 = stringResource(R.string.joined_value)
+    val homeAllClearNoPendingApprovalActionsRequired = stringResource(R.string.home_all_clear_no_pending_approval_actions_required)
+    val homeDraftCairoTechOrder = stringResource(R.string.home_draft_cairo_tech_order)
+    val homeInspectLedgerChain = stringResource(R.string.home_inspect_ledger_chain)
+    val homePending = stringResource(R.string.home_pending)
+    val homeVault = stringResource(R.string.home_vault)
+    val homeVerifyReceipts = stringResource(R.string.home_verify_receipts)
+
     val vm: HomeViewModel = viewModel(factory = simpleFactory { HomeViewModel(graph) })
     val state by vm.state.collectAsStateWithLifecycle()
     val syncStatus by graph.syncTracker.state.collectAsStateWithLifecycle()
@@ -295,7 +304,7 @@ fun HomeRoute(
                 }
                 if (state.actor.isNotBlank() && state.roleName.isNotBlank()) {
                     Text(
-                        text = "${state.actor} · ${roleLabel(app.mizan.domain.model.Role.valueOf(state.roleName))}",
+                        text = designJoinedValue4.replace("{1}", state.actor).replace("{2}", roleLabel(app.mizan.domain.model.Role.valueOf(state.roleName))),
                         color = colors.textSecondary,
                         style = MaterialTheme.typography.bodySmall,
                     )
@@ -327,7 +336,7 @@ fun HomeRoute(
             horizontalArrangement = Arrangement.spacedBy(Space.sm),
         ) {
             MetricCard(
-                title = "Pending",
+                title = homePending,
                 value = if (state.attention.isEmpty()) "0" else "${state.attention.size}",
                 icon = Icons.Outlined.FactCheck,
                 tone = if (state.attention.isEmpty()) StatusTone.Success else StatusTone.Warning,
@@ -335,7 +344,7 @@ fun HomeRoute(
                 modifier = Modifier.weight(1f).mizanReveal(0),
             )
             MetricCard(
-                title = "Vault",
+                title = homeVault,
                 value = "Active",
                 icon = Icons.Outlined.Fingerprint,
                 tone = StatusTone.Success,
@@ -343,7 +352,7 @@ fun HomeRoute(
                 modifier = Modifier.weight(1f).mizanReveal(1),
             )
             MetricCard(
-                title = "System",
+                title = accountSystem,
                 value = if (state.offline) "Offline" else "100%",
                 icon = Icons.Outlined.Shield,
                 tone = if (state.offline) StatusTone.Danger else StatusTone.Success,
@@ -365,17 +374,17 @@ fun HomeRoute(
                 onClick = { onOpen("agent") },
             )
             QuickChip(
-                label = "Draft Cairo Tech Order",
+                label = homeDraftCairoTechOrder,
                 icon = Icons.Outlined.FactCheck,
                 onClick = { onOpen("agent") },
             )
             QuickChip(
-                label = "Inspect Ledger Chain",
+                label = homeInspectLedgerChain,
                 icon = Icons.Outlined.Security,
                 onClick = { onOpen("evidence") },
             )
             QuickChip(
-                label = "Verify Receipts",
+                label = homeVerifyReceipts,
                 icon = Icons.Outlined.History,
                 onClick = { onOpen("operations") },
             )
@@ -425,7 +434,7 @@ fun HomeRoute(
                 )
                 Spacer(Modifier.width(Space.md))
                 Text(
-                    text = "All clear · No pending approval actions required.",
+                    text = homeAllClearNoPendingApprovalActionsRequired,
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.textSecondary,
                 )
@@ -498,6 +507,10 @@ private fun AuditTrailSection(
     onOpenAll: () -> Unit,
     onInspectEvidence: () -> Unit,
 ) {
+    val homeErpAuditTrail = stringResource(R.string.home_erp_audit_trail)
+    val homeNoErpExecutionReceiptsRecordedYetExecuteTasks = stringResource(R.string.home_no_erp_execution_receipts_recorded_yet_execute_tasks)
+    val homeViewAll = stringResource(R.string.home_view_all)
+
     val colors = LocalMizanColors.current
     var selectedFilterIndex by remember { mutableIntStateOf(0) }
     val filterOptions = listOf("All Audit Receipts", "Verified Only", "Recent Executions")
@@ -517,14 +530,14 @@ private fun AuditTrailSection(
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    text = "ERP Audit Trail",
+                    text = homeErpAuditTrail,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = colors.textPrimary,
                 )
             }
             Text(
-                text = "View All",
+                text = homeViewAll,
                 style = MaterialTheme.typography.labelSmall,
                 color = colors.accent,
                 fontWeight = FontWeight.SemiBold,
@@ -549,7 +562,7 @@ private fun AuditTrailSection(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "No ERP execution receipts recorded yet. Execute tasks to generate signed audit receipts.",
+                    text = homeNoErpExecutionReceiptsRecordedYetExecuteTasks,
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.textSecondary,
                 )

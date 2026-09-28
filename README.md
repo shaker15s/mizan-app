@@ -29,7 +29,8 @@ things a company does with the app -- each one asserted by a test -- are
 :app           Shell, screens, flavors, composition root.
 :service       JVM server. The reference authority. Not part of the app.
 tools/         Dependency-free static checks.
-docs/          Architecture, threat model, testing, service contract, health.
+docs/          Architecture, threat model, testing, service contract, health,
+               accessibility and localisation.
 ```
 
 ## Build
